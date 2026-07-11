@@ -1,2 +1,2 @@
-library;
-// Exports added in Task 2 and Task 3.
+export 'src/messages.g.dart';
+// Platform interface exports added in Task 3.
