@@ -1,0 +1,10 @@
+.dart_tool/
+.packages
+build/
+pubspec_overrides.yaml
+.fvm/
+*.iml
+.idea/
+ios/Pods/
+ios/.symlinks/
+Podfile.lock

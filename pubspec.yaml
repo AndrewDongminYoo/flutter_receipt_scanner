@@ -1,0 +1,26 @@
+name: flutter_receipt_scanner_workspace
+publish_to: none
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+workspace:
+  - packages/flutter_receipt_scanner_platform_interface
+  - packages/flutter_receipt_scanner
+  - packages/flutter_receipt_scanner_ios
+  - packages/flutter_receipt_scanner_android
+dev_dependencies:
+  melos: ^7.0.0
+# melos 7 reads its config from this key (melos.yaml is removed in v7).
+melos:
+  scripts:
+    analyze:
+      run: dart analyze .
+      exec:
+        concurrency: 4
+    test:
+      run: flutter test
+      exec:
+        concurrency: 4
+      packageFilters:
+        dirExists: test
+    format:
+      run: dart format --line-length 120 .
