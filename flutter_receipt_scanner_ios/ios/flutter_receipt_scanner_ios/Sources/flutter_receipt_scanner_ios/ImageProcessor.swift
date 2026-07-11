@@ -134,3 +134,163 @@ enum ImageProcessor {
         return formatter.string(from: Date())
     }
 }
+
+// MARK: - Real-source EXIF (gallery path)
+
+/// Reads the real source EXIF for gallery imports. The camera path synthesizes
+/// device info (`deviceExif()`); the gallery path forwards the source's own
+/// metadata. Faithful port of RN `RNImageProcessor.buildExifDict:` / `flattenRaw:`
+/// plus the file-props forwarding in `processImage:`.
+extension ImageProcessor {
+    /// Reads `source`'s properties and returns both the Pigeon white-list wire
+    /// object and the ImageIO property dict to write into the output file.
+    ///
+    /// `fileProps` forwards the raw EXIF/TIFF/GPS dictionaries (TIFF orientation
+    /// forced to Up, GPS only when `includeGpsExif`); `encodeJpeg` merges them.
+    /// Returns nil when the source exposes no readable properties.
+    static func buildExif(
+        from source: CGImageSource,
+        includeGpsExif: Bool,
+        includeRawExif: Bool
+    ) -> (wire: ReceiptExifWire, fileProps: [CFString: Any])? {
+        guard let sourceProps = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+            as? [CFString: Any] else { return nil }
+
+        let exifDict = sourceProps[kCGImagePropertyExifDictionary] as? [CFString: Any]
+        let tiffDict = sourceProps[kCGImagePropertyTIFFDictionary] as? [CFString: Any]
+        let gpsDict = sourceProps[kCGImagePropertyGPSDictionary] as? [CFString: Any]
+
+        // ── File props: forward the raw dicts (orientation stripped to Up). ──
+        var fileProps: [CFString: Any] = [:]
+        if let exifDict { fileProps[kCGImagePropertyExifDictionary] = exifDict }
+        if var tiffDict {
+            tiffDict[kCGImagePropertyTIFFOrientation] = CGImagePropertyOrientation.up.rawValue
+            fileProps[kCGImagePropertyTIFFDictionary] = tiffDict
+        }
+        if includeGpsExif, let gpsDict {
+            fileProps[kCGImagePropertyGPSDictionary] = gpsDict
+        }
+
+        // ── Wire white-list. ──
+        var wire = ReceiptExifWire()
+        // Output pixels are always orientation-normalized; report 1 (Up). The
+        // original value survives only in raw.Orientation (when includeRawExif).
+        wire.orientation = Int64(CGImagePropertyOrientation.up.rawValue)
+
+        wire.dateTimeOriginal = exifDict?[kCGImagePropertyExifDateTimeOriginal] as? String
+        wire.dateTimeDigitized = exifDict?[kCGImagePropertyExifDateTimeDigitized] as? String
+        wire.dateTime = tiffDict?[kCGImagePropertyTIFFDateTime] as? String
+        wire.make = tiffDict?[kCGImagePropertyTIFFMake] as? String
+        wire.model = tiffDict?[kCGImagePropertyTIFFModel] as? String
+        wire.software = tiffDict?[kCGImagePropertyTIFFSoftware] as? String
+
+        wire.exposureTime = asDouble(exifDict?[kCGImagePropertyExifExposureTime])
+        wire.fNumber = asDouble(exifDict?[kCGImagePropertyExifFNumber])
+        wire.focalLength = asDouble(exifDict?[kCGImagePropertyExifFocalLength])
+        wire.flash = asInt64(exifDict?[kCGImagePropertyExifFlash])
+        wire.whiteBalance = asInt64(exifDict?[kCGImagePropertyExifWhiteBalance])
+        wire.exposureMode = asInt64(exifDict?[kCGImagePropertyExifExposureMode])
+        wire.exposureProgram = asInt64(exifDict?[kCGImagePropertyExifExposureProgram])
+        wire.meteringMode = asInt64(exifDict?[kCGImagePropertyExifMeteringMode])
+        wire.colorSpace = asInt64(exifDict?[kCGImagePropertyExifColorSpace])
+        wire.lightSource = asInt64(exifDict?[kCGImagePropertyExifLightSource])
+
+        // ISOSpeedRatings is an array on iOS (e.g. [50]); take the first element.
+        let isoRaw = exifDict?[kCGImagePropertyExifISOSpeedRatings]
+        if let isoArray = isoRaw as? [Any], let first = isoArray.first {
+            wire.iso = asDouble(first)
+        } else {
+            wire.iso = asDouble(isoRaw)
+        }
+
+        // ExifVersion is either a String ("0220") or an array of digits.
+        let versionRaw = exifDict?[kCGImagePropertyExifVersion]
+        if let versionString = versionRaw as? String {
+            wire.exifVersion = versionString
+        } else if let versionParts = versionRaw as? [Any] {
+            let joined = versionParts.map { "\($0)" }.joined()
+            wire.exifVersion = joined.isEmpty ? nil : joined
+        }
+
+        if includeGpsExif, let gpsDict {
+            wire.gps = buildGps(from: gpsDict)
+        }
+
+        if includeRawExif {
+            let raw = flattenRaw(sourceProps, includeGps: includeGpsExif)
+            wire.raw = raw.isEmpty ? nil : raw
+        }
+
+        return (wire, fileProps)
+    }
+
+    private static func buildGps(from gpsDict: [CFString: Any]) -> GpsDataWire? {
+        guard let lat = asDouble(gpsDict[kCGImagePropertyGPSLatitude]),
+              let lon = asDouble(gpsDict[kCGImagePropertyGPSLongitude])
+        else { return nil }
+
+        let latRef = gpsDict[kCGImagePropertyGPSLatitudeRef] as? String
+        let lonRef = gpsDict[kCGImagePropertyGPSLongitudeRef] as? String
+
+        var gps = GpsDataWire(
+            latitude: lat * (latRef == "S" ? -1 : 1),
+            longitude: lon * (lonRef == "W" ? -1 : 1)
+        )
+        if let altitude = asDouble(gpsDict[kCGImagePropertyGPSAltitude]) {
+            let altRef = asInt64(gpsDict[kCGImagePropertyGPSAltitudeRef])
+            gps.altitude = altRef == 1 ? -altitude : altitude
+        }
+        gps.timestamp = gpsDict[kCGImagePropertyGPSTimeStamp] as? String
+        gps.speed = asDouble(gpsDict[kCGImagePropertyGPSSpeed])
+        gps.heading = asDouble(gpsDict[kCGImagePropertyGPSImgDirection])
+            ?? asDouble(gpsDict[kCGImagePropertyGPSDestBearing])
+        return gps
+    }
+
+    /// Flat raw-EXIF map keyed by standard tag names. Skips binary/dict values and
+    /// a deny-set; GPS keys are prefixed with "GPS" and excluded unless `includeGps`.
+    private static func flattenRaw(
+        _ sourceProps: [CFString: Any],
+        includeGps: Bool
+    ) -> [String: Any?] {
+        let deny: Set = [
+            "MakerNote",
+            "UserComment",
+            "ComponentsConfiguration",
+            "FileSource",
+            "SceneType",
+            "InteroperabilityIndex",
+        ]
+
+        var raw: [String: Any?] = [:]
+        func add(_ dict: [CFString: Any]?, prefix: String?) {
+            guard let dict else { return }
+            for (cfKey, value) in dict {
+                let key = cfKey as String
+                if deny.contains(key) { continue }
+                // Skip values the codec can't marshal cleanly.
+                if value is Data { continue }
+                if value is [AnyHashable: Any] { continue }
+                if !(value is String || value is NSNumber || value is [Any]) { continue }
+                let outKey = (prefix != nil && !key.hasPrefix(prefix!))
+                    ? prefix! + key
+                    : key
+                raw[outKey] = value
+            }
+        }
+        add(sourceProps[kCGImagePropertyTIFFDictionary] as? [CFString: Any], prefix: nil)
+        add(sourceProps[kCGImagePropertyExifDictionary] as? [CFString: Any], prefix: nil)
+        if includeGps {
+            add(sourceProps[kCGImagePropertyGPSDictionary] as? [CFString: Any], prefix: "GPS")
+        }
+        return raw
+    }
+
+    private static func asDouble(_ value: Any?) -> Double? {
+        (value as? NSNumber)?.doubleValue
+    }
+
+    private static func asInt64(_ value: Any?) -> Int64? {
+        (value as? NSNumber)?.int64Value
+    }
+}

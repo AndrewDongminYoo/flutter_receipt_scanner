@@ -1,4 +1,6 @@
 import Flutter
+import Photos
+import PhotosUI
 import UIKit
 import VisionKit
 
@@ -6,12 +8,20 @@ import VisionKit
 ///
 /// Camera path (`source == .camera`): VisionKit document scanner → orientation
 /// normalize → OCR (+ rotation detect) → optional pixel rotation → JPEG encode
-/// with synthesized device EXIF. Gallery path is not yet implemented.
+/// with synthesized device EXIF.
+///
+/// Gallery path (`source == .gallery`): PHPicker → per-photo quad detect →
+/// custom crop editor (or auto-confirm) → perspective-correct → OCR → JPEG encode
+/// with the real source EXIF. Delegated to `GalleryPickerDelegate` (held strongly
+/// for the whole flow).
 final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     VNDocumentCameraViewControllerDelegate
 {
     private var completion: ((Result<ScanResultWire, Error>) -> Void)?
     private var options: ScanOptionsWire?
+    /// Retained for the whole gallery flow — PHPickerViewController holds its
+    /// delegate weakly. Cleared in `finish`.
+    private var galleryDelegate: GalleryPickerDelegate?
 
     private let workQueue = DispatchQueue(label: "com.flutterreceiptscanner.work", qos: .userInitiated)
 
@@ -27,14 +37,20 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
             )))
             return
         }
-        guard (options.source ?? .camera) == .camera else {
-            completion(.failure(PigeonError(
-                code: "unimplemented",
-                message: "source: gallery is not implemented yet.",
-                details: nil
-            )))
-            return
+        switch options.source ?? .camera {
+        case .camera:
+            startCamera(options: options, completion: completion)
+        case .gallery:
+            startGallery(options: options, completion: completion)
         }
+    }
+
+    // MARK: - Camera path
+
+    private func startCamera(
+        options: ScanOptionsWire,
+        completion: @escaping (Result<ScanResultWire, Error>) -> Void
+    ) {
         guard VNDocumentCameraViewController.isSupported else {
             completion(.failure(PigeonError(
                 code: "unavailable",
@@ -50,6 +66,71 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
             scanner.delegate = self
             Self.topViewController()?.present(scanner, animated: true)
         }
+    }
+
+    // MARK: - Gallery path
+
+    private func startGallery(
+        options: ScanOptionsWire,
+        completion: @escaping (Result<ScanResultWire, Error>) -> Void
+    ) {
+        self.completion = completion
+        self.options = options
+        DispatchQueue.main.async {
+            guard let presenter = Self.topViewController() else {
+                self.finish(.failure(PigeonError(
+                    code: "no_activity",
+                    message: "No view controller is available to present the picker.",
+                    details: nil
+                )))
+                return
+            }
+            // Library access only populates PHPickerResult.assetIdentifier (used
+            // for screenshot origin detection). The picker itself works without it.
+            let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+            switch status {
+            case .notDetermined:
+                PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
+                    DispatchQueue.main.async {
+                        self.presentPicker(
+                            options: options,
+                            presenter: presenter,
+                            hasLibraryAccess: newStatus == .authorized || newStatus == .limited
+                        )
+                    }
+                }
+            case .authorized, .limited:
+                self.presentPicker(options: options, presenter: presenter, hasLibraryAccess: true)
+            default:
+                self.presentPicker(options: options, presenter: presenter, hasLibraryAccess: false)
+            }
+        }
+    }
+
+    private func presentPicker(
+        options: ScanOptionsWire,
+        presenter: UIViewController,
+        hasLibraryAccess: Bool
+    ) {
+        var config: PHPickerConfiguration = hasLibraryAccess
+            // Initializing with the photo library populates assetIdentifier.
+            ? PHPickerConfiguration(photoLibrary: .shared())
+            : PHPickerConfiguration()
+        config.filter = .images
+        // selectionLimit 0 means unlimited in PHPicker — clamp to at least 1.
+        config.selectionLimit = max(1, Int(options.maxPages ?? 1))
+
+        let delegate = GalleryPickerDelegate(
+            options: options,
+            presentingViewController: presenter,
+            hasLibraryAccess: hasLibraryAccess,
+            completion: { [weak self] result in self?.finish(result) }
+        )
+        galleryDelegate = delegate
+
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = delegate
+        presenter.present(picker, animated: true)
     }
 
     // MARK: - VNDocumentCameraViewControllerDelegate
@@ -145,6 +226,9 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
         let callback = completion
         completion = nil
         options = nil
+        // Safe to release even mid-flight: an in-flight gallery block holds a
+        // strong reference to the delegate until it returns.
+        galleryDelegate = nil
         DispatchQueue.main.async { callback?(result) }
     }
 
