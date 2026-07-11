@@ -3,6 +3,7 @@ package com.example.flutter_receipt_scanner_android
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
@@ -35,6 +36,7 @@ class FlutterReceiptScannerPlugin :
 
     private companion object {
         const val SCAN_REQUEST_CODE = 0x5EC0
+        const val GALLERY_REQUEST_CODE = 0x5EC1
     }
 
     // MARK: - FlutterPlugin
@@ -75,10 +77,6 @@ class FlutterReceiptScannerPlugin :
             callback(Result.failure(FlutterError("scan_in_progress", "A scan is already in progress.", null)))
             return
         }
-        if ((options.source ?: ScanSourceWire.CAMERA) != ScanSourceWire.CAMERA) {
-            callback(Result.failure(FlutterError("unimplemented", "source: gallery is not implemented yet.", null)))
-            return
-        }
         val activity = activityBinding?.activity
         if (activity == null) {
             callback(Result.failure(FlutterError("no_activity", "Plugin is not attached to an Activity.", null)))
@@ -90,6 +88,23 @@ class FlutterReceiptScannerPlugin :
         executor.execute { appContext?.let { ImageProcessor.deletePreviousSessionFiles(it) } }
 
         val maxPages = maxOf(1, (options.maxPages ?: 1).toInt())
+
+        // Gallery path: the system photo picker + custom quad-crop editor live in
+        // CropEditorActivity, which returns cached file:// URIs + per-image corners.
+        // Android always shows the editor — cropAutoConfirm is ignored (port map §2.4).
+        if ((options.source ?: ScanSourceWire.CAMERA) == ScanSourceWire.GALLERY) {
+            runCatching {
+                @Suppress("DEPRECATION")
+                activity.startActivityForResult(
+                    Intent(activity, CropEditorActivity::class.java)
+                        .putExtra(CropEditorActivity.EXTRA_MAX_IMAGES, maxPages),
+                    GALLERY_REQUEST_CODE,
+                )
+            }.onFailure { reject("gallery_launch_failed", it.message) }
+            return
+        }
+
+        // Camera path: GMS ML Kit Document Scanner.
         val scannerOptions =
             GmsDocumentScannerOptions
                 .Builder()
@@ -115,13 +130,32 @@ class FlutterReceiptScannerPlugin :
         requestCode: Int,
         resultCode: Int,
         data: Intent?,
-    ): Boolean {
-        if (requestCode != SCAN_REQUEST_CODE) return false
-        if (pendingCallback == null) return true
+    ): Boolean =
+        when (requestCode) {
+            SCAN_REQUEST_CODE -> {
+                handleCameraResult(resultCode, data)
+                true
+            }
+
+            GALLERY_REQUEST_CODE -> {
+                handleGalleryResult(resultCode, data)
+                true
+            }
+
+            else -> {
+                false
+            }
+        }
+
+    private fun handleCameraResult(
+        resultCode: Int,
+        data: Intent?,
+    ) {
+        if (pendingCallback == null) return
 
         if (resultCode == Activity.RESULT_CANCELED) {
             resolve(ScanResultWire(status = ScanStatusWire.CANCELLED, images = emptyList(), rejectedImages = emptyList()))
-            return true
+            return
         }
         val result = GmsDocumentScanningResult.fromActivityResultIntent(data)
         val pages = result?.pages ?: emptyList()
@@ -150,7 +184,51 @@ class FlutterReceiptScannerPlugin :
                 ocr.close()
             }
         }
-        return true
+    }
+
+    private fun handleGalleryResult(
+        resultCode: Int,
+        data: Intent?,
+    ) {
+        if (pendingCallback == null) return
+        val options = pendingOptions ?: ScanOptionsWire()
+
+        val uris = data?.getStringArrayExtra(CropEditorActivity.EXTRA_ORIGINAL_URIS)
+        val allCorners = data?.getFloatArrayExtra(CropEditorActivity.EXTRA_ALL_CORNERS)
+        if (resultCode != Activity.RESULT_OK || uris.isNullOrEmpty() || allCorners == null) {
+            resolve(ScanResultWire(status = ScanStatusWire.CANCELLED, images = emptyList(), rejectedImages = emptyList()))
+            return
+        }
+
+        executor.execute {
+            val context = appContext
+            if (context == null) {
+                reject("no_context", "Application context unavailable.")
+                return@execute
+            }
+            val ocr = OcrProcessor()
+            try {
+                val images =
+                    uris.mapIndexedNotNull { i, uriStr ->
+                        val uri = Uri.parse(uriStr)
+                        val corners =
+                            allCorners.copyOfRange(
+                                i * CropEditorActivity.CORNERS_PER_IMAGE,
+                                (i + 1) * CropEditorActivity.CORNERS_PER_IMAGE,
+                            )
+                        ResultBuilder.processGalleryImage(context, uri, corners, options, ocr)
+                    }
+                if (images.isEmpty() && uris.isNotEmpty()) {
+                    reject("processing_failed", "Failed to process the selected images.")
+                } else {
+                    resolve(ScanResultWire(status = ScanStatusWire.SUCCESS, images = images, rejectedImages = emptyList()))
+                }
+            } catch (e: OutOfMemoryError) {
+                reject("out_of_memory", e.message)
+            } finally {
+                ocr.close()
+            }
+        }
     }
 
     private fun resolve(result: ScanResultWire) {

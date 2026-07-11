@@ -1,1 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name=".CropEditorActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false"
+            android:theme="@android:style/Theme.Black.NoTitleBar" />
+    </application>
+</manifest>
