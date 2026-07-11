@@ -7,8 +7,9 @@ workspace:
   - packages/flutter_receipt_scanner
   - packages/flutter_receipt_scanner_ios
   - packages/flutter_receipt_scanner_android
+  - packages/flutter_receipt_scanner/example
 dev_dependencies:
-  melos: ^7.0.0
+  melos: ^8.0.0
 # melos 7 reads its config from this key (melos.yaml is removed in v7).
 melos:
   scripts:

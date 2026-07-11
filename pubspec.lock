@@ -153,6 +153,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
+  cupertino_icons:
+    dependency: transitive
+    description:
+      name: cupertino_icons
+      sha256: "41e005c33bd814be4d3096aff55b1908d419fde52ca656c8c47719ec745873cd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.9"
   dart_style:
     dependency: transitive
     description:
@@ -198,6 +206,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_lints:
+    dependency: transitive
+    description:
+      name: flutter_lints
+      sha256: "3105dc8492f6183fb076ccf1f351ac3d60564bff92e20bfc4af9cc1651f4e7e1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.0"
   flutter_test:
     dependency: transitive
     description: flutter
@@ -275,6 +291,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  lints:
+    dependency: transitive
+    description:
+      name: lints
+      sha256: "12f842a479589fea194fe5c5a3095abc7be0c1f2ddfa9a0e76aed1dbd26a87df"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.0"
   matcher:
     dependency: transitive
     description:
@@ -295,10 +319,10 @@ packages:
     dependency: "direct dev"
     description:
       name: melos
-      sha256: "5fc1a858e3d90fdc42f2f423b95f901214bbc3d9e80c99125d9352f12453721d"
+      sha256: "78817a26b8f8dd6e5d4f85da2347da296516dae9664c894e5b887b10bc4aefa0"
       url: "https://pub.dev"
     source: hosted
-    version: "7.8.2"
+    version: "8.2.0"
   meta:
     dependency: transitive
     description:
@@ -537,5 +561,5 @@ packages:
     source: hosted
     version: "2.2.4"
 sdks:
-  dart: ">=3.12.0 <4.0.0"
+  dart: ">=3.12.2 <4.0.0"
   flutter: ">=3.44.0"
