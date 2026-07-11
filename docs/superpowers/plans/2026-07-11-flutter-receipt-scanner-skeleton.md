@@ -25,8 +25,7 @@
 ### Task 1: Repo scaffold — pub + melos workspace with four packages
 
 **Files:**
-- Create: `pubspec.yaml` (root — pub workspace + melos config)
-- Create: `melos.yaml`
+- Create: `pubspec.yaml` (root — pub workspace + melos config; melos 7 keeps its config here, `melos.yaml` no longer exists)
 - Create: `analysis_options.yaml` (root)
 - Create: `.gitignore`
 - Create: `packages/flutter_receipt_scanner_platform_interface/pubspec.yaml`
@@ -56,31 +55,24 @@ workspace:
   - packages/flutter_receipt_scanner_android
 dev_dependencies:
   melos: ^7.0.0
+# melos 7 reads its config from this key (melos.yaml is removed in v7).
+melos:
+  scripts:
+    analyze:
+      run: dart analyze .
+      exec:
+        concurrency: 4
+    test:
+      run: flutter test
+      exec:
+        concurrency: 4
+      packageFilters:
+        dirExists: test
+    format:
+      run: dart format --line-length 120 .
 ```
 
-- [ ] **Step 2: `melos.yaml`**
-
-```yaml
-name: flutter_receipt_scanner
-packages:
-  - packages/**
-command:
-  bootstrap:
-    runPubGetInParallel: true
-scripts:
-  analyze:
-    run: dart analyze .
-    exec:
-      concurrency: 4
-  test:
-    run: flutter test
-    exec:
-      concurrency: 4
-    packageFilters:
-      dirExists: test
-  format:
-    run: dart format --line-length 120 .
-```
+- [ ] **Step 2 (removed): melos.yaml is not used in melos 7 — config lives in the root pubspec `melos:` key above.**
 
 - [ ] **Step 3: Root `analysis_options.yaml`**
 
@@ -359,23 +351,27 @@ class OcrQuality {
   double? confidence;
 }
 
+// Pigeon reads only the fields (no explicit constructor). Non-null fields
+// become `required` named params in the generated constructor, so always-present
+// output fields never need a Dart null-check.
 class ReceiptImage {
-  String? uri;
-  int? width;
-  int? height;
-  String? fileName;
-  String? mimeType;
-  int? fileSize;
+  String uri;
+  int width;
+  int height;
+  String fileName;
+  String mimeType;
+  int fileSize;
+  ImageOrigin imageOrigin;
+  // Genuinely optional (populated only when the option is enabled / text found).
   String? ocrText;
   OcrQuality? ocrQuality;
   ReceiptExif? exif;
-  ImageOrigin? imageOrigin;
 }
 
 class ScanResult {
-  ScanStatus? status;
-  List<ReceiptImage?>? images;
-  List<ReceiptImage?>? rejectedImages;
+  ScanStatus status;
+  List<ReceiptImage> images;
+  List<ReceiptImage> rejectedImages;
 }
 
 @HostApi()
