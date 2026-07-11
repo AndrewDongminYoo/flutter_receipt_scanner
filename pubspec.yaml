@@ -14,12 +14,12 @@ dev_dependencies:
 melos:
   scripts:
     analyze:
-      run: dart analyze .
       exec:
+        command: dart analyze .
         concurrency: 4
     test:
-      run: flutter test
       exec:
+        command: flutter test
         concurrency: 4
       packageFilters:
         dirExists: test
