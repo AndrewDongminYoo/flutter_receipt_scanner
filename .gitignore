@@ -8,3 +8,6 @@ pubspec_overrides.yaml
 ios/Pods/
 ios/.symlinks/
 Podfile.lock
+
+# Android Gradle caches
+**/.gradle/
