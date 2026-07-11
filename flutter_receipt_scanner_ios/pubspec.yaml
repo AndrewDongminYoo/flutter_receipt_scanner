@@ -1,0 +1,38 @@
+name: flutter_receipt_scanner_ios
+description: iOS implementation of the flutter_receipt_scanner plugin.
+version: 0.1.0
+homepage: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
+repository: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
+issue_tracker: https://github.com/AndrewDongminYoo/flutter_receipt_scanner/issues
+topics:
+  - receipt
+  - scanner
+  - ocr
+  - exif
+  - document-scanner
+
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+
+resolution: workspace
+
+flutter:
+  plugin:
+    implements: flutter_receipt_scanner
+    platforms:
+      ios:
+        pluginClass: FlutterReceiptScannerPlugin
+        dartPluginClass: FlutterReceiptScannerIos
+        sharedDarwinSource: false
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_receipt_scanner_platform_interface: ^0.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  plugin_platform_interface: ^2.1.8
+  very_good_analysis: ^10.2.0

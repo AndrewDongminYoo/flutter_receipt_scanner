@@ -1,27 +1,56 @@
-name: flutter_receipt_scanner_workspace
+name: flutter_receipt_scanner_root
 publish_to: none
 environment:
-  sdk: ">=3.12.0 <4.0.0"
+  sdk: ^3.12.0
 workspace:
-  - packages/flutter_receipt_scanner_platform_interface
-  - packages/flutter_receipt_scanner
-  - packages/flutter_receipt_scanner_ios
-  - packages/flutter_receipt_scanner_android
-  - packages/flutter_receipt_scanner/example
+  - flutter_receipt_scanner_platform_interface
+  - flutter_receipt_scanner
+  - flutter_receipt_scanner_android
+  - flutter_receipt_scanner_ios
+  - flutter_receipt_scanner/example
+homepage: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
+repository: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
+issue_tracker: https://github.com/AndrewDongminYoo/flutter_receipt_scanner/issues
+topics:
+  - receipt
+  - scanner
+  - ocr
+  - exif
+  - document-scanner
+
 dev_dependencies:
-  melos: ^8.0.0
-# melos 7 reads its config from this key (melos.yaml is removed in v7).
+  melos: ^7.8.2
+
 melos:
+  name: flutter_receipt_scanner
+
+  packages:
+    - flutter_receipt_scanner_platform_interface
+    - flutter_receipt_scanner
+    - flutter_receipt_scanner_android
+    - flutter_receipt_scanner_ios
+
   scripts:
+    generate:
+      run: dart run pigeon --input pigeons/messages.dart
+      description: Regenerate the Pigeon message contract for Dart, Swift, and Kotlin.
+
     analyze:
-      exec:
-        command: dart analyze .
-        concurrency: 4
+      run: melos exec -- "dart analyze ."
+      description: Analyze all Dart packages in this project.
+
     test:
-      exec:
-        command: flutter test
-        concurrency: 4
-      packageFilters:
-        dirExists: test
+      run: melos exec --dir-exists=test --fail-fast -- "flutter test --test-randomize-ordering-seed random"
+      description: Run Flutter tests for every package that has a test directory.
+
+    test:ci:
+      run: melos exec --dir-exists=test --fail-fast -- "flutter test --concurrency 4 --coverage --test-randomize-ordering-seed random"
+      description: Run Flutter tests with coverage for CI.
+
     format:
-      run: dart format --line-length 120 .
+      run: melos exec -- "dart fix --apply ; dart format --line-length 120 ."
+      description: Apply fixes and format all Dart files in this project.
+
+    format:ci:
+      run: melos exec -- "dart format --line-length 120 . --set-exit-if-changed"
+      description: Check Dart formatting for all packages in this project.

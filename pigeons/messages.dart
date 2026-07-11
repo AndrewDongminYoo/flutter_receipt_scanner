@@ -3,13 +3,13 @@ import 'package:pigeon/pigeon.dart';
 @ConfigurePigeon(
   PigeonOptions(
     dartOut:
-        'packages/flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart',
+        'flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart',
     dartOptions: DartOptions(),
     swiftOut:
-        'packages/flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
+        'flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
     swiftOptions: SwiftOptions(),
     kotlinOut:
-        'packages/flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
+        'flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
     kotlinOptions: KotlinOptions(
       package: 'com.example.flutter_receipt_scanner_android',
     ),
