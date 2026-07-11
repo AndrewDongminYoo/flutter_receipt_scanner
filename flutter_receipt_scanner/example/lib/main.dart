@@ -16,10 +16,12 @@ class _ReceiptScannerExampleAppState extends State<ReceiptScannerExampleApp> {
   String _status = 'idle';
   ScanReceiptResult? _result;
 
-  Future<void> _scan() async {
+  Future<void> _scan(ScanSource source) async {
     setState(() => _status = 'scanning…');
     try {
-      final result = await scan(options: const ScanReceiptOptions(maxPages: 1));
+      final result = await scan(
+        options: ScanReceiptOptions(source: source, maxPages: 1),
+      );
       setState(() {
         _result = result;
         _status = result.status.name;
@@ -47,7 +49,20 @@ class _ReceiptScannerExampleAppState extends State<ReceiptScannerExampleApp> {
                 Text('ocr chars: ${image.ocrQuality?.textLength ?? 0}'),
               ],
               const SizedBox(height: 16),
-              FilledButton(onPressed: _scan, child: const Text('Scan')),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FilledButton(
+                    onPressed: () => _scan(ScanSource.camera),
+                    child: const Text('Camera'),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.tonal(
+                    onPressed: () => _scan(ScanSource.gallery),
+                    child: const Text('Gallery'),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
