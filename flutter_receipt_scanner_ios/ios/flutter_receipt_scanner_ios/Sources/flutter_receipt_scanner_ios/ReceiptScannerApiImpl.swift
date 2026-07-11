@@ -1,28 +1,36 @@
 import Flutter
-import ImageIO
 import UIKit
-import UniformTypeIdentifiers
-import Vision
 import VisionKit
 
-/// Clean-room iOS implementation of the generated `ReceiptScannerApi`.
+/// iOS implementation of the generated `ReceiptScannerApi`.
 ///
-/// Skeleton milestone: only `source == .camera` is implemented. Every other
-/// path returns a `PigeonError` with code `unimplemented`.
+/// Camera path (`source == .camera`): VisionKit document scanner → orientation
+/// normalize → OCR (+ rotation detect) → optional pixel rotation → JPEG encode
+/// with synthesized device EXIF. Gallery path is not yet implemented.
 final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     VNDocumentCameraViewControllerDelegate
 {
     private var completion: ((Result<ScanResultWire, Error>) -> Void)?
     private var options: ScanOptionsWire?
 
+    private let workQueue = DispatchQueue(label: "com.flutterreceiptscanner.work", qos: .userInitiated)
+
     func scan(
         options: ScanOptionsWire,
         completion: @escaping (Result<ScanResultWire, Error>) -> Void
     ) {
+        guard self.completion == nil else {
+            completion(.failure(PigeonError(
+                code: "scan_in_progress",
+                message: "A scan is already in progress.",
+                details: nil
+            )))
+            return
+        }
         guard (options.source ?? .camera) == .camera else {
             completion(.failure(PigeonError(
                 code: "unimplemented",
-                message: "Only source: camera is implemented in the skeleton.",
+                message: "source: gallery is not implemented yet.",
                 details: nil
             )))
             return
@@ -52,17 +60,25 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     ) {
         controller.dismiss(animated: true)
         let opts = options ?? ScanOptionsWire()
-        let maxPages = max(1, Int(opts.maxPages ?? 1))
-        let pageCount = min(scan.pageCount, maxPages)
-
-        var images: [ReceiptImageWire] = []
+        let pageCount = min(scan.pageCount, max(1, Int(opts.maxPages ?? 1)))
+        var pages: [UIImage] = []
         for index in 0 ..< pageCount {
-            let uiImage = scan.imageOfPage(at: index)
-            if let image = Self.process(uiImage, options: opts) {
-                images.append(image)
-            }
+            pages.append(scan.imageOfPage(at: index))
         }
-        finish(.success(ScanResultWire(status: .success, images: images, rejectedImages: [])))
+
+        workQueue.async { [weak self] in
+            ImageProcessor.deletePreviousSessionFiles()
+            let images = pages.compactMap { Self.process($0, options: opts) }
+            if images.isEmpty, pageCount > 0 {
+                self?.finish(.failure(PigeonError(
+                    code: "processing_failed",
+                    message: "Failed to process the scanned pages.",
+                    details: nil
+                )))
+                return
+            }
+            self?.finish(.success(ScanResultWire(status: .success, images: images, rejectedImages: [])))
+        }
     }
 
     func documentCameraViewControllerDidCancel(
@@ -87,79 +103,49 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     // MARK: - Processing
 
     private static func process(_ image: UIImage, options: ScanOptionsWire) -> ReceiptImageWire? {
-        guard let cg = image.cgImage else { return nil }
-        let quality = CGFloat(options.quality ?? 0.82)
-        let millis = Int(Date().timeIntervalSince1970 * 1000)
-        let fileName = "receipt_\(millis)_\(UUID().uuidString.prefix(6)).jpg"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        guard var cg = ImageProcessor.normalized(image) else { return nil }
 
-        guard let dest = CGImageDestinationCreateWithURL(
-            url as CFURL, UTType.jpeg.identifier as CFString, 1, nil
-        ) else { return nil }
-        // Always normalize output orientation to Up (1).
-        let props: [CFString: Any] = [
-            kCGImageDestinationLossyCompressionQuality: quality,
-            kCGImagePropertyOrientation: CGImagePropertyOrientation.up.rawValue,
-        ]
-        CGImageDestinationAddImage(dest, cg, props as CFDictionary)
-        guard CGImageDestinationFinalize(dest) else { return nil }
-
-        let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
-        let fileSize = (attrs?[.size] as? Int) ?? 0
-
+        let runOcr = options.ocr ?? true
+        let autoRotate = options.autoRotate ?? true
         var ocrText: String?
         var confidence: Double?
-        if options.ocr ?? true {
-            let result = Self.recognizeText(cg)
-            ocrText = result.text
-            confidence = result.confidence
+        if runOcr {
+            let minHeight = Float(options.minimumTextHeight ?? 0)
+            let outcome = OcrProcessor.recognize(cg, minimumTextHeight: minHeight, autoRotate: autoRotate)
+            ocrText = outcome.text
+            confidence = outcome.confidence
+            if autoRotate, outcome.rotationDegrees != 0 {
+                cg = ImageProcessor.rotated(cg, byDegreesCCW: outcome.rotationDegrees)
+            }
         }
 
+        let includeExif = options.includeExif ?? true
+        let exif = includeExif ? ImageProcessor.deviceExif() : nil
+        guard let encoded = ImageProcessor.encodeJpeg(
+            cg, quality: CGFloat(options.quality ?? 0.82), exifProps: exif?.fileProps
+        ) else { return nil }
+
         return ReceiptImageWire(
-            uri: url.absoluteString,
+            uri: encoded.url.absoluteString,
             width: Int64(cg.width),
             height: Int64(cg.height),
-            fileName: fileName,
+            fileName: encoded.fileName,
             mimeType: "image/jpeg",
-            fileSize: Int64(fileSize),
+            fileSize: Int64(encoded.fileSize),
             imageOrigin: .camera,
             ocrText: ocrText,
             ocrQuality: ocrText == nil ? nil : OcrQualityWire(
                 textLength: nil, lineCount: nil, confidence: confidence
             ),
-            exif: nil
+            exif: exif?.wire
         )
-    }
-
-    private static func recognizeText(_ cg: CGImage) -> (text: String?, confidence: Double?) {
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.recognitionLanguages = ["ko-KR", "en-US"]
-        request.usesLanguageCorrection = true
-        let handler = VNImageRequestHandler(cgImage: cg, orientation: .up, options: [:])
-        try? handler.perform([request])
-        guard let observations = request.results, !observations.isEmpty else {
-            return (nil, nil)
-        }
-        var lines: [String] = []
-        var confSum: Float = 0
-        var confCount = 0
-        for obs in observations {
-            guard let top = obs.topCandidates(1).first else { continue }
-            lines.append(top.string)
-            confSum += top.confidence
-            confCount += 1
-        }
-        let text = lines.isEmpty ? nil : lines.joined(separator: "\n")
-        let confidence = confCount == 0 ? nil : Double(confSum / Float(confCount))
-        return (text, confidence)
     }
 
     private func finish(_ result: Result<ScanResultWire, Error>) {
         let callback = completion
         completion = nil
         options = nil
-        callback?(result)
+        DispatchQueue.main.async { callback?(result) }
     }
 
     private static func topViewController() -> UIViewController? {
