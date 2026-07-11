@@ -54,3 +54,13 @@ kotlin {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
+
+dependencies {
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
+    // Korean recognizer covers Latin too; pinned 16.0.1 (rotation-invariance
+    // validated on 16.0.0 — see the native port map §6.4). A different version
+    // can silently break the single-pass autoRotate heuristic.
+    implementation("com.google.mlkit:text-recognition-korean:16.0.1")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
+    implementation("androidx.activity:activity-ktx:1.10.1")
+}
