@@ -1,2 +1,3 @@
+export 'src/flutter_receipt_scanner_platform.dart';
 export 'src/messages.g.dart';
-// Platform interface exports added in Task 3.
+export 'src/pigeon_receipt_scanner.dart';

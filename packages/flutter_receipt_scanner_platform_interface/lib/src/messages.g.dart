@@ -15,30 +15,14 @@ PlatformException _createConnectionError(String channelName) {
   );
 }
 
-enum ScanSource {
-  camera,
-  gallery,
-}
+enum ScanSource { camera, gallery }
 
-enum ImageOrigin {
-  camera,
-  screenshot,
-  download,
-  unknown,
-}
+enum ImageOrigin { camera, screenshot, download, unknown }
 
-enum ScanStatus {
-  success,
-  cancelled,
-  rejected,
-}
+enum ScanStatus { success, cancelled, rejected }
 
 class OcrFloorMessage {
-  OcrFloorMessage({
-    this.minTextLength,
-    this.minLines,
-    this.minConfidence,
-  });
+  OcrFloorMessage({this.minTextLength, this.minLines, this.minConfidence});
 
   int? minTextLength;
 
@@ -47,11 +31,7 @@ class OcrFloorMessage {
   double? minConfidence;
 
   Object encode() {
-    return <Object?>[
-      minTextLength,
-      minLines,
-      minConfidence,
-    ];
+    return <Object?>[minTextLength, minLines, minConfidence];
   }
 
   static OcrFloorMessage decode(Object result) {
@@ -131,14 +111,7 @@ class ScanOptions {
 }
 
 class GpsData {
-  GpsData({
-    this.latitude,
-    this.longitude,
-    this.altitude,
-    this.timestamp,
-    this.speed,
-    this.heading,
-  });
+  GpsData({this.latitude, this.longitude, this.altitude, this.timestamp, this.speed, this.heading});
 
   double? latitude;
 
@@ -153,14 +126,7 @@ class GpsData {
   double? heading;
 
   Object encode() {
-    return <Object?>[
-      latitude,
-      longitude,
-      altitude,
-      timestamp,
-      speed,
-      heading,
-    ];
+    return <Object?>[latitude, longitude, altitude, timestamp, speed, heading];
   }
 
   static GpsData decode(Object result) {
@@ -298,11 +264,7 @@ class ReceiptExif {
 }
 
 class OcrQuality {
-  OcrQuality({
-    this.textLength,
-    this.lineCount,
-    this.confidence,
-  });
+  OcrQuality({this.textLength, this.lineCount, this.confidence});
 
   int? textLength;
 
@@ -311,20 +273,12 @@ class OcrQuality {
   double? confidence;
 
   Object encode() {
-    return <Object?>[
-      textLength,
-      lineCount,
-      confidence,
-    ];
+    return <Object?>[textLength, lineCount, confidence];
   }
 
   static OcrQuality decode(Object result) {
     result as List<Object?>;
-    return OcrQuality(
-      textLength: result[0] as int?,
-      lineCount: result[1] as int?,
-      confidence: result[2] as double?,
-    );
+    return OcrQuality(textLength: result[0] as int?, lineCount: result[1] as int?, confidence: result[2] as double?);
   }
 }
 
@@ -363,18 +317,7 @@ class ReceiptImage {
   ReceiptExif? exif;
 
   Object encode() {
-    return <Object?>[
-      uri,
-      width,
-      height,
-      fileName,
-      mimeType,
-      fileSize,
-      imageOrigin,
-      ocrText,
-      ocrQuality,
-      exif,
-    ];
+    return <Object?>[uri, width, height, fileName, mimeType, fileSize, imageOrigin, ocrText, ocrQuality, exif];
   }
 
   static ReceiptImage decode(Object result) {
@@ -395,11 +338,7 @@ class ReceiptImage {
 }
 
 class ScanResult {
-  ScanResult({
-    required this.status,
-    required this.images,
-    required this.rejectedImages,
-  });
+  ScanResult({required this.status, required this.images, required this.rejectedImages});
 
   ScanStatus status;
 
@@ -408,11 +347,7 @@ class ScanResult {
   List<ReceiptImage> rejectedImages;
 
   Object encode() {
-    return <Object?>[
-      status,
-      images,
-      rejectedImages,
-    ];
+    return <Object?>[status, images, rejectedImages];
   }
 
   static ScanResult decode(Object result) {
@@ -425,7 +360,6 @@ class ScanResult {
   }
 }
 
-
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -433,34 +367,34 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is ScanSource) {
+    } else if (value is ScanSource) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    }    else if (value is ImageOrigin) {
+    } else if (value is ImageOrigin) {
       buffer.putUint8(130);
       writeValue(buffer, value.index);
-    }    else if (value is ScanStatus) {
+    } else if (value is ScanStatus) {
       buffer.putUint8(131);
       writeValue(buffer, value.index);
-    }    else if (value is OcrFloorMessage) {
+    } else if (value is OcrFloorMessage) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    }    else if (value is ScanOptions) {
+    } else if (value is ScanOptions) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
-    }    else if (value is GpsData) {
+    } else if (value is GpsData) {
       buffer.putUint8(134);
       writeValue(buffer, value.encode());
-    }    else if (value is ReceiptExif) {
+    } else if (value is ReceiptExif) {
       buffer.putUint8(135);
       writeValue(buffer, value.encode());
-    }    else if (value is OcrQuality) {
+    } else if (value is OcrQuality) {
       buffer.putUint8(136);
       writeValue(buffer, value.encode());
-    }    else if (value is ReceiptImage) {
+    } else if (value is ReceiptImage) {
       buffer.putUint8(137);
       writeValue(buffer, value.encode());
-    }    else if (value is ScanResult) {
+    } else if (value is ScanResult) {
       buffer.putUint8(138);
       writeValue(buffer, value.encode());
     } else {
@@ -471,28 +405,28 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129: 
+      case 129:
         final int? value = readValue(buffer) as int?;
         return value == null ? null : ScanSource.values[value];
-      case 130: 
+      case 130:
         final int? value = readValue(buffer) as int?;
         return value == null ? null : ImageOrigin.values[value];
-      case 131: 
+      case 131:
         final int? value = readValue(buffer) as int?;
         return value == null ? null : ScanStatus.values[value];
-      case 132: 
+      case 132:
         return OcrFloorMessage.decode(readValue(buffer)!);
-      case 133: 
+      case 133:
         return ScanOptions.decode(readValue(buffer)!);
-      case 134: 
+      case 134:
         return GpsData.decode(readValue(buffer)!);
-      case 135: 
+      case 135:
         return ReceiptExif.decode(readValue(buffer)!);
-      case 136: 
+      case 136:
         return OcrQuality.decode(readValue(buffer)!);
-      case 137: 
+      case 137:
         return ReceiptImage.decode(readValue(buffer)!);
-      case 138: 
+      case 138:
         return ScanResult.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -505,8 +439,8 @@ class ReceiptScannerApi {
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
   ReceiptScannerApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
-      : pigeonVar_binaryMessenger = binaryMessenger,
-        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+    : pigeonVar_binaryMessenger = binaryMessenger,
+      pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -514,14 +448,14 @@ class ReceiptScannerApi {
   final String pigeonVar_messageChannelSuffix;
 
   Future<ScanResult> scan(ScanOptions options) async {
-    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_receipt_scanner_platform_interface.ReceiptScannerApi.scan$pigeonVar_messageChannelSuffix';
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.flutter_receipt_scanner_platform_interface.ReceiptScannerApi.scan$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_channel.send(<Object?>[options]) as List<Object?>?;
+    final List<Object?>? pigeonVar_replyList = await pigeonVar_channel.send(<Object?>[options]) as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);
     } else if (pigeonVar_replyList.length > 1) {
