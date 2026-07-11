@@ -24,11 +24,11 @@ The reject-on-sight test (three questions, from ADR-003): does a change read/wri
 
 ## 3. Key decisions (collected 2026-07-11)
 
-| Decision | Choice | Note |
-| --- | --- | --- |
-| Native sourcing | Clean-room re-derivation | No copy/port; conforms to the operator's recorded IP discipline (`ip-hygiene-expression-vs-mechanic`, `employer-ip-moonlighting-risk`). The conservative path is safe regardless of the still-open "employment terms reviewed?" question. |
-| Transport | Pigeon codegen | Type-safe message classes generated for Dart/Swift/Kotlin. New precedent (prior federated plugin used MethodChannel+EventChannel). |
-| First milestone | iOS camera walking skeleton | Thinnest end-to-end slice through every layer. |
+| Decision        | Choice                      | Note                                                                                                                                                                                                                                      |
+| --------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native sourcing | Clean-room re-derivation    | No copy/port; conforms to the operator's recorded IP discipline (`ip-hygiene-expression-vs-mechanic`, `employer-ip-moonlighting-risk`). The conservative path is safe regardless of the still-open "employment terms reviewed?" question. |
+| Transport       | Pigeon codegen              | Type-safe message classes generated for Dart/Swift/Kotlin. New precedent (prior federated plugin used MethodChannel+EventChannel).                                                                                                        |
+| First milestone | iOS camera walking skeleton | Thinnest end-to-end slice through every layer.                                                                                                                                                                                            |
 
 ## 4. Package layout (federated — follows `ble_proximity_signal` precedent)
 
@@ -48,7 +48,7 @@ flutter_receipt_scanner/                              ← repo root (pub workspa
 
 Conventions carried forward from the prior federated plugin:
 
-- **Extend, never implement.** The platform interface is an abstract class that platform packages *extend*, calling `registerWith()` to set the static `instance`.
+- **Extend, never implement.** The platform interface is an abstract class that platform packages _extend_, calling `registerWith()` to set the static `instance`.
   Extending preserves source-compatibility when the interface adds methods with default implementations.
 - **Four-touchpoint update obligation.** Adding one interface method requires updates in: the default impl in the platform-interface package, the Android Dart class, the iOS Dart class, and the native handler.
   Pigeon removes the channel-name byte-sync failure mode by generating the wire contract.

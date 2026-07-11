@@ -4,541 +4,510 @@
 import Foundation
 
 #if os(iOS)
-  import Flutter
+    import Flutter
 #elseif os(macOS)
-  import FlutterMacOS
+    import FlutterMacOS
 #else
-  #error("Unsupported platform.")
+    #error("Unsupported platform.")
 #endif
 
 /// Error class for passing custom error details to Dart side.
 final class PigeonError: Error {
-  let code: String
-  let message: String?
-  let details: Any?
+    let code: String
+    let message: String?
+    let details: Any?
 
-  init(code: String, message: String?, details: Any?) {
-    self.code = code
-    self.message = message
-    self.details = details
-  }
+    init(code: String, message: String?, details: Any?) {
+        self.code = code
+        self.message = message
+        self.details = details
+    }
 
-  var localizedDescription: String {
-    return
-      "PigeonError(code: \(code), message: \(message ?? "<nil>"), details: \(details ?? "<nil>")"
-      }
+    var localizedDescription: String {
+        return
+            "PigeonError(code: \(code), message: \(message ?? "<nil>"), details: \(details ?? "<nil>")"
+    }
 }
 
 private func wrapResult(_ result: Any?) -> [Any?] {
-  return [result]
+    return [result]
 }
 
 private func wrapError(_ error: Any) -> [Any?] {
-  if let pigeonError = error as? PigeonError {
+    if let pigeonError = error as? PigeonError {
+        return [
+            pigeonError.code,
+            pigeonError.message,
+            pigeonError.details,
+        ]
+    }
+    if let flutterError = error as? FlutterError {
+        return [
+            flutterError.code,
+            flutterError.message,
+            flutterError.details,
+        ]
+    }
     return [
-      pigeonError.code,
-      pigeonError.message,
-      pigeonError.details,
+        "\(error)",
+        "\(type(of: error))",
+        "Stacktrace: \(Thread.callStackSymbols)",
     ]
-  }
-  if let flutterError = error as? FlutterError {
-    return [
-      flutterError.code,
-      flutterError.message,
-      flutterError.details,
-    ]
-  }
-  return [
-    "\(error)",
-    "\(type(of: error))",
-    "Stacktrace: \(Thread.callStackSymbols)",
-  ]
 }
 
 private func isNullish(_ value: Any?) -> Bool {
-  return value is NSNull || value == nil
+    return value is NSNull || value == nil
 }
 
 private func nilOrValue<T>(_ value: Any?) -> T? {
-  if value is NSNull { return nil }
-  return value as! T?
+    if value is NSNull { return nil }
+    return value as! T?
 }
 
-enum ScanSource: Int {
-  case camera = 0
-  case gallery = 1
+enum ScanSourceWire: Int {
+    case camera = 0
+    case gallery = 1
 }
 
-enum ImageOrigin: Int {
-  case camera = 0
-  case screenshot = 1
-  case download = 2
-  case unknown = 3
+enum ImageOriginWire: Int {
+    case camera = 0
+    case screenshot = 1
+    case download = 2
+    case unknown = 3
 }
 
-enum ScanStatus: Int {
-  case success = 0
-  case cancelled = 1
-  case rejected = 2
-}
-
-/// Generated class from Pigeon that represents data sent in messages.
-struct OcrFloorMessage {
-  var minTextLength: Int64? = nil
-  var minLines: Int64? = nil
-  var minConfidence: Double? = nil
-
-
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> OcrFloorMessage? {
-    let minTextLength: Int64? = nilOrValue(pigeonVar_list[0])
-    let minLines: Int64? = nilOrValue(pigeonVar_list[1])
-    let minConfidence: Double? = nilOrValue(pigeonVar_list[2])
-
-    return OcrFloorMessage(
-      minTextLength: minTextLength,
-      minLines: minLines,
-      minConfidence: minConfidence
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      minTextLength,
-      minLines,
-      minConfidence,
-    ]
-  }
+enum ScanStatusWire: Int {
+    case success = 0
+    case cancelled = 1
+    case rejected = 2
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
-struct ScanOptions {
-  var source: ScanSource? = nil
-  var maxPages: Int64? = nil
-  var quality: Double? = nil
-  var includeExif: Bool? = nil
-  var includeGpsExif: Bool? = nil
-  var ocr: Bool? = nil
-  var cropAutoConfirm: Bool? = nil
-  var autoRotate: Bool? = nil
-  var includeRawExif: Bool? = nil
-  var minimumTextHeight: Double? = nil
+struct ScanOptionsWire {
+    var source: ScanSourceWire? = nil
+    var maxPages: Int64? = nil
+    var quality: Double? = nil
+    var includeExif: Bool? = nil
+    var includeGpsExif: Bool? = nil
+    var ocr: Bool? = nil
+    var cropAutoConfirm: Bool? = nil
+    var autoRotate: Bool? = nil
+    var includeRawExif: Bool? = nil
+    var minimumTextHeight: Double? = nil
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> ScanOptionsWire? {
+        let source: ScanSourceWire? = nilOrValue(pigeonVar_list[0])
+        let maxPages: Int64? = nilOrValue(pigeonVar_list[1])
+        let quality: Double? = nilOrValue(pigeonVar_list[2])
+        let includeExif: Bool? = nilOrValue(pigeonVar_list[3])
+        let includeGpsExif: Bool? = nilOrValue(pigeonVar_list[4])
+        let ocr: Bool? = nilOrValue(pigeonVar_list[5])
+        let cropAutoConfirm: Bool? = nilOrValue(pigeonVar_list[6])
+        let autoRotate: Bool? = nilOrValue(pigeonVar_list[7])
+        let includeRawExif: Bool? = nilOrValue(pigeonVar_list[8])
+        let minimumTextHeight: Double? = nilOrValue(pigeonVar_list[9])
 
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> ScanOptions? {
-    let source: ScanSource? = nilOrValue(pigeonVar_list[0])
-    let maxPages: Int64? = nilOrValue(pigeonVar_list[1])
-    let quality: Double? = nilOrValue(pigeonVar_list[2])
-    let includeExif: Bool? = nilOrValue(pigeonVar_list[3])
-    let includeGpsExif: Bool? = nilOrValue(pigeonVar_list[4])
-    let ocr: Bool? = nilOrValue(pigeonVar_list[5])
-    let cropAutoConfirm: Bool? = nilOrValue(pigeonVar_list[6])
-    let autoRotate: Bool? = nilOrValue(pigeonVar_list[7])
-    let includeRawExif: Bool? = nilOrValue(pigeonVar_list[8])
-    let minimumTextHeight: Double? = nilOrValue(pigeonVar_list[9])
+        return ScanOptionsWire(
+            source: source,
+            maxPages: maxPages,
+            quality: quality,
+            includeExif: includeExif,
+            includeGpsExif: includeGpsExif,
+            ocr: ocr,
+            cropAutoConfirm: cropAutoConfirm,
+            autoRotate: autoRotate,
+            includeRawExif: includeRawExif,
+            minimumTextHeight: minimumTextHeight
+        )
+    }
 
-    return ScanOptions(
-      source: source,
-      maxPages: maxPages,
-      quality: quality,
-      includeExif: includeExif,
-      includeGpsExif: includeGpsExif,
-      ocr: ocr,
-      cropAutoConfirm: cropAutoConfirm,
-      autoRotate: autoRotate,
-      includeRawExif: includeRawExif,
-      minimumTextHeight: minimumTextHeight
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      source,
-      maxPages,
-      quality,
-      includeExif,
-      includeGpsExif,
-      ocr,
-      cropAutoConfirm,
-      autoRotate,
-      includeRawExif,
-      minimumTextHeight,
-    ]
-  }
+    func toList() -> [Any?] {
+        return [
+            source,
+            maxPages,
+            quality,
+            includeExif,
+            includeGpsExif,
+            ocr,
+            cropAutoConfirm,
+            autoRotate,
+            includeRawExif,
+            minimumTextHeight,
+        ]
+    }
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
-struct GpsData {
-  var latitude: Double? = nil
-  var longitude: Double? = nil
-  var altitude: Double? = nil
-  var timestamp: String? = nil
-  var speed: Double? = nil
-  var heading: Double? = nil
+struct GpsDataWire {
+    var latitude: Double? = nil
+    var longitude: Double? = nil
+    var altitude: Double? = nil
+    var timestamp: String? = nil
+    var speed: Double? = nil
+    var heading: Double? = nil
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> GpsDataWire? {
+        let latitude: Double? = nilOrValue(pigeonVar_list[0])
+        let longitude: Double? = nilOrValue(pigeonVar_list[1])
+        let altitude: Double? = nilOrValue(pigeonVar_list[2])
+        let timestamp: String? = nilOrValue(pigeonVar_list[3])
+        let speed: Double? = nilOrValue(pigeonVar_list[4])
+        let heading: Double? = nilOrValue(pigeonVar_list[5])
 
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> GpsData? {
-    let latitude: Double? = nilOrValue(pigeonVar_list[0])
-    let longitude: Double? = nilOrValue(pigeonVar_list[1])
-    let altitude: Double? = nilOrValue(pigeonVar_list[2])
-    let timestamp: String? = nilOrValue(pigeonVar_list[3])
-    let speed: Double? = nilOrValue(pigeonVar_list[4])
-    let heading: Double? = nilOrValue(pigeonVar_list[5])
+        return GpsDataWire(
+            latitude: latitude,
+            longitude: longitude,
+            altitude: altitude,
+            timestamp: timestamp,
+            speed: speed,
+            heading: heading
+        )
+    }
 
-    return GpsData(
-      latitude: latitude,
-      longitude: longitude,
-      altitude: altitude,
-      timestamp: timestamp,
-      speed: speed,
-      heading: heading
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      latitude,
-      longitude,
-      altitude,
-      timestamp,
-      speed,
-      heading,
-    ]
-  }
+    func toList() -> [Any?] {
+        return [
+            latitude,
+            longitude,
+            altitude,
+            timestamp,
+            speed,
+            heading,
+        ]
+    }
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
-struct ReceiptExif {
-  var orientation: Int64? = nil
-  var colorSpace: Int64? = nil
-  var lightSource: Int64? = nil
-  var exifVersion: String? = nil
-  var make: String? = nil
-  var model: String? = nil
-  var software: String? = nil
-  var dateTime: String? = nil
-  var dateTimeOriginal: String? = nil
-  var dateTimeDigitized: String? = nil
-  var exposureTime: Double? = nil
-  var fNumber: Double? = nil
-  var iso: Double? = nil
-  var focalLength: Double? = nil
-  var flash: Int64? = nil
-  var whiteBalance: Int64? = nil
-  var exposureMode: Int64? = nil
-  var exposureProgram: Int64? = nil
-  var meteringMode: Int64? = nil
-  var gps: GpsData? = nil
-  var raw: [String: Any?]? = nil
+struct ReceiptExifWire {
+    var orientation: Int64? = nil
+    var colorSpace: Int64? = nil
+    var lightSource: Int64? = nil
+    var exifVersion: String? = nil
+    var make: String? = nil
+    var model: String? = nil
+    var software: String? = nil
+    var dateTime: String? = nil
+    var dateTimeOriginal: String? = nil
+    var dateTimeDigitized: String? = nil
+    var exposureTime: Double? = nil
+    var fNumber: Double? = nil
+    var iso: Double? = nil
+    var focalLength: Double? = nil
+    var flash: Int64? = nil
+    var whiteBalance: Int64? = nil
+    var exposureMode: Int64? = nil
+    var exposureProgram: Int64? = nil
+    var meteringMode: Int64? = nil
+    var gps: GpsDataWire? = nil
+    var raw: [String: Any?]? = nil
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> ReceiptExifWire? {
+        let orientation: Int64? = nilOrValue(pigeonVar_list[0])
+        let colorSpace: Int64? = nilOrValue(pigeonVar_list[1])
+        let lightSource: Int64? = nilOrValue(pigeonVar_list[2])
+        let exifVersion: String? = nilOrValue(pigeonVar_list[3])
+        let make: String? = nilOrValue(pigeonVar_list[4])
+        let model: String? = nilOrValue(pigeonVar_list[5])
+        let software: String? = nilOrValue(pigeonVar_list[6])
+        let dateTime: String? = nilOrValue(pigeonVar_list[7])
+        let dateTimeOriginal: String? = nilOrValue(pigeonVar_list[8])
+        let dateTimeDigitized: String? = nilOrValue(pigeonVar_list[9])
+        let exposureTime: Double? = nilOrValue(pigeonVar_list[10])
+        let fNumber: Double? = nilOrValue(pigeonVar_list[11])
+        let iso: Double? = nilOrValue(pigeonVar_list[12])
+        let focalLength: Double? = nilOrValue(pigeonVar_list[13])
+        let flash: Int64? = nilOrValue(pigeonVar_list[14])
+        let whiteBalance: Int64? = nilOrValue(pigeonVar_list[15])
+        let exposureMode: Int64? = nilOrValue(pigeonVar_list[16])
+        let exposureProgram: Int64? = nilOrValue(pigeonVar_list[17])
+        let meteringMode: Int64? = nilOrValue(pigeonVar_list[18])
+        let gps: GpsDataWire? = nilOrValue(pigeonVar_list[19])
+        let raw: [String: Any?]? = nilOrValue(pigeonVar_list[20])
 
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> ReceiptExif? {
-    let orientation: Int64? = nilOrValue(pigeonVar_list[0])
-    let colorSpace: Int64? = nilOrValue(pigeonVar_list[1])
-    let lightSource: Int64? = nilOrValue(pigeonVar_list[2])
-    let exifVersion: String? = nilOrValue(pigeonVar_list[3])
-    let make: String? = nilOrValue(pigeonVar_list[4])
-    let model: String? = nilOrValue(pigeonVar_list[5])
-    let software: String? = nilOrValue(pigeonVar_list[6])
-    let dateTime: String? = nilOrValue(pigeonVar_list[7])
-    let dateTimeOriginal: String? = nilOrValue(pigeonVar_list[8])
-    let dateTimeDigitized: String? = nilOrValue(pigeonVar_list[9])
-    let exposureTime: Double? = nilOrValue(pigeonVar_list[10])
-    let fNumber: Double? = nilOrValue(pigeonVar_list[11])
-    let iso: Double? = nilOrValue(pigeonVar_list[12])
-    let focalLength: Double? = nilOrValue(pigeonVar_list[13])
-    let flash: Int64? = nilOrValue(pigeonVar_list[14])
-    let whiteBalance: Int64? = nilOrValue(pigeonVar_list[15])
-    let exposureMode: Int64? = nilOrValue(pigeonVar_list[16])
-    let exposureProgram: Int64? = nilOrValue(pigeonVar_list[17])
-    let meteringMode: Int64? = nilOrValue(pigeonVar_list[18])
-    let gps: GpsData? = nilOrValue(pigeonVar_list[19])
-    let raw: [String: Any?]? = nilOrValue(pigeonVar_list[20])
+        return ReceiptExifWire(
+            orientation: orientation,
+            colorSpace: colorSpace,
+            lightSource: lightSource,
+            exifVersion: exifVersion,
+            make: make,
+            model: model,
+            software: software,
+            dateTime: dateTime,
+            dateTimeOriginal: dateTimeOriginal,
+            dateTimeDigitized: dateTimeDigitized,
+            exposureTime: exposureTime,
+            fNumber: fNumber,
+            iso: iso,
+            focalLength: focalLength,
+            flash: flash,
+            whiteBalance: whiteBalance,
+            exposureMode: exposureMode,
+            exposureProgram: exposureProgram,
+            meteringMode: meteringMode,
+            gps: gps,
+            raw: raw
+        )
+    }
 
-    return ReceiptExif(
-      orientation: orientation,
-      colorSpace: colorSpace,
-      lightSource: lightSource,
-      exifVersion: exifVersion,
-      make: make,
-      model: model,
-      software: software,
-      dateTime: dateTime,
-      dateTimeOriginal: dateTimeOriginal,
-      dateTimeDigitized: dateTimeDigitized,
-      exposureTime: exposureTime,
-      fNumber: fNumber,
-      iso: iso,
-      focalLength: focalLength,
-      flash: flash,
-      whiteBalance: whiteBalance,
-      exposureMode: exposureMode,
-      exposureProgram: exposureProgram,
-      meteringMode: meteringMode,
-      gps: gps,
-      raw: raw
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      orientation,
-      colorSpace,
-      lightSource,
-      exifVersion,
-      make,
-      model,
-      software,
-      dateTime,
-      dateTimeOriginal,
-      dateTimeDigitized,
-      exposureTime,
-      fNumber,
-      iso,
-      focalLength,
-      flash,
-      whiteBalance,
-      exposureMode,
-      exposureProgram,
-      meteringMode,
-      gps,
-      raw,
-    ]
-  }
+    func toList() -> [Any?] {
+        return [
+            orientation,
+            colorSpace,
+            lightSource,
+            exifVersion,
+            make,
+            model,
+            software,
+            dateTime,
+            dateTimeOriginal,
+            dateTimeDigitized,
+            exposureTime,
+            fNumber,
+            iso,
+            focalLength,
+            flash,
+            whiteBalance,
+            exposureMode,
+            exposureProgram,
+            meteringMode,
+            gps,
+            raw,
+        ]
+    }
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
-struct OcrQuality {
-  var textLength: Int64? = nil
-  var lineCount: Int64? = nil
-  var confidence: Double? = nil
+struct OcrQualityWire {
+    var textLength: Int64? = nil
+    var lineCount: Int64? = nil
+    var confidence: Double? = nil
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> OcrQualityWire? {
+        let textLength: Int64? = nilOrValue(pigeonVar_list[0])
+        let lineCount: Int64? = nilOrValue(pigeonVar_list[1])
+        let confidence: Double? = nilOrValue(pigeonVar_list[2])
 
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> OcrQuality? {
-    let textLength: Int64? = nilOrValue(pigeonVar_list[0])
-    let lineCount: Int64? = nilOrValue(pigeonVar_list[1])
-    let confidence: Double? = nilOrValue(pigeonVar_list[2])
+        return OcrQualityWire(
+            textLength: textLength,
+            lineCount: lineCount,
+            confidence: confidence
+        )
+    }
 
-    return OcrQuality(
-      textLength: textLength,
-      lineCount: lineCount,
-      confidence: confidence
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      textLength,
-      lineCount,
-      confidence,
-    ]
-  }
+    func toList() -> [Any?] {
+        return [
+            textLength,
+            lineCount,
+            confidence,
+        ]
+    }
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
-struct ReceiptImage {
-  var uri: String
-  var width: Int64
-  var height: Int64
-  var fileName: String
-  var mimeType: String
-  var fileSize: Int64
-  var imageOrigin: ImageOrigin
-  var ocrText: String? = nil
-  var ocrQuality: OcrQuality? = nil
-  var exif: ReceiptExif? = nil
+struct ReceiptImageWire {
+    var uri: String
+    var width: Int64
+    var height: Int64
+    var fileName: String
+    var mimeType: String
+    var fileSize: Int64
+    var imageOrigin: ImageOriginWire
+    var ocrText: String? = nil
+    var ocrQuality: OcrQualityWire? = nil
+    var exif: ReceiptExifWire? = nil
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> ReceiptImageWire? {
+        let uri = pigeonVar_list[0] as! String
+        let width = pigeonVar_list[1] as! Int64
+        let height = pigeonVar_list[2] as! Int64
+        let fileName = pigeonVar_list[3] as! String
+        let mimeType = pigeonVar_list[4] as! String
+        let fileSize = pigeonVar_list[5] as! Int64
+        let imageOrigin = pigeonVar_list[6] as! ImageOriginWire
+        let ocrText: String? = nilOrValue(pigeonVar_list[7])
+        let ocrQuality: OcrQualityWire? = nilOrValue(pigeonVar_list[8])
+        let exif: ReceiptExifWire? = nilOrValue(pigeonVar_list[9])
 
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> ReceiptImage? {
-    let uri = pigeonVar_list[0] as! String
-    let width = pigeonVar_list[1] as! Int64
-    let height = pigeonVar_list[2] as! Int64
-    let fileName = pigeonVar_list[3] as! String
-    let mimeType = pigeonVar_list[4] as! String
-    let fileSize = pigeonVar_list[5] as! Int64
-    let imageOrigin = pigeonVar_list[6] as! ImageOrigin
-    let ocrText: String? = nilOrValue(pigeonVar_list[7])
-    let ocrQuality: OcrQuality? = nilOrValue(pigeonVar_list[8])
-    let exif: ReceiptExif? = nilOrValue(pigeonVar_list[9])
+        return ReceiptImageWire(
+            uri: uri,
+            width: width,
+            height: height,
+            fileName: fileName,
+            mimeType: mimeType,
+            fileSize: fileSize,
+            imageOrigin: imageOrigin,
+            ocrText: ocrText,
+            ocrQuality: ocrQuality,
+            exif: exif
+        )
+    }
 
-    return ReceiptImage(
-      uri: uri,
-      width: width,
-      height: height,
-      fileName: fileName,
-      mimeType: mimeType,
-      fileSize: fileSize,
-      imageOrigin: imageOrigin,
-      ocrText: ocrText,
-      ocrQuality: ocrQuality,
-      exif: exif
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      uri,
-      width,
-      height,
-      fileName,
-      mimeType,
-      fileSize,
-      imageOrigin,
-      ocrText,
-      ocrQuality,
-      exif,
-    ]
-  }
+    func toList() -> [Any?] {
+        return [
+            uri,
+            width,
+            height,
+            fileName,
+            mimeType,
+            fileSize,
+            imageOrigin,
+            ocrText,
+            ocrQuality,
+            exif,
+        ]
+    }
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
-struct ScanResult {
-  var status: ScanStatus
-  var images: [ReceiptImage]
-  var rejectedImages: [ReceiptImage]
+struct ScanResultWire {
+    var status: ScanStatusWire
+    var images: [ReceiptImageWire]
+    var rejectedImages: [ReceiptImageWire]
 
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> ScanResultWire? {
+        let status = pigeonVar_list[0] as! ScanStatusWire
+        let images = pigeonVar_list[1] as! [ReceiptImageWire]
+        let rejectedImages = pigeonVar_list[2] as! [ReceiptImageWire]
 
-  // swift-format-ignore: AlwaysUseLowerCamelCase
-  static func fromList(_ pigeonVar_list: [Any?]) -> ScanResult? {
-    let status = pigeonVar_list[0] as! ScanStatus
-    let images = pigeonVar_list[1] as! [ReceiptImage]
-    let rejectedImages = pigeonVar_list[2] as! [ReceiptImage]
+        return ScanResultWire(
+            status: status,
+            images: images,
+            rejectedImages: rejectedImages
+        )
+    }
 
-    return ScanResult(
-      status: status,
-      images: images,
-      rejectedImages: rejectedImages
-    )
-  }
-  func toList() -> [Any?] {
-    return [
-      status,
-      images,
-      rejectedImages,
-    ]
-  }
+    func toList() -> [Any?] {
+        return [
+            status,
+            images,
+            rejectedImages,
+        ]
+    }
 }
 
 private class MessagesPigeonCodecReader: FlutterStandardReader {
-  override func readValue(ofType type: UInt8) -> Any? {
-    switch type {
-    case 129:
-      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
-      if let enumResultAsInt = enumResultAsInt {
-        return ScanSource(rawValue: enumResultAsInt)
-      }
-      return nil
-    case 130:
-      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
-      if let enumResultAsInt = enumResultAsInt {
-        return ImageOrigin(rawValue: enumResultAsInt)
-      }
-      return nil
-    case 131:
-      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
-      if let enumResultAsInt = enumResultAsInt {
-        return ScanStatus(rawValue: enumResultAsInt)
-      }
-      return nil
-    case 132:
-      return OcrFloorMessage.fromList(self.readValue() as! [Any?])
-    case 133:
-      return ScanOptions.fromList(self.readValue() as! [Any?])
-    case 134:
-      return GpsData.fromList(self.readValue() as! [Any?])
-    case 135:
-      return ReceiptExif.fromList(self.readValue() as! [Any?])
-    case 136:
-      return OcrQuality.fromList(self.readValue() as! [Any?])
-    case 137:
-      return ReceiptImage.fromList(self.readValue() as! [Any?])
-    case 138:
-      return ScanResult.fromList(self.readValue() as! [Any?])
-    default:
-      return super.readValue(ofType: type)
+    override func readValue(ofType type: UInt8) -> Any? {
+        switch type {
+        case 129:
+            let enumResultAsInt: Int? = nilOrValue(readValue() as! Int?)
+            if let enumResultAsInt = enumResultAsInt {
+                return ScanSourceWire(rawValue: enumResultAsInt)
+            }
+            return nil
+        case 130:
+            let enumResultAsInt: Int? = nilOrValue(readValue() as! Int?)
+            if let enumResultAsInt = enumResultAsInt {
+                return ImageOriginWire(rawValue: enumResultAsInt)
+            }
+            return nil
+        case 131:
+            let enumResultAsInt: Int? = nilOrValue(readValue() as! Int?)
+            if let enumResultAsInt = enumResultAsInt {
+                return ScanStatusWire(rawValue: enumResultAsInt)
+            }
+            return nil
+        case 132:
+            return ScanOptionsWire.fromList(readValue() as! [Any?])
+        case 133:
+            return GpsDataWire.fromList(readValue() as! [Any?])
+        case 134:
+            return ReceiptExifWire.fromList(readValue() as! [Any?])
+        case 135:
+            return OcrQualityWire.fromList(readValue() as! [Any?])
+        case 136:
+            return ReceiptImageWire.fromList(readValue() as! [Any?])
+        case 137:
+            return ScanResultWire.fromList(readValue() as! [Any?])
+        default:
+            return super.readValue(ofType: type)
+        }
     }
-  }
 }
 
 private class MessagesPigeonCodecWriter: FlutterStandardWriter {
-  override func writeValue(_ value: Any) {
-    if let value = value as? ScanSource {
-      super.writeByte(129)
-      super.writeValue(value.rawValue)
-    } else if let value = value as? ImageOrigin {
-      super.writeByte(130)
-      super.writeValue(value.rawValue)
-    } else if let value = value as? ScanStatus {
-      super.writeByte(131)
-      super.writeValue(value.rawValue)
-    } else if let value = value as? OcrFloorMessage {
-      super.writeByte(132)
-      super.writeValue(value.toList())
-    } else if let value = value as? ScanOptions {
-      super.writeByte(133)
-      super.writeValue(value.toList())
-    } else if let value = value as? GpsData {
-      super.writeByte(134)
-      super.writeValue(value.toList())
-    } else if let value = value as? ReceiptExif {
-      super.writeByte(135)
-      super.writeValue(value.toList())
-    } else if let value = value as? OcrQuality {
-      super.writeByte(136)
-      super.writeValue(value.toList())
-    } else if let value = value as? ReceiptImage {
-      super.writeByte(137)
-      super.writeValue(value.toList())
-    } else if let value = value as? ScanResult {
-      super.writeByte(138)
-      super.writeValue(value.toList())
-    } else {
-      super.writeValue(value)
+    override func writeValue(_ value: Any) {
+        if let value = value as? ScanSourceWire {
+            super.writeByte(129)
+            super.writeValue(value.rawValue)
+        } else if let value = value as? ImageOriginWire {
+            super.writeByte(130)
+            super.writeValue(value.rawValue)
+        } else if let value = value as? ScanStatusWire {
+            super.writeByte(131)
+            super.writeValue(value.rawValue)
+        } else if let value = value as? ScanOptionsWire {
+            super.writeByte(132)
+            super.writeValue(value.toList())
+        } else if let value = value as? GpsDataWire {
+            super.writeByte(133)
+            super.writeValue(value.toList())
+        } else if let value = value as? ReceiptExifWire {
+            super.writeByte(134)
+            super.writeValue(value.toList())
+        } else if let value = value as? OcrQualityWire {
+            super.writeByte(135)
+            super.writeValue(value.toList())
+        } else if let value = value as? ReceiptImageWire {
+            super.writeByte(136)
+            super.writeValue(value.toList())
+        } else if let value = value as? ScanResultWire {
+            super.writeByte(137)
+            super.writeValue(value.toList())
+        } else {
+            super.writeValue(value)
+        }
     }
-  }
 }
 
 private class MessagesPigeonCodecReaderWriter: FlutterStandardReaderWriter {
-  override func reader(with data: Data) -> FlutterStandardReader {
-    return MessagesPigeonCodecReader(data: data)
-  }
+    override func reader(with data: Data) -> FlutterStandardReader {
+        return MessagesPigeonCodecReader(data: data)
+    }
 
-  override func writer(with data: NSMutableData) -> FlutterStandardWriter {
-    return MessagesPigeonCodecWriter(data: data)
-  }
+    override func writer(with data: NSMutableData) -> FlutterStandardWriter {
+        return MessagesPigeonCodecWriter(data: data)
+    }
 }
 
 class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
-  static let shared = MessagesPigeonCodec(readerWriter: MessagesPigeonCodecReaderWriter())
+    static let shared = MessagesPigeonCodec(readerWriter: MessagesPigeonCodecReaderWriter())
 }
-
 
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol ReceiptScannerApi {
-  func scan(options: ScanOptions, completion: @escaping (Result<ScanResult, Error>) -> Void)
+    func scan(options: ScanOptionsWire, completion: @escaping (Result<ScanResultWire, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
 class ReceiptScannerApiSetup {
-  static var codec: FlutterStandardMessageCodec { MessagesPigeonCodec.shared }
-  /// Sets up an instance of `ReceiptScannerApi` to handle messages through the `binaryMessenger`.
-  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: ReceiptScannerApi?, messageChannelSuffix: String = "") {
-    let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    let scanChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_receipt_scanner_platform_interface.ReceiptScannerApi.scan\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
-    if let api = api {
-      scanChannel.setMessageHandler { message, reply in
-        let args = message as! [Any?]
-        let optionsArg = args[0] as! ScanOptions
-        api.scan(options: optionsArg) { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
-        }
-      }
-    } else {
-      scanChannel.setMessageHandler(nil)
+    static var codec: FlutterStandardMessageCodec {
+        MessagesPigeonCodec.shared
     }
-  }
+
+    /// Sets up an instance of `ReceiptScannerApi` to handle messages through the `binaryMessenger`.
+    static func setUp(binaryMessenger: FlutterBinaryMessenger, api: ReceiptScannerApi?, messageChannelSuffix: String = "") {
+        let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+        let scanChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_receipt_scanner.ReceiptScannerApi.scan\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+        if let api = api {
+            scanChannel.setMessageHandler { message, reply in
+                let args = message as! [Any?]
+                let optionsArg = args[0] as! ScanOptionsWire
+                api.scan(options: optionsArg) { result in
+                    switch result {
+                    case let .success(res):
+                        reply(wrapResult(res))
+                    case let .failure(error):
+                        reply(wrapError(error))
+                    }
+                }
+            }
+        } else {
+            scanChannel.setMessageHandler(nil)
+        }
+    }
 }

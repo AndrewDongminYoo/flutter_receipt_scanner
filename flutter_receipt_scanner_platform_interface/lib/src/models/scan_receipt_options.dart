@@ -1,10 +1,10 @@
-import 'package:flutter_receipt_scanner/src/ocr_floor.dart';
-import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scanner_platform_interface.dart';
+import 'package:flutter_receipt_scanner_platform_interface/src/models/scan_enums.dart';
 
-/// Dart-facing scan options. Every field has a default from
-/// [kDefaultScanOptions] and is filled before the native call.
-class ScanReceiptOptions {
-  /// Creates options; omitted fields use the package defaults.
+/// Native-facing scan options. This is the contract forwarded to a platform
+/// implementation; the Dart-side OCR-floor gate is configured separately by the
+/// app-facing package, so it is intentionally absent here.
+final class ScanReceiptOptions {
+  /// Creates scan options. Every field has a receipt-tuned default.
   const ScanReceiptOptions({
     this.source = ScanSource.camera,
     this.maxPages = 1,
@@ -16,7 +16,6 @@ class ScanReceiptOptions {
     this.autoRotate = true,
     this.includeRawExif = false,
     this.minimumTextHeight = 0,
-    this.ocrFloor = const OcrFloorOrDisabled.floor(kDefaultOcrFloor),
   });
 
   /// Acquisition path.
@@ -48,25 +47,4 @@ class ScanReceiptOptions {
 
   /// iOS-only Vision `minimumTextHeight` fraction; `0` uses the package default.
   final double minimumTextHeight;
-
-  /// Acceptance gate applied in Dart after the native call.
-  final OcrFloorOrDisabled ocrFloor;
-
-  /// Maps to the Pigeon wire type. `ocrFloor` is intentionally not sent — the
-  /// gate is applied in Dart so native stays at image primitives (ADR-003).
-  ScanOptions toMessage() => ScanOptions(
-    source: source,
-    maxPages: maxPages,
-    quality: quality,
-    includeExif: includeExif,
-    includeGpsExif: includeGpsExif,
-    ocr: ocr,
-    cropAutoConfirm: cropAutoConfirm,
-    autoRotate: autoRotate,
-    includeRawExif: includeRawExif,
-    minimumTextHeight: minimumTextHeight,
-  );
 }
-
-/// The package-default options.
-const ScanReceiptOptions kDefaultScanOptions = ScanReceiptOptions();

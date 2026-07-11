@@ -3,12 +3,12 @@ import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scann
 import 'package:flutter_test/flutter_test.dart';
 
 class _RecordingPlatform extends FlutterReceiptScannerPlatform {
-  ScanOptions? received;
+  ScanReceiptOptions? received;
 
   @override
-  Future<ScanResult> scan(ScanOptions options) async {
+  Future<ScanReceiptResult> scan(ScanReceiptOptions options) async {
     received = options;
-    return ScanResult(
+    return const ScanReceiptResult(
       status: ScanStatus.success,
       images: [
         ReceiptImage(
@@ -16,14 +16,12 @@ class _RecordingPlatform extends FlutterReceiptScannerPlatform {
           width: 1,
           height: 1,
           fileName: 'a.jpg',
-          mimeType: 'image/jpeg',
           fileSize: 1,
-          ocrText: 'a receipt line\nsecond line',
-          ocrQuality: OcrQuality(confidence: 0.9),
           imageOrigin: ImageOrigin.camera,
+          ocrText: 'a receipt line\nsecond line',
+          ocrQuality: OcrQuality(textLength: 0, lineCount: 0, confidence: 0.9),
         ),
       ],
-      rejectedImages: [],
     );
   }
 }
@@ -33,7 +31,9 @@ void main() {
     final platform = _RecordingPlatform();
     FlutterReceiptScannerPlatform.instance = platform;
 
-    final result = await scan(const ScanReceiptOptions(maxPages: 3));
+    final result = await scan(
+      options: const ScanReceiptOptions(maxPages: 3),
+    );
 
     expect(platform.received?.maxPages, 3);
     expect(result.status, ScanStatus.success);

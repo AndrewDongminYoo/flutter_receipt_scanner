@@ -14,12 +14,12 @@ class ReceiptScannerExampleApp extends StatefulWidget {
 
 class _ReceiptScannerExampleAppState extends State<ReceiptScannerExampleApp> {
   String _status = 'idle';
-  ScanResult? _result;
+  ScanReceiptResult? _result;
 
   Future<void> _scan() async {
     setState(() => _status = 'scanning…');
     try {
-      final result = await scan(const ScanReceiptOptions(maxPages: 1));
+      final result = await scan(options: const ScanReceiptOptions(maxPages: 1));
       setState(() {
         _result = result;
         _status = result.status.name;

@@ -5,8 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('registerWith installs the Pigeon-backed platform', () {
+  test('registerWith installs the iOS platform as the instance', () {
     FlutterReceiptScannerIos.registerWith();
-    expect(FlutterReceiptScannerPlatform.instance, isA<PigeonReceiptScannerPlatform>());
+    expect(
+      FlutterReceiptScannerPlatform.instance,
+      isA<FlutterReceiptScannerIos>(),
+    );
   });
 }

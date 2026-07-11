@@ -15,57 +15,26 @@ PlatformException _createConnectionError(String channelName) {
   );
 }
 
-enum ScanSource {
+enum ScanSourceWire {
   camera,
   gallery,
 }
 
-enum ImageOrigin {
+enum ImageOriginWire {
   camera,
   screenshot,
   download,
   unknown,
 }
 
-enum ScanStatus {
+enum ScanStatusWire {
   success,
   cancelled,
   rejected,
 }
 
-class OcrFloorMessage {
-  OcrFloorMessage({
-    this.minTextLength,
-    this.minLines,
-    this.minConfidence,
-  });
-
-  int? minTextLength;
-
-  int? minLines;
-
-  double? minConfidence;
-
-  Object encode() {
-    return <Object?>[
-      minTextLength,
-      minLines,
-      minConfidence,
-    ];
-  }
-
-  static OcrFloorMessage decode(Object result) {
-    result as List<Object?>;
-    return OcrFloorMessage(
-      minTextLength: result[0] as int?,
-      minLines: result[1] as int?,
-      minConfidence: result[2] as double?,
-    );
-  }
-}
-
-class ScanOptions {
-  ScanOptions({
+class ScanOptionsWire {
+  ScanOptionsWire({
     this.source,
     this.maxPages,
     this.quality,
@@ -78,7 +47,7 @@ class ScanOptions {
     this.minimumTextHeight,
   });
 
-  ScanSource? source;
+  ScanSourceWire? source;
 
   int? maxPages;
 
@@ -113,10 +82,10 @@ class ScanOptions {
     ];
   }
 
-  static ScanOptions decode(Object result) {
+  static ScanOptionsWire decode(Object result) {
     result as List<Object?>;
-    return ScanOptions(
-      source: result[0] as ScanSource?,
+    return ScanOptionsWire(
+      source: result[0] as ScanSourceWire?,
       maxPages: result[1] as int?,
       quality: result[2] as double?,
       includeExif: result[3] as bool?,
@@ -130,8 +99,8 @@ class ScanOptions {
   }
 }
 
-class GpsData {
-  GpsData({
+class GpsDataWire {
+  GpsDataWire({
     this.latitude,
     this.longitude,
     this.altitude,
@@ -163,9 +132,9 @@ class GpsData {
     ];
   }
 
-  static GpsData decode(Object result) {
+  static GpsDataWire decode(Object result) {
     result as List<Object?>;
-    return GpsData(
+    return GpsDataWire(
       latitude: result[0] as double?,
       longitude: result[1] as double?,
       altitude: result[2] as double?,
@@ -176,8 +145,8 @@ class GpsData {
   }
 }
 
-class ReceiptExif {
-  ReceiptExif({
+class ReceiptExifWire {
+  ReceiptExifWire({
     this.orientation,
     this.colorSpace,
     this.lightSource,
@@ -239,7 +208,7 @@ class ReceiptExif {
 
   int? meteringMode;
 
-  GpsData? gps;
+  GpsDataWire? gps;
 
   Map<String, Object?>? raw;
 
@@ -269,9 +238,9 @@ class ReceiptExif {
     ];
   }
 
-  static ReceiptExif decode(Object result) {
+  static ReceiptExifWire decode(Object result) {
     result as List<Object?>;
-    return ReceiptExif(
+    return ReceiptExifWire(
       orientation: result[0] as int?,
       colorSpace: result[1] as int?,
       lightSource: result[2] as int?,
@@ -291,14 +260,14 @@ class ReceiptExif {
       exposureMode: result[16] as int?,
       exposureProgram: result[17] as int?,
       meteringMode: result[18] as int?,
-      gps: result[19] as GpsData?,
+      gps: result[19] as GpsDataWire?,
       raw: (result[20] as Map<Object?, Object?>?)?.cast<String, Object?>(),
     );
   }
 }
 
-class OcrQuality {
-  OcrQuality({
+class OcrQualityWire {
+  OcrQualityWire({
     this.textLength,
     this.lineCount,
     this.confidence,
@@ -318,9 +287,9 @@ class OcrQuality {
     ];
   }
 
-  static OcrQuality decode(Object result) {
+  static OcrQualityWire decode(Object result) {
     result as List<Object?>;
-    return OcrQuality(
+    return OcrQualityWire(
       textLength: result[0] as int?,
       lineCount: result[1] as int?,
       confidence: result[2] as double?,
@@ -328,8 +297,8 @@ class OcrQuality {
   }
 }
 
-class ReceiptImage {
-  ReceiptImage({
+class ReceiptImageWire {
+  ReceiptImageWire({
     required this.uri,
     required this.width,
     required this.height,
@@ -354,13 +323,13 @@ class ReceiptImage {
 
   int fileSize;
 
-  ImageOrigin imageOrigin;
+  ImageOriginWire imageOrigin;
 
   String? ocrText;
 
-  OcrQuality? ocrQuality;
+  OcrQualityWire? ocrQuality;
 
-  ReceiptExif? exif;
+  ReceiptExifWire? exif;
 
   Object encode() {
     return <Object?>[
@@ -377,35 +346,35 @@ class ReceiptImage {
     ];
   }
 
-  static ReceiptImage decode(Object result) {
+  static ReceiptImageWire decode(Object result) {
     result as List<Object?>;
-    return ReceiptImage(
+    return ReceiptImageWire(
       uri: result[0]! as String,
       width: result[1]! as int,
       height: result[2]! as int,
       fileName: result[3]! as String,
       mimeType: result[4]! as String,
       fileSize: result[5]! as int,
-      imageOrigin: result[6]! as ImageOrigin,
+      imageOrigin: result[6]! as ImageOriginWire,
       ocrText: result[7] as String?,
-      ocrQuality: result[8] as OcrQuality?,
-      exif: result[9] as ReceiptExif?,
+      ocrQuality: result[8] as OcrQualityWire?,
+      exif: result[9] as ReceiptExifWire?,
     );
   }
 }
 
-class ScanResult {
-  ScanResult({
+class ScanResultWire {
+  ScanResultWire({
     required this.status,
     required this.images,
     required this.rejectedImages,
   });
 
-  ScanStatus status;
+  ScanStatusWire status;
 
-  List<ReceiptImage> images;
+  List<ReceiptImageWire> images;
 
-  List<ReceiptImage> rejectedImages;
+  List<ReceiptImageWire> rejectedImages;
 
   Object encode() {
     return <Object?>[
@@ -415,16 +384,15 @@ class ScanResult {
     ];
   }
 
-  static ScanResult decode(Object result) {
+  static ScanResultWire decode(Object result) {
     result as List<Object?>;
-    return ScanResult(
-      status: result[0]! as ScanStatus,
-      images: (result[1] as List<Object?>?)!.cast<ReceiptImage>(),
-      rejectedImages: (result[2] as List<Object?>?)!.cast<ReceiptImage>(),
+    return ScanResultWire(
+      status: result[0]! as ScanStatusWire,
+      images: (result[1] as List<Object?>?)!.cast<ReceiptImageWire>(),
+      rejectedImages: (result[2] as List<Object?>?)!.cast<ReceiptImageWire>(),
     );
   }
 }
-
 
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
@@ -433,35 +401,32 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is ScanSource) {
+    } else if (value is ScanSourceWire) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    }    else if (value is ImageOrigin) {
+    } else if (value is ImageOriginWire) {
       buffer.putUint8(130);
       writeValue(buffer, value.index);
-    }    else if (value is ScanStatus) {
+    } else if (value is ScanStatusWire) {
       buffer.putUint8(131);
       writeValue(buffer, value.index);
-    }    else if (value is OcrFloorMessage) {
+    } else if (value is ScanOptionsWire) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    }    else if (value is ScanOptions) {
+    } else if (value is GpsDataWire) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
-    }    else if (value is GpsData) {
+    } else if (value is ReceiptExifWire) {
       buffer.putUint8(134);
       writeValue(buffer, value.encode());
-    }    else if (value is ReceiptExif) {
+    } else if (value is OcrQualityWire) {
       buffer.putUint8(135);
       writeValue(buffer, value.encode());
-    }    else if (value is OcrQuality) {
+    } else if (value is ReceiptImageWire) {
       buffer.putUint8(136);
       writeValue(buffer, value.encode());
-    }    else if (value is ReceiptImage) {
+    } else if (value is ScanResultWire) {
       buffer.putUint8(137);
-      writeValue(buffer, value.encode());
-    }    else if (value is ScanResult) {
-      buffer.putUint8(138);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -471,29 +436,27 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129: 
+      case 129:
         final int? value = readValue(buffer) as int?;
-        return value == null ? null : ScanSource.values[value];
-      case 130: 
+        return value == null ? null : ScanSourceWire.values[value];
+      case 130:
         final int? value = readValue(buffer) as int?;
-        return value == null ? null : ImageOrigin.values[value];
-      case 131: 
+        return value == null ? null : ImageOriginWire.values[value];
+      case 131:
         final int? value = readValue(buffer) as int?;
-        return value == null ? null : ScanStatus.values[value];
-      case 132: 
-        return OcrFloorMessage.decode(readValue(buffer)!);
-      case 133: 
-        return ScanOptions.decode(readValue(buffer)!);
-      case 134: 
-        return GpsData.decode(readValue(buffer)!);
-      case 135: 
-        return ReceiptExif.decode(readValue(buffer)!);
-      case 136: 
-        return OcrQuality.decode(readValue(buffer)!);
-      case 137: 
-        return ReceiptImage.decode(readValue(buffer)!);
-      case 138: 
-        return ScanResult.decode(readValue(buffer)!);
+        return value == null ? null : ScanStatusWire.values[value];
+      case 132:
+        return ScanOptionsWire.decode(readValue(buffer)!);
+      case 133:
+        return GpsDataWire.decode(readValue(buffer)!);
+      case 134:
+        return ReceiptExifWire.decode(readValue(buffer)!);
+      case 135:
+        return OcrQualityWire.decode(readValue(buffer)!);
+      case 136:
+        return ReceiptImageWire.decode(readValue(buffer)!);
+      case 137:
+        return ScanResultWire.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -505,23 +468,23 @@ class ReceiptScannerApi {
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
   ReceiptScannerApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
-      : pigeonVar_binaryMessenger = binaryMessenger,
-        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+    : pigeonVar_binaryMessenger = binaryMessenger,
+      pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
 
   final String pigeonVar_messageChannelSuffix;
 
-  Future<ScanResult> scan(ScanOptions options) async {
-    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_receipt_scanner_platform_interface.ReceiptScannerApi.scan$pigeonVar_messageChannelSuffix';
+  Future<ScanResultWire> scan(ScanOptionsWire options) async {
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.flutter_receipt_scanner.ReceiptScannerApi.scan$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final List<Object?>? pigeonVar_replyList =
-        await pigeonVar_channel.send(<Object?>[options]) as List<Object?>?;
+    final List<Object?>? pigeonVar_replyList = await pigeonVar_channel.send(<Object?>[options]) as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);
     } else if (pigeonVar_replyList.length > 1) {
@@ -536,7 +499,7 @@ class ReceiptScannerApi {
         message: 'Host platform returned null value for non-null return value.',
       );
     } else {
-      return (pigeonVar_replyList[0] as ScanResult?)!;
+      return (pigeonVar_replyList[0] as ScanResultWire?)!;
     }
   }
 }

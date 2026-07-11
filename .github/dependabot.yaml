@@ -1,0 +1,27 @@
+version: 2
+enable-beta-ecosystems: true
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+  - package-ecosystem: pub
+    directory: /flutter_receipt_scanner
+    schedule:
+      interval: daily
+  - package-ecosystem: pub
+    directory: /flutter_receipt_scanner/example
+    schedule:
+      interval: daily
+  - package-ecosystem: pub
+    directory: /flutter_receipt_scanner_platform_interface
+    schedule:
+      interval: daily
+  - package-ecosystem: pub
+    directory: /flutter_receipt_scanner_android
+    schedule:
+      interval: daily
+  - package-ecosystem: pub
+    directory: /flutter_receipt_scanner_ios
+    schedule:
+      interval: daily

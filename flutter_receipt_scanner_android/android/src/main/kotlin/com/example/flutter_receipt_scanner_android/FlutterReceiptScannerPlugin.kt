@@ -19,8 +19,8 @@ class FlutterReceiptScannerPlugin :
     }
 
     override fun scan(
-        options: ScanOptions,
-        callback: (Result<ScanResult>) -> Unit,
+        options: ScanOptionsWire,
+        callback: (Result<ScanResultWire>) -> Unit,
     ) {
         callback(
             Result.failure(

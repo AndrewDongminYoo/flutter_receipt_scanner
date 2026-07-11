@@ -25,6 +25,7 @@
 ### Task 1: Repo scaffold — pub + melos workspace with four packages
 
 **Files:**
+
 - Create: `pubspec.yaml` (root — pub workspace + melos config; melos 7 keeps its config here, `melos.yaml` no longer exists)
 - Create: `analysis_options.yaml` (root)
 - Create: `.gitignore`
@@ -38,6 +39,7 @@
 - Create: `packages/flutter_receipt_scanner_android/lib/flutter_receipt_scanner_android.dart` (placeholder)
 
 **Interfaces:**
+
 - Consumes: nothing (first task).
 - Produces: a resolvable four-package workspace. Package names: `flutter_receipt_scanner`, `flutter_receipt_scanner_platform_interface`, `flutter_receipt_scanner_ios`, `flutter_receipt_scanner_android`.
 
@@ -258,11 +260,13 @@ git commit -m "feat: scaffold federated four-package workspace"
 ### Task 2: Pigeon schema and code generation
 
 **Files:**
+
 - Create: `pigeons/messages.dart`
 - Create: `packages/flutter_receipt_scanner_platform_interface/tool/generate_pigeon.sh`
 - Generated (by pigeon, do not hand-edit): `packages/flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart`, `packages/flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift`, `packages/flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt`
 
 **Interfaces:**
+
 - Consumes: Task 1 workspace.
 - Produces: Pigeon Dart classes `ScanSource`, `ImageOrigin`, `ScanStatus`, `OcrFloorMessage`, `ScanOptions`, `ReceiptExif`, `GpsData`, `OcrQuality`, `ReceiptImage`, `ScanResult`, and `ReceiptScannerApi` (Dart client) with `Future<ScanResult> scan(ScanOptions options)`. Swift `ReceiptScannerApi` protocol + `setUp`. Kotlin `ReceiptScannerApi` interface + `setUp`.
 
@@ -423,12 +427,14 @@ git commit -m "feat: add pigeon schema and generated messages"
 ### Task 3: Platform interface (extend-not-implement) + Pigeon-backed default
 
 **Files:**
+
 - Create: `packages/flutter_receipt_scanner_platform_interface/lib/src/flutter_receipt_scanner_platform.dart`
 - Create: `packages/flutter_receipt_scanner_platform_interface/lib/src/pigeon_receipt_scanner.dart`
 - Modify: `packages/flutter_receipt_scanner_platform_interface/lib/flutter_receipt_scanner_platform_interface.dart`
 - Test: `packages/flutter_receipt_scanner_platform_interface/test/flutter_receipt_scanner_platform_test.dart`
 
 **Interfaces:**
+
 - Consumes: `ReceiptScannerApi`, `ScanOptions`, `ScanResult` from Task 2.
 - Produces: abstract `FlutterReceiptScannerPlatform extends PlatformInterface` with `static FlutterReceiptScannerPlatform get instance` / `set instance`, and `Future<ScanResult> scan(ScanOptions options)`. Concrete `PigeonReceiptScannerPlatform extends FlutterReceiptScannerPlatform` wrapping `ReceiptScannerApi`.
 
@@ -563,6 +569,7 @@ git commit -m "feat: add platform interface with pigeon-backed default"
 ### Task 4: App-facing `scan()` + defaults + OCR-floor gate (Dart-side domain of ADR-003)
 
 **Files:**
+
 - Create: `packages/flutter_receipt_scanner/lib/src/scan_options.dart` (public options + defaults)
 - Create: `packages/flutter_receipt_scanner/lib/src/ocr_floor.dart` (floor config + gate logic)
 - Create: `packages/flutter_receipt_scanner/lib/src/receipt_scanner.dart` (`scan()` entry)
@@ -571,6 +578,7 @@ git commit -m "feat: add platform interface with pigeon-backed default"
 - Test: `packages/flutter_receipt_scanner/test/scan_test.dart`
 
 **Interfaces:**
+
 - Consumes: `FlutterReceiptScannerPlatform`, `ScanOptions`, `ScanResult`, `ReceiptImage`, `OcrQuality`, `ScanStatus` from Task 3.
 - Produces: `Future<ScanReceiptResult> scan({ScanReceiptOptions options})`, `ScanReceiptOptions` (Dart-facing), `OcrFloor`, `kDefaultOcrFloor`, `kDefaultScanOptions`, and pure functions `deriveQuality(String text, {double? confidence})` and `applyOcrFloor(ScanResult native, {required bool ocr, OcrFloorOrDisabled floor})`.
 
@@ -933,6 +941,7 @@ git commit -m "feat: add app-facing scan() with dart-side ocr-floor gate"
 ### Task 5: iOS native handler — clean-room VisionKit camera path
 
 **Files:**
+
 - Create: `packages/flutter_receipt_scanner_ios/lib/flutter_receipt_scanner_ios.dart` (Dart registrant)
 - Create: `packages/flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios.podspec`
 - Create: `packages/flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/FlutterReceiptScannerPlugin.swift`
@@ -940,6 +949,7 @@ git commit -m "feat: add app-facing scan() with dart-side ocr-floor gate"
 - Test: `packages/flutter_receipt_scanner_ios/test/registrant_test.dart`
 
 **Interfaces:**
+
 - Consumes: generated Swift `ReceiptScannerApi`, `ScanResult`, `ScanOptions` (Task 2); Dart `FlutterReceiptScannerPlatform`, `PigeonReceiptScannerPlatform` (Task 3).
 - Produces: `FlutterReceiptScannerIos.registerWith()` (Dart) setting the platform instance; native `FlutterReceiptScannerPlugin` registering `ReceiptScannerApiImpl`.
 
@@ -1211,6 +1221,7 @@ git commit -m "feat(ios): add clean-room visionkit camera scan handler"
 ### Task 6: Android skeleton stub (unimplemented)
 
 **Files:**
+
 - Create: `packages/flutter_receipt_scanner_android/lib/flutter_receipt_scanner_android.dart`
 - Create: `packages/flutter_receipt_scanner_android/android/build.gradle`
 - Create: `packages/flutter_receipt_scanner_android/android/src/main/AndroidManifest.xml`
@@ -1218,6 +1229,7 @@ git commit -m "feat(ios): add clean-room visionkit camera scan handler"
 - Test: `packages/flutter_receipt_scanner_android/test/registrant_test.dart`
 
 **Interfaces:**
+
 - Consumes: generated Kotlin `ReceiptScannerApi`, `ScanOptions`, `ScanResult` (Task 2); Dart `FlutterReceiptScannerPlatform`, `PigeonReceiptScannerPlatform` (Task 3).
 - Produces: `FlutterReceiptScannerAndroid.registerWith()`; native plugin that answers `scan` with an unimplemented error.
 
@@ -1341,6 +1353,7 @@ git commit -m "feat(android): add skeleton stub returning unimplemented"
 ### Task 7: Example app + iOS end-to-end verification + docs
 
 **Files:**
+
 - Create: `packages/flutter_receipt_scanner/example/` (via `flutter create`)
 - Modify: `packages/flutter_receipt_scanner/example/lib/main.dart`
 - Modify: `packages/flutter_receipt_scanner/example/ios/Runner/Info.plist` (camera usage string)
@@ -1348,20 +1361,24 @@ git commit -m "feat(android): add skeleton stub returning unimplemented"
 - Create: `LICENSE` (MIT, matching the RN package license holder)
 
 **Interfaces:**
+
 - Consumes: `scan`, `ScanReceiptOptions`, `ScanResult` (Task 4).
 - Produces: a runnable example demonstrating the iOS camera path.
 
 - [ ] **Step 1: Create the example app**
 
 Run:
+
 ```bash
 cd packages/flutter_receipt_scanner
 flutter create --platforms=ios,android --org com.example example
 ```
+
 Then add the plugin dep to `example/pubspec.yaml` under `dependencies:`:
+
 ```yaml
-  flutter_receipt_scanner:
-    path: ../
+flutter_receipt_scanner:
+  path: ../
 ```
 
 - [ ] **Step 2: Write `example/lib/main.dart`**
@@ -1425,6 +1442,7 @@ class _AppState extends State<_App> {
 - [ ] **Step 3: Add camera usage description to `example/ios/Runner/Info.plist`**
 
 Add inside the top-level `<dict>`:
+
 ```xml
 <key>NSCameraUsageDescription</key>
 <string>Scan receipts with the camera.</string>
@@ -1438,10 +1456,12 @@ Expected: analyze clean; all package tests pass.
 - [ ] **Step 5: Build + run the iOS example (device or simulator)**
 
 Run:
+
 ```bash
 cd packages/flutter_receipt_scanner/example
 flutter build ios --no-codesign --simulator
 ```
+
 Expected: Swift compiles (validates Task 5 symbol reconciliation). Then run on a physical device (`flutter run`) and tap **Scan**: VisionKit opens, capture a receipt, confirm the app shows `status: success` and a non-zero `ocr chars`. (VisionKit camera needs a real device; the simulator build only proves compilation.)
 
 - [ ] **Step 6: Write root `README.md`** (usage + ADR-003 scope note + host-permission note: iOS `NSCameraUsageDescription`).

@@ -32,8 +32,8 @@ melos:
 
   scripts:
     generate:
-      run: dart run pigeon --input pigeons/messages.dart
-      description: Regenerate the Pigeon message contract for Dart, Swift, and Kotlin.
+      run: melos exec --depends-on=pigeon -- "dart run pigeon --input pigeons/messages.dart"
+      description: Regenerate each platform package's Pigeon message contract.
 
     analyze:
       run: melos exec -- "dart analyze ."

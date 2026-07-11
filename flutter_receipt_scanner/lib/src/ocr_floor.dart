@@ -4,7 +4,11 @@ import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scann
 /// floor, the corresponding image is moved from `images` into `rejectedImages`.
 class OcrFloor {
   /// Creates a floor. Missing arguments fall back to the package defaults.
-  const OcrFloor({this.minTextLength = 12, this.minLines = 2, this.minConfidence = 0});
+  const OcrFloor({
+    this.minTextLength = 12,
+    this.minLines = 2,
+    this.minConfidence = 0,
+  });
 
   /// Minimum trimmed text length, in characters.
   final int minTextLength;
@@ -12,16 +16,15 @@ class OcrFloor {
   /// Minimum non-empty line count.
   final int minLines;
 
-  /// Minimum mean OCR confidence (0.0–1.0). Confidence is reporting-only until
-  /// its cross-platform distributions are validated comparable.
+  /// Minimum mean OCR confidence (0.0–1.0). Reporting-only until distributions
+  /// are validated comparable across platforms.
   final double minConfidence;
 }
 
-/// Package-default OCR floor, applied when the caller does not override it.
+/// Package-default OCR floor.
 const OcrFloor kDefaultOcrFloor = OcrFloor();
 
-/// Either an active [OcrFloor] or an explicit "disabled" marker (mirrors the
-/// RN package's `ocrFloor: false`).
+/// Either an active [OcrFloor] or an explicit "disabled" marker.
 class OcrFloorOrDisabled {
   /// Wraps an active floor.
   const OcrFloorOrDisabled.floor(OcrFloor value) : _value = value, isDisabled = false;
@@ -46,12 +49,16 @@ OcrQuality deriveQuality(String text, {double? confidence}) {
   for (final line in text.split('\n')) {
     if (line.trim().isNotEmpty) lineCount++;
   }
-  return OcrQuality(textLength: trimmedLength, lineCount: lineCount, confidence: confidence);
+  return OcrQuality(
+    textLength: trimmedLength,
+    lineCount: lineCount,
+    confidence: confidence,
+  );
 }
 
 bool _meetsFloor(OcrQuality q, OcrFloor floor) {
-  if ((q.textLength ?? 0) < floor.minTextLength) return false;
-  if ((q.lineCount ?? 0) < floor.minLines) return false;
+  if (q.textLength < floor.minTextLength) return false;
+  if (q.lineCount < floor.minLines) return false;
   // Absent confidence => satisfied: never gate on a field that was not
   // produced (OCR disabled, or no text recognized).
   final c = q.confidence;
@@ -59,13 +66,17 @@ bool _meetsFloor(OcrQuality q, OcrFloor floor) {
   return true;
 }
 
-/// Applies the acceptance gate to a native [ScanResult].
+/// Applies the acceptance gate to a native [ScanReceiptResult].
 ///
 /// Non-success statuses pass through untouched. When the floor is disabled or
 /// OCR did not run, every image passes with an empty `rejectedImages`.
 /// Otherwise images are partitioned; if all fall below the floor the status
 /// becomes [ScanStatus.rejected].
-ScanResult applyOcrFloor(ScanResult native, {required bool ocr, required OcrFloorOrDisabled floor}) {
+ScanReceiptResult applyOcrFloor(
+  ScanReceiptResult native, {
+  required bool ocr,
+  required OcrFloorOrDisabled floor,
+}) {
   if (native.status != ScanStatus.success) {
     return native;
   }
@@ -73,11 +84,13 @@ ScanResult applyOcrFloor(ScanResult native, {required bool ocr, required OcrFloo
   final annotated = native.images.map((img) {
     final text = img.ocrText;
     if (text == null) return img;
-    return _copyWithQuality(img, deriveQuality(text, confidence: img.ocrQuality?.confidence));
+    return img.copyWith(
+      ocrQuality: deriveQuality(text, confidence: img.ocrQuality?.confidence),
+    );
   }).toList();
 
   if (!ocr || floor.isDisabled) {
-    return ScanResult(status: ScanStatus.success, images: annotated, rejectedImages: []);
+    return ScanReceiptResult(status: ScanStatus.success, images: annotated);
   }
 
   final passed = <ReceiptImage>[];
@@ -89,20 +102,14 @@ ScanResult applyOcrFloor(ScanResult native, {required bool ocr, required OcrFloo
   }
 
   if (passed.isEmpty && rejected.isNotEmpty) {
-    return ScanResult(status: ScanStatus.rejected, images: [], rejectedImages: rejected);
+    return ScanReceiptResult(
+      status: ScanStatus.rejected,
+      rejectedImages: rejected,
+    );
   }
-  return ScanResult(status: ScanStatus.success, images: passed, rejectedImages: rejected);
+  return ScanReceiptResult(
+    status: ScanStatus.success,
+    images: passed,
+    rejectedImages: rejected,
+  );
 }
-
-ReceiptImage _copyWithQuality(ReceiptImage img, OcrQuality quality) => ReceiptImage(
-  uri: img.uri,
-  width: img.width,
-  height: img.height,
-  fileName: img.fileName,
-  mimeType: img.mimeType,
-  fileSize: img.fileSize,
-  ocrText: img.ocrText,
-  ocrQuality: quality,
-  exif: img.exif,
-  imageOrigin: img.imageOrigin,
-);

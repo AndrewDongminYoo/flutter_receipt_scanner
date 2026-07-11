@@ -1,0 +1,28 @@
+name: flutter_receipt_scanner_platform_interface
+
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/flutter_receipt_scanner_platform_interface.yaml
+      - flutter_receipt_scanner_platform_interface/**
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/flutter_receipt_scanner_platform_interface.yaml
+      - flutter_receipt_scanner_platform_interface/**
+
+jobs:
+  build:
+    if: ${{ !contains(fromJSON('["dependabot[bot]", "renovate[bot]", "snyk-bot", "allcontributors[bot]"]'), github.actor) }}
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@c2e27845f65775943bc310b3ab89e5c5432b8d4d # v1.19.2
+    with:
+      flutter_version: 3.44.6
+      format_line_length: 120
+      working_directory: flutter_receipt_scanner_platform_interface
