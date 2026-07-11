@@ -35,7 +35,7 @@ The RN JS layer (`scan.tsx`) owns the OCR-floor acceptance gate and the quality 
 
 ### 1.1 iOS (`RNDocumentCameraDelegate.m`, entry `ReceiptScanner.mm`)
 
-**Algorithm**
+#### Algorithm
 
 1. `scan()` runs on `DispatchQueue.main`. Guard: if a scan delegate is already retained, reject `SCAN_IN_PROGRESS`. Resolve the presenting VC (skeleton already has `topViewController()`); if none → reject `NO_ACTIVITY`.
 2. If `!VNDocumentCameraViewController.isSupported` → reject `NOT_SUPPORTED`.
@@ -57,7 +57,7 @@ The RN JS layer (`scan.tsx`) owns the OCR-floor acceptance gate and the quality 
 
 ### 1.2 Android (`ReceiptScannerModule.kt` camera branch)
 
-**Algorithm**
+#### Algorithm
 
 1. Guard `pendingPromise != null` → reject `SCAN_IN_PROGRESS`. Resolve `currentActivity` or reject `NO_ACTIVITY`. Parse options, `executor.execute { deletePreviousSessionFiles() }`, store `pendingPromise`/`pendingOptions`.
 2. Build `GmsDocumentScannerOptions`: `.setGalleryImportAllowed(false)` (critical — see ADR-005; in-camera gallery import goes through GMS which strips EXIF and collapses origin to unknown), `.setPageLimit(maxPages)`, `RESULT_FORMAT_JPEG`, `SCANNER_MODE_FULL`.
@@ -89,17 +89,17 @@ Both platforms: system photo picker → detect a document quad → present a 4-h
 
 ### 2.1 iOS (`RNGalleryPickerDelegate.m` + `RNCropEditorViewController.m`)
 
-**Picker & auth**
+#### Picker & auth
 
 - If `PHPhotoLibrary.authorizationStatus == notDetermined`, request authorization (only to populate `PHPickerResult.assetIdentifier` for origin detection — the picker itself works without it). Present `PHPickerViewController`:
   - `config.filter = imagesFilter`, `config.selectionLimit = maxPages`.
   - If authorized/limited: init config `initWithPhotoLibrary:` so `assetIdentifier` is populated.
 
-**Per-photo serialization (ADR / AGENTS.md anti-pattern — load-bearing)**
+#### Per-photo serialization (ADR / AGENTS.md anti-pattern — load-bearing)
 
 - `didFinishPicking` with 0 results → `cancelled`. Else dismiss, `deletePreviousSessionFiles`, then process **one photo at a time** via `queuedItems`+`queueIndex`+`processNextQueuedItem`. **Never** fan out N `present` calls in a for-loop — UIKit silently rejects all but the first, and the rejected editors' completion blocks never fire → the Promise hangs forever. Chain the next item from inside `didFinishOneItem:`.
 
-**Per item**
+#### Per item
 
 1. `earlyOrigin = originForPickerResult(item)` — synchronous `PHAsset` fetch; returns `screenshot` if `mediaSubtypes & PHAssetMediaSubtypePhotoScreenshot`, else nil (§7).
 2. `loadDataRepresentationForTypeIdentifier: UTTypeImage` → `NSData`. Wrap `CGImageSourceCreateWithData` in an ARC holder (`RNCGImageSourceHolder`) so every early-return path releases it. `UIImage imageWithData:`.
@@ -121,7 +121,7 @@ Both platforms: system photo picker → detect a document quad → present a 4-h
 
 ### 2.2 Android (`CropEditorActivity.kt` + `QuadCropView.kt`, dispatched by `ReceiptScannerModule.handleGalleryResult`)
 
-**Flow**
+#### Flow
 
 1. Module starts `CropEditorActivity` via `startActivityForResult(GALLERY_REQUEST_CODE)`, passing `EXTRA_MAX_IMAGES = maxPages`.
 2. Activity opens the **system photo picker** via `ActivityResultContracts.PickVisualMedia` (maxImages==1) or `PickMultipleVisualMedia(maxImages)`. Launched from `onPostResume` guarded by `galleryPickerLaunched`.
@@ -289,7 +289,7 @@ Priority: `earlyOrigin` (PHAsset) → extracted EXIF → raw source props → `u
 - Query `MediaStore.Images.Media.BUCKET_DISPLAY_NAME` (lowercased): `"camera"`→camera, `"screenshots"/"screenshot"`→screenshot, `"download"/"downloads"`→download.
 - Fallback EXIF heuristic: `dateTimeOriginal != null` → camera; `make && model` → camera; else **`unknown`**. **Android never returns `download` from the EXIF fallback** — only an explicit bucket-name match yields `download` (§5 of platform-asymmetries). Intended asymmetry.
 
-### 7.3 Fills `ReceiptImage.imageOrigin` (always present).
+### 7.3 Fills `ReceiptImage.imageOrigin` (always present)
 
 ---
 
