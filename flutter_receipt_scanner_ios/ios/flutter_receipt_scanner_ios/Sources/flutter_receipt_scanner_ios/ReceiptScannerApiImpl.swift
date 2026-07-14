@@ -31,7 +31,7 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     ) {
         guard self.completion == nil else {
             completion(.failure(PigeonError(
-                code: "scan_in_progress",
+                code: "SCAN_IN_PROGRESS",
                 message: "A scan is already in progress.",
                 details: nil
             )))
@@ -53,7 +53,7 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     ) {
         guard VNDocumentCameraViewController.isSupported else {
             completion(.failure(PigeonError(
-                code: "unavailable",
+                code: "NOT_SUPPORTED",
                 message: "Document scanning is not supported on this device.",
                 details: nil
             )))
@@ -62,9 +62,17 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
         self.completion = completion
         self.options = options
         DispatchQueue.main.async {
+            guard let presenter = Self.topViewController() else {
+                self.finish(.failure(PigeonError(
+                    code: "NO_ACTIVITY",
+                    message: "No view controller is available to present the scanner.",
+                    details: nil
+                )))
+                return
+            }
             let scanner = VNDocumentCameraViewController()
             scanner.delegate = self
-            Self.topViewController()?.present(scanner, animated: true)
+            presenter.present(scanner, animated: true)
         }
     }
 
@@ -79,7 +87,7 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
         DispatchQueue.main.async {
             guard let presenter = Self.topViewController() else {
                 self.finish(.failure(PigeonError(
-                    code: "no_activity",
+                    code: "NO_ACTIVITY",
                     message: "No view controller is available to present the picker.",
                     details: nil
                 )))
@@ -152,7 +160,7 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
             let images = pages.compactMap { Self.process($0, options: opts) }
             if images.isEmpty, pageCount > 0 {
                 self?.finish(.failure(PigeonError(
-                    code: "processing_failed",
+                    code: "PROCESSING_FAILED",
                     message: "Failed to process the scanned pages.",
                     details: nil
                 )))
@@ -175,7 +183,7 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     ) {
         controller.dismiss(animated: true)
         finish(.failure(PigeonError(
-            code: "scan_failed",
+            code: "CAMERA_FAILED",
             message: error.localizedDescription,
             details: nil
         )))

@@ -54,11 +54,13 @@ enum OcrProcessor {
         let probes = isLandscape ? [90, 180, 270] : [180]
         var bestDegrees = 0
         var bestCount = pass0.count
+        var bestProbeText: String?
         for degrees in probes {
             let probe = recognizeText(cg, orientation: degrees, level: .fast, minHeight: effectiveHeight)
             if probe.count > bestCount {
                 bestCount = probe.count
                 bestDegrees = degrees
+                bestProbeText = probe.text
             }
         }
 
@@ -68,7 +70,9 @@ enum OcrProcessor {
         }
 
         let finalPass = recognizeText(cg, orientation: bestDegrees, level: .accurate, minHeight: effectiveHeight)
-        let text = finalPass.text ?? pass0.text
+        // On final-pass failure fall back to the winning probe's text (matches the
+        // committed rotation), not the 0° pass0 text; pass0 is the last resort.
+        let text = finalPass.text ?? bestProbeText ?? pass0.text
         return OcrOutcome(text: text, confidence: finalPass.confidence, rotationDegrees: bestDegrees)
     }
 
