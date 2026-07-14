@@ -49,12 +49,12 @@ The output `file://` JPEG URIs are stable until the next `scan()` call and do no
 ## Development
 
 ```bash
-melos run generate   # regenerate the Pigeon wire contract in every platform package
+melos run generate   # regenerate the Pigeon wire contract from the root schema
 melos run analyze    # analyze all packages
 melos run test       # test all packages
 ```
 
-The Pigeon schema lives per platform package (`flutter_receipt_scanner_ios/pigeons/messages.dart` and `flutter_receipt_scanner_android/pigeons/messages.dart`), kept identical except for the Swift/Kotlin output config. `melos run generate` runs Pigeon in each; to regenerate one package, run `dart run pigeon --input pigeons/messages.dart` from inside that package.
+The Pigeon schema is a single source of truth at the repo root (`pigeons/messages.dart`). `melos run generate` runs Pigeon once from the root, emitting the Dart client into `flutter_receipt_scanner_platform_interface` and the Swift/Kotlin hosts into their platform packages.
 
 Dart is formatted at 120 columns (`dart format --line-length 120`) and linted with `very_good_analysis`.
 Kotlin, Swift, YAML, and Markdown are owned by trunk; Dart is intentionally left to `flutter`/`melos`.

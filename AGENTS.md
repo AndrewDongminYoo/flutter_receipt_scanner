@@ -4,10 +4,10 @@
 
 - Root is a Melos workspace for a federated Flutter plugin, split into packages:
   - `flutter_receipt_scanner/` (app-facing plugin API; example app in `flutter_receipt_scanner/example/`)
-  - `flutter_receipt_scanner_platform_interface/` (abstract platform interface plus the hand-written public models in `lib/src/models/`)
-  - `flutter_receipt_scanner_android/` (Android implementation; native code in `android/`; Pigeon-generated Dart in `lib/src/messages.g.dart`)
-  - `flutter_receipt_scanner_ios/` (iOS implementation; native code in `ios/`; Pigeon-generated Dart in `lib/src/messages.g.dart`)
-- Each platform package owns a `pigeons/messages.dart` schema (`_android` and `_ios`, identical except output config) that defines the host/native transport (see Pigeon below).
+  - `flutter_receipt_scanner_platform_interface/` (abstract platform interface, hand-written public models in `lib/src/models/`, and the Pigeon-generated Dart in `lib/src/messages.g.dart`)
+  - `flutter_receipt_scanner_android/` (Android implementation; native code in `android/`)
+  - `flutter_receipt_scanner_ios/` (iOS implementation; native code in `ios/`)
+- The root `pigeons/messages.dart` is the single source of truth for the host/native transport (see Pigeon below).
 - Tests live in each package's `test/` directory.
 
 ## Package Scope & Responsibility Boundary
@@ -17,10 +17,9 @@
 
 ## Transport: Pigeon
 
-- The host/native message contract is defined per platform package in `<pkg>/pigeons/messages.dart` and code-generated for Dart, Swift, and Kotlin. The `_android` and `_ios` copies are identical except for the Kotlin/Swift output config — edit both in lockstep.
-- Regenerate after editing the schema:
-  - `melos run generate` (regenerates every platform package), or `dart run pigeon --input pigeons/messages.dart` from inside one package.
-- Never hand-edit generated Pigeon output; change the `pigeons/messages.dart` schema and regenerate.
+- The host/native message contract is defined once in the root `pigeons/messages.dart` and code-generated for Dart, Swift, and Kotlin. The Dart client lands in the platform-interface package (re-exported for both platform packages); the Swift/Kotlin hosts land in their native packages.
+- Regenerate after editing the schema: `melos run generate` (a single root `dart run pigeon --input pigeons/messages.dart`).
+- Never hand-edit generated Pigeon output; change the root `pigeons/messages.dart` schema and regenerate.
 
 ## Build, Test, and Development Commands
 
