@@ -93,7 +93,7 @@ it is intentionally last and can be dropped without affecting Groups A/B.
 ## Verification summary
 
 - Group A + the Dart side of C: `melos run analyze` and `melos run test` must be green.
-- Group B + native side of C: compile clean; behavior is **QA-pending** on device/simulator.
+- Group B + native side of C: the Swift/Kotlin edits are **not compiled or run** by the Dart gates (`dart analyze`/`flutter test` are Dart-only; `trunk` is formatting). They stay **unverified** until an actual `swiftc`/`kotlinc` build (example app via `xcodebuild` / gradle) and on-device/simulator QA.
 - Commit per concern (conventional + gitmoji), Dart/native/refactor grouped.
 
 ## Non-goals
