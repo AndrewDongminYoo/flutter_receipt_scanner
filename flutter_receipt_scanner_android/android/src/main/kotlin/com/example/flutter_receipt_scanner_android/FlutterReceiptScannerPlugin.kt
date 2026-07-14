@@ -100,7 +100,7 @@ class FlutterReceiptScannerPlugin :
                         .putExtra(CropEditorActivity.EXTRA_MAX_IMAGES, maxPages),
                     GALLERY_REQUEST_CODE,
                 )
-            }.onFailure { reject("gallery_launch_failed", it.message) }
+            }.onFailure { reject("GALLERY_LAUNCH_FAILED", it.message) }
             return
         }
 
@@ -120,8 +120,22 @@ class FlutterReceiptScannerPlugin :
             .addOnSuccessListener { intentSender ->
                 runCatching {
                     activity.startIntentSenderForResult(intentSender, SCAN_REQUEST_CODE, null, 0, 0, 0)
-                }.onFailure { reject("scanner_launch_failed", it.message) }
-            }.addOnFailureListener { reject("scanner_init_failed", it.message) }
+                }.onFailure { reject("SCANNER_LAUNCH_FAILED", it.message) }
+            }.addOnFailureListener { reject("SCANNER_INIT_FAILED", friendlyScannerInitMessage(it.message)) }
+    }
+
+    /**
+     * Maps a GMS scanner-init failure into guidance. GmsNetworkStack / AuthPII errors mean
+     * Play Services is missing or outdated, so surface an actionable message instead of the
+     * raw internal exception text (port map §1.2).
+     */
+    private fun friendlyScannerInitMessage(raw: String?): String {
+        val message = raw.orEmpty()
+        return if (message.contains("GmsNetworkStack") || message.contains("AuthPII")) {
+            "Google Play services must be updated to run the document scanner; please update it and retry."
+        } else {
+            message.ifEmpty { "Failed to initialize the document scanner." }
+        }
     }
 
     // MARK: - ActivityResultListener
@@ -164,7 +178,7 @@ class FlutterReceiptScannerPlugin :
         executor.execute {
             val context = appContext
             if (context == null) {
-                reject("no_context", "Application context unavailable.")
+                reject("NO_CONTEXT", "Application context unavailable.")
                 return@execute
             }
             val ocr = OcrProcessor()
@@ -174,12 +188,12 @@ class FlutterReceiptScannerPlugin :
                         ResultBuilder.processCameraPage(context, page.imageUri, options, ocr)
                     }
                 if (images.isEmpty() && pages.isNotEmpty()) {
-                    reject("processing_failed", "Failed to process the scanned pages.")
+                    reject("PROCESSING_FAILED", "Failed to process the scanned pages.")
                 } else {
                     resolve(ScanResultWire(status = ScanStatusWire.SUCCESS, images = images, rejectedImages = emptyList()))
                 }
             } catch (e: OutOfMemoryError) {
-                reject("out_of_memory", e.message)
+                reject("OUT_OF_MEMORY", e.message)
             } finally {
                 ocr.close()
             }
@@ -203,7 +217,7 @@ class FlutterReceiptScannerPlugin :
         executor.execute {
             val context = appContext
             if (context == null) {
-                reject("no_context", "Application context unavailable.")
+                reject("NO_CONTEXT", "Application context unavailable.")
                 return@execute
             }
             val ocr = OcrProcessor()
@@ -219,12 +233,12 @@ class FlutterReceiptScannerPlugin :
                         ResultBuilder.processGalleryImage(context, uri, corners, options, ocr)
                     }
                 if (images.isEmpty() && uris.isNotEmpty()) {
-                    reject("processing_failed", "Failed to process the selected images.")
+                    reject("PROCESSING_FAILED", "Failed to process the selected images.")
                 } else {
                     resolve(ScanResultWire(status = ScanStatusWire.SUCCESS, images = images, rejectedImages = emptyList()))
                 }
             } catch (e: OutOfMemoryError) {
-                reject("out_of_memory", e.message)
+                reject("OUT_OF_MEMORY", e.message)
             } finally {
                 ocr.close()
             }
