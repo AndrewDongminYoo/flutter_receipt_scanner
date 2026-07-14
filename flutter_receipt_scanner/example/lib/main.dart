@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show PlatformException;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData, PlatformException;
 import 'package:flutter_receipt_scanner/flutter_receipt_scanner.dart';
 
 void main() => runApp(const ReceiptScannerExampleApp());
@@ -24,7 +24,7 @@ class ReceiptScannerExampleApp extends StatelessWidget {
   }
 }
 
-/// The single demo screen: scan-option controls on top, results below.
+/// The option-form screen. Runs a scan and pushes [ResultScreen] with the result.
 class ScanScreen extends StatefulWidget {
   /// Creates the scan screen.
   const ScanScreen({super.key});
@@ -53,7 +53,6 @@ class _ScanScreenState extends State<ScanScreen> {
   double _floorMinConfidence = 0;
 
   bool _scanning = false;
-  ScanReceiptResult? _result;
   ({String code, String message})? _error;
 
   bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
@@ -63,8 +62,10 @@ class _ScanScreenState extends State<ScanScreen> {
       _scanning = true;
       _error = null;
     });
+    ScanReceiptResult? result;
+    ({String code, String message})? error;
     try {
-      final result = await scan(
+      result = await scan(
         options: ScanReceiptOptions(
           source: _source,
           ocr: _ocr,
@@ -87,14 +88,23 @@ class _ScanScreenState extends State<ScanScreen> {
               )
             : const OcrFloorOrDisabled.disabled(),
       );
-      if (mounted) setState(() => _result = result);
     } on PlatformException catch (e) {
-      if (mounted) setState(() => _error = (code: e.code, message: e.message ?? ''));
+      error = (code: e.code, message: e.message ?? '');
     } on Object catch (e) {
-      if (mounted) setState(() => _error = (code: 'error', message: '$e'));
-    } finally {
-      if (mounted) setState(() => _scanning = false);
+      error = (code: 'error', message: '$e');
     }
+
+    if (!mounted) return;
+    setState(() {
+      _scanning = false;
+      _error = error;
+    });
+    if (result == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ResultScreen(result: result!, source: _source),
+      ),
+    );
   }
 
   @override
@@ -117,7 +127,6 @@ class _ScanScreenState extends State<ScanScreen> {
             label: Text(_source == ScanSource.camera ? '카메라로 스캔' : '갤러리에서 가져오기'),
           ),
           if (_error != null) _errorCard(_error!),
-          if (_result != null && _error == null) ..._resultSection(_result!),
         ],
       ),
     );
@@ -282,33 +291,6 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  // ── Result ─────────────────────────────────────────────────────────────────
-
-  List<Widget> _resultSection(ScanReceiptResult result) {
-    final warn = result.status != ScanStatus.success;
-    return [
-      const SizedBox(height: 16),
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: warn ? Colors.orange.shade100 : Colors.green.shade100,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          _statusSummary(result),
-          style: TextStyle(fontWeight: FontWeight.w600, color: warn ? Colors.orange.shade900 : Colors.green.shade900),
-        ),
-      ),
-      for (final (i, img) in result.images.indexed) _ImageCard(image: img, index: i),
-      if (result.rejectedImages.isNotEmpty) ...[
-        const SizedBox(height: 8),
-        Text('거부된 이미지 (rejectedImages)', style: Theme.of(context).textTheme.titleMedium),
-        for (final (i, img) in result.rejectedImages.indexed) _ImageCard(image: img, index: i),
-      ],
-    ];
-  }
-
   Widget _errorCard(({String code, String message}) error) {
     return Container(
       width: double.infinity,
@@ -336,16 +318,74 @@ class _ScanScreenState extends State<ScanScreen> {
       ),
     );
   }
+}
 
-  String _statusSummary(ScanReceiptResult result) {
-    switch (result.status) {
-      case ScanStatus.success:
-        return '✅ 스캔 성공 — ${result.images.length}페이지';
-      case ScanStatus.rejected:
-        return '⚠️ OCR 기준 미달 — ${result.rejectedImages.length}페이지 거부됨';
-      case ScanStatus.cancelled:
-        return '⚪ 스캔 취소됨';
-    }
+/// The result screen: status summary, per-page image cards, and rejected images.
+class ResultScreen extends StatelessWidget {
+  /// Creates the result screen for a completed [result].
+  const ResultScreen({required this.result, required this.source, super.key});
+
+  /// The scan outcome to render.
+  final ScanReceiptResult result;
+
+  /// The source path the scan used, for the section description.
+  final ScanSource source;
+
+  String get _statusSummary => switch (result.status) {
+    ScanStatus.success => '✅ 스캔 성공 — ${result.images.length}페이지',
+    ScanStatus.rejected => '⚠️ OCR 기준 미달 — ${result.rejectedImages.length}페이지 거부됨',
+    ScanStatus.cancelled => '⚪ 스캔 취소됨',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final warn = result.status != ScanStatus.success;
+    return Scaffold(
+      appBar: AppBar(title: const Text('스캔 결과')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: warn ? Colors.orange.shade100 : Colors.green.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              _statusSummary,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: warn ? Colors.orange.shade900 : Colors.green.shade900,
+              ),
+            ),
+          ),
+          if (result.images.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              source == ScanSource.gallery ? '갤러리에서 가져와 원근 보정된 이미지' : '카메라 문서 스캐너로 촬영된 이미지',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            for (final (i, img) in result.images.indexed) _ImageCard(image: img, index: i),
+          ],
+          if (result.rejectedImages.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              '거부된 이미지 (rejectedImages)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            Text('ocrFloor 기준을 충족하지 못해 images에서 제외된 캡처입니다', style: Theme.of(context).textTheme.bodySmall),
+            for (final (i, img) in result.rejectedImages.indexed) _ImageCard(image: img, index: i),
+          ],
+          const SizedBox(height: 20),
+          FilledButton.tonalIcon(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.refresh),
+            label: const Text('다시 스캔하기'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -506,6 +546,41 @@ class _ChipRow<T> extends StatelessWidget {
   }
 }
 
+/// An [ExpansionTile] with no divider lines and a soft, rounded content panel
+/// that sets its body apart from the surrounding card.
+class _DetailTile extends StatelessWidget {
+  const _DetailTile({required this.title, required this.children, this.initiallyExpanded = false});
+
+  final String title;
+  final List<Widget> children;
+  final bool initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ExpansionTile(
+      title: Text(title, style: theme.textTheme.labelLarge),
+      initiallyExpanded: initiallyExpanded,
+      // Empty borders remove ExpansionTile's default top/bottom divider lines.
+      shape: const Border(),
+      collapsedShape: const Border(),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+      childrenPadding: const EdgeInsets.only(bottom: 8),
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+        ),
+      ],
+    );
+  }
+}
+
 /// Renders one [ReceiptImage] — preview, origin, file info, OCR, and EXIF.
 class _ImageCard extends StatelessWidget {
   const _ImageCard({required this.image, required this.index});
@@ -513,10 +588,18 @@ class _ImageCard extends StatelessWidget {
   final ReceiptImage image;
   final int index;
 
+  void _copyOcr(BuildContext context, String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('OCR 텍스트를 복사했습니다'), duration: Duration(seconds: 1)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final quality = image.ocrQuality;
     final exif = image.exif;
+    final ocrText = image.ocrText?.trim();
     return Card(
       margin: const EdgeInsets.only(top: 12),
       child: Padding(
@@ -537,10 +620,8 @@ class _ImageCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Row(children: [const Text('이미지 출처  '), _OriginChip(image.imageOrigin)]),
-            ExpansionTile(
-              title: const Text('파일 정보'),
-              tilePadding: EdgeInsets.zero,
-              childrenPadding: const EdgeInsets.only(bottom: 8),
+            _DetailTile(
+              title: '파일 정보',
               children: [
                 _MetaRow('파일명', image.fileName),
                 _MetaRow('해상도', '${image.width} × ${image.height}'),
@@ -549,11 +630,9 @@ class _ImageCard extends StatelessWidget {
               ],
             ),
             if (quality != null)
-              ExpansionTile(
-                title: const Text('OCR 품질'),
+              _DetailTile(
+                title: 'OCR 품질',
                 initiallyExpanded: true,
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(bottom: 8),
                 children: [
                   _MetaRow('글자 수', '${quality.textLength}'),
                   _MetaRow('줄 수', '${quality.lineCount}'),
@@ -563,18 +642,24 @@ class _ImageCard extends StatelessWidget {
                   ),
                 ],
               ),
-            if (image.ocrText != null)
-              ExpansionTile(
-                title: const Text('OCR 텍스트'),
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(bottom: 8),
+            if (ocrText != null)
+              _DetailTile(
+                title: 'OCR 텍스트',
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      image.ocrText!.trim().isEmpty ? '(인식된 텍스트 없음)' : image.ocrText!.trim(),
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                    ),
+                  Row(
+                    children: [
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: ocrText.isEmpty ? null : () => _copyOcr(context, ocrText),
+                        icon: const Icon(Icons.copy, size: 16),
+                        label: const Text('복사'),
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                      ),
+                    ],
+                  ),
+                  SelectableText(
+                    ocrText.isEmpty ? '(인식된 텍스트 없음)' : ocrText,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
                   ),
                 ],
               ),
@@ -604,25 +689,20 @@ class _ExifPart extends StatelessWidget {
       if (gps != null) _MetaRow('GPS', '${gps.latitude.toStringAsFixed(5)}, ${gps.longitude.toStringAsFixed(5)}'),
     ];
     final raw = exif.raw;
-    return ExpansionTile(
-      title: Text(raw == null ? 'EXIF' : 'EXIF (raw · ${raw.length} keys)'),
-      tilePadding: EdgeInsets.zero,
-      childrenPadding: const EdgeInsets.only(bottom: 8),
+    return _DetailTile(
+      title: raw == null ? 'EXIF' : 'EXIF (raw · ${raw.length} keys)',
       children: [
         if (rows.isEmpty)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              origin == ImageOrigin.camera ? '스캐너가 원본 EXIF를 내보내지 않아 기기 정보만 합성됩니다' : '추가 EXIF 필드 없음',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+          Text(
+            origin == ImageOrigin.camera ? '스캐너가 원본 EXIF를 내보내지 않아 기기 정보만 합성됩니다' : '추가 EXIF 필드 없음',
+            style: Theme.of(context).textTheme.bodySmall,
           )
         else
           ...rows,
         if (raw != null)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text('$raw', style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: SelectableText('$raw', style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
           ),
       ],
     );
