@@ -136,4 +136,43 @@ void main() {
 
     expect(result.images.single.exif!.gps, isNull);
   });
+
+  test('scan maps the cancelled wire status', () async {
+    final fake = _FakeReceiptScannerApi(
+      ScanResultWire(
+        status: ScanStatusWire.cancelled,
+        images: <ReceiptImageWire>[],
+        rejectedImages: <ReceiptImageWire>[],
+      ),
+    );
+
+    final result = await FlutterReceiptScannerIos(api: fake).scan(const ScanReceiptOptions());
+
+    expect(result.status, ScanStatus.cancelled);
+  });
+
+  test('scan maps the rejected wire status and download origin', () async {
+    final fake = _FakeReceiptScannerApi(
+      ScanResultWire(
+        status: ScanStatusWire.rejected,
+        images: <ReceiptImageWire>[],
+        rejectedImages: <ReceiptImageWire>[
+          ReceiptImageWire(
+            uri: 'file:///tmp/receipt_4.jpg',
+            width: 640,
+            height: 480,
+            fileName: 'receipt_4.jpg',
+            mimeType: 'image/jpeg',
+            fileSize: 256,
+            imageOrigin: ImageOriginWire.download,
+          ),
+        ],
+      ),
+    );
+
+    final result = await FlutterReceiptScannerIos(api: fake).scan(const ScanReceiptOptions());
+
+    expect(result.status, ScanStatus.rejected);
+    expect(result.rejectedImages.single.imageOrigin, ImageOrigin.download);
+  });
 }
