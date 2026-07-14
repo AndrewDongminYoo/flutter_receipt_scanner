@@ -22,7 +22,7 @@ enum ImageOrigin {
   unknown,
 }
 
-/// Primary discriminator on a [ScanReceiptResult].
+/// Primary discriminator on a `ScanReceiptResult`.
 enum ScanStatus {
   /// The user completed the scan and at least one image passed the floor.
   success,
