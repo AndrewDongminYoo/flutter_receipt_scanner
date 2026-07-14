@@ -7,6 +7,34 @@ import 'package:flutter_receipt_scanner/flutter_receipt_scanner.dart';
 
 void main() => runApp(const ReceiptScannerExampleApp());
 
+/// Asana-inspired design tokens (warm coral productivity canvas). Coral is
+/// reserved for the primary action and active selection; chrome stays neutral.
+abstract final class _Asana {
+  static const coral = Color(0xFFF06A6A);
+  static const coralHover = Color(0xFFE5544F);
+  static const coralSoft = Color(0xFFFCE8E6);
+  static const ink = Color(0xFF1E1F21);
+  static const inkMuted = Color(0xFF6D6E6F);
+  static const canvas = Color(0xFFFAF9F8);
+  static const surface1 = Color(0xFFFFFFFF);
+  static const surface2 = Color(0xFFF6F5F3);
+  static const surface3 = Color(0xFFEDECE9);
+  static const border = Color(0xFFE4E4E4);
+  static const success = Color(0xFF37A66B);
+  static const warning = Color(0xFFF1BD6C);
+  static const warningInk = Color(0xFF8A5A1B);
+  static const error = Color(0xFFE8384F);
+
+  // Color-coding accents for image origin (paired with a text label, never
+  // color-only). Muted so many can coexist calmly.
+  static const green = Color(0xFF2E7D4F);
+  static const greenSoft = Color(0x2662D26F);
+  static const blue = Color(0xFF35589E);
+  static const blueSoft = Color(0x264573D2);
+  static const amber = Color(0xFF8A5A1B);
+  static const amberSoft = Color(0x26F1BD6C);
+}
+
 /// Demo app exercising every [ScanReceiptOptions] field and rendering the
 /// returned images, OCR output, and EXIF metadata.
 class ReceiptScannerExampleApp extends StatelessWidget {
@@ -15,10 +43,62 @@ class ReceiptScannerExampleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = ColorScheme.fromSeed(seedColor: _Asana.coral, brightness: Brightness.light).copyWith(
+      primary: _Asana.coral,
+      onPrimary: Colors.white,
+      primaryContainer: _Asana.coralSoft,
+      onPrimaryContainer: _Asana.coralHover,
+      surface: _Asana.surface1,
+      onSurface: _Asana.ink,
+      onSurfaceVariant: _Asana.inkMuted,
+      surfaceContainerHighest: _Asana.surface2,
+      surfaceContainerHigh: _Asana.surface2,
+      secondaryContainer: _Asana.surface3,
+      onSecondaryContainer: _Asana.inkMuted,
+      outline: _Asana.border,
+      error: _Asana.error,
+    );
+
     return MaterialApp(
       title: 'Receipt Scanner',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF3B5BFE), useMaterial3: true),
+      themeMode: ThemeMode.light,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: scheme,
+        scaffoldBackgroundColor: _Asana.canvas,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: _Asana.canvas,
+          foregroundColor: _Asana.ink,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: false,
+          titleTextStyle: TextStyle(color: _Asana.ink, fontSize: 20, fontWeight: FontWeight.w600),
+        ),
+        cardTheme: CardThemeData(
+          color: _Asana.surface1,
+          surfaceTintColor: Colors.transparent,
+          elevation: 1,
+          shadowColor: Colors.black.withValues(alpha: 0.06),
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            shape: const StadiumBorder(),
+          ),
+        ),
+        chipTheme: const ChipThemeData(
+          selectedColor: _Asana.coralSoft,
+          backgroundColor: _Asana.surface2,
+          checkmarkColor: _Asana.coralHover,
+          side: BorderSide.none,
+          shape: StadiumBorder(),
+        ),
+      ),
       home: const ScanScreen(),
     );
   }
@@ -142,6 +222,11 @@ class _ScanScreenState extends State<ScanScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SegmentedButton<ScanSource>(
+            style: SegmentedButton.styleFrom(
+              selectedBackgroundColor: _Asana.coralSoft,
+              selectedForegroundColor: _Asana.coralHover,
+              foregroundColor: _Asana.inkMuted,
+            ),
             segments: const [
               ButtonSegment(value: ScanSource.camera, label: Text('카메라'), icon: Icon(Icons.photo_camera)),
               ButtonSegment(value: ScanSource.gallery, label: Text('갤러리'), icon: Icon(Icons.photo_library)),
@@ -152,9 +237,7 @@ class _ScanScreenState extends State<ScanScreen> {
           if (_source == ScanSource.gallery) ...[
             const SizedBox(height: 12),
             _InfoBanner(
-              _isIOS
-                  ? '📐 iOS: 문서 모서리를 자동 감지하고 드래그 핸들로 원근 보정이 가능합니다'
-                  : '📷 Android: 갤러리에서 영수증 사진을 선택한 뒤 드래그 핸들로 모서리를 보정하세요',
+              _isIOS ? 'iOS: 문서 모서리를 자동 감지하고 드래그 핸들로 원근 보정이 가능합니다' : 'Android: 갤러리에서 영수증 사진을 선택한 뒤 드래그 핸들로 모서리를 보정하세요',
             ),
           ],
         ],
@@ -169,7 +252,7 @@ class _ScanScreenState extends State<ScanScreen> {
       child: Column(
         children: [
           SwitchListTile(
-            title: const Text('OCR — 한국어 + 라틴 텍스트 인식'),
+            title: const Text('OCR · 한국어 + 라틴 텍스트 인식'),
             value: _ocr,
             onChanged: (v) => setState(() => _ocr = v),
           ),
@@ -268,7 +351,7 @@ class _ScanScreenState extends State<ScanScreen> {
         children: [
           SwitchListTile(
             title: const Text('GPS EXIF 포함 (includeGpsExif)'),
-            subtitle: Text(_includeExif ? '원본에 박힌 GPS만 복사 — 위치 권한 요청 없음' : 'EXIF 포함이 켜져 있어야 적용됩니다'),
+            subtitle: Text(_includeExif ? '원본에 박힌 GPS만 복사 · 위치 권한 요청 없음' : 'EXIF 포함이 켜져 있어야 적용됩니다'),
             value: _includeGpsExif,
             onChanged: _includeExif ? (v) => setState(() => _includeGpsExif = v) : null,
           ),
@@ -297,23 +380,33 @@ class _ScanScreenState extends State<ScanScreen> {
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.red.shade200),
+        color: _Asana.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _Asana.error.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '스캔 오류',
-            style: TextStyle(fontWeight: FontWeight.w700, color: Colors.red.shade900),
+          Row(
+            children: [
+              const Icon(Icons.error_outline, size: 18, color: _Asana.error),
+              const SizedBox(width: 6),
+              Text(
+                '스캔 오류',
+                style: TextStyle(fontWeight: FontWeight.w700, color: _Asana.error),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             error.code,
-            style: TextStyle(fontFamily: 'monospace', color: Colors.red.shade700),
+            style: const TextStyle(fontFamily: 'monospace', color: _Asana.inkMuted),
           ),
-          if (error.message.isNotEmpty) Text(error.message, style: TextStyle(color: Colors.red.shade700)),
+          if (error.message.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(error.message, style: const TextStyle(color: _Asana.inkMuted)),
+            ),
         ],
       ),
     );
@@ -331,35 +424,14 @@ class ResultScreen extends StatelessWidget {
   /// The source path the scan used, for the section description.
   final ScanSource source;
 
-  String get _statusSummary => switch (result.status) {
-    ScanStatus.success => '✅ 스캔 성공 — ${result.images.length}페이지',
-    ScanStatus.rejected => '⚠️ OCR 기준 미달 — ${result.rejectedImages.length}페이지 거부됨',
-    ScanStatus.cancelled => '⚪ 스캔 취소됨',
-  };
-
   @override
   Widget build(BuildContext context) {
-    final warn = result.status != ScanStatus.success;
     return Scaffold(
       appBar: AppBar(title: const Text('스캔 결과')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: warn ? Colors.orange.shade100 : Colors.green.shade100,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              _statusSummary,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: warn ? Colors.orange.shade900 : Colors.green.shade900,
-              ),
-            ),
-          ),
+          _StatusBanner(result),
           if (result.images.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(
@@ -391,6 +463,48 @@ class ResultScreen extends StatelessWidget {
 
 // ── Reusable pieces ──────────────────────────────────────────────────────────
 
+class _StatusBanner extends StatelessWidget {
+  const _StatusBanner(this.result);
+
+  final ScanReceiptResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, fg, bg, text) = switch (result.status) {
+      ScanStatus.success => (
+        Icons.check_circle,
+        _Asana.success,
+        _Asana.success.withValues(alpha: 0.12),
+        '스캔 성공 · ${result.images.length}페이지',
+      ),
+      ScanStatus.rejected => (
+        Icons.error_outline,
+        _Asana.warningInk,
+        _Asana.warning.withValues(alpha: 0.2),
+        'OCR 기준 미달 · ${result.rejectedImages.length}페이지 거부됨',
+      ),
+      ScanStatus.cancelled => (Icons.remove_circle_outline, _Asana.inkMuted, _Asana.surface2, '스캔 취소됨'),
+    };
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: fg),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontWeight: FontWeight.w600, color: fg),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Section extends StatelessWidget {
   const _Section({required this.title, required this.child, this.subtitle});
 
@@ -406,14 +520,16 @@ class _Section extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: _Asana.ink),
+          ),
           if (subtitle != null)
             Padding(
               padding: const EdgeInsets.only(top: 2, bottom: 8),
-              child: Text(subtitle!, style: theme.textTheme.bodySmall),
+              child: Text(subtitle!, style: theme.textTheme.bodySmall?.copyWith(color: _Asana.inkMuted)),
             ),
           Card(
-            margin: EdgeInsets.zero,
             child: Padding(padding: const EdgeInsets.all(8), child: child),
           ),
         ],
@@ -430,12 +546,18 @@ class _InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: _Asana.coralSoft, borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.crop_free, size: 18, color: _Asana.coralHover),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 13, color: _Asana.ink)),
+          ),
+        ],
       ),
-      child: Text(text, style: Theme.of(context).textTheme.bodySmall),
     );
   }
 }
@@ -508,17 +630,14 @@ class _ChipRow<T> extends StatelessWidget {
           Row(
             children: [
               Flexible(
-                child: Text(label, style: TextStyle(color: disabled ? theme.disabledColor : null)),
+                child: Text(label, style: TextStyle(color: disabled ? theme.disabledColor : _Asana.ink)),
               ),
               if (badge != null) ...[
                 const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(badge!, style: theme.textTheme.labelSmall),
+                  decoration: BoxDecoration(color: _Asana.surface3, borderRadius: BorderRadius.circular(6)),
+                  child: Text(badge!, style: const TextStyle(fontSize: 11, color: _Asana.inkMuted)),
                 ),
               ],
             ],
@@ -526,7 +645,7 @@ class _ChipRow<T> extends StatelessWidget {
           if (hint != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text(hint!, style: theme.textTheme.bodySmall),
+              child: Text(hint!, style: theme.textTheme.bodySmall?.copyWith(color: _Asana.inkMuted)),
             ),
           const SizedBox(height: 6),
           Wrap(
@@ -557,9 +676,11 @@ class _DetailTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ExpansionTile(
-      title: Text(title, style: theme.textTheme.labelLarge),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600, color: _Asana.ink),
+      ),
       initiallyExpanded: initiallyExpanded,
       // Empty borders remove ExpansionTile's default top/bottom divider lines.
       shape: const Border(),
@@ -570,10 +691,7 @@ class _DetailTile extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(10),
-          ),
+          decoration: BoxDecoration(color: _Asana.surface2, borderRadius: BorderRadius.circular(10)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
         ),
       ],
@@ -607,19 +725,31 @@ class _ImageCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('페이지 ${index + 1}', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              '페이지 ${index + 1}',
+              style: const TextStyle(fontWeight: FontWeight.w600, color: _Asana.ink),
+            ),
             const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.file(
                 File(Uri.parse(image.uri).toFilePath()),
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) =>
-                    const SizedBox(height: 120, child: Center(child: Text('(미리보기를 불러올 수 없습니다)'))),
+                errorBuilder: (context, error, stackTrace) => const SizedBox(
+                  height: 120,
+                  child: Center(
+                    child: Text('(미리보기를 불러올 수 없습니다)', style: TextStyle(color: _Asana.inkMuted)),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
-            Row(children: [const Text('이미지 출처  '), _OriginChip(image.imageOrigin)]),
+            Row(
+              children: [
+                const Text('이미지 출처  ', style: TextStyle(color: _Asana.inkMuted)),
+                _OriginChip(image.imageOrigin),
+              ],
+            ),
             _DetailTile(
               title: '파일 정보',
               children: [
@@ -638,7 +768,7 @@ class _ImageCard extends StatelessWidget {
                   _MetaRow('줄 수', '${quality.lineCount}'),
                   _MetaRow(
                     '신뢰도',
-                    quality.confidence == null ? '—' : '${(quality.confidence! * 100).toStringAsFixed(1)}%',
+                    quality.confidence == null ? '측정 안 됨' : '${(quality.confidence! * 100).toStringAsFixed(1)}%',
                   ),
                 ],
               ),
@@ -653,13 +783,16 @@ class _ImageCard extends StatelessWidget {
                         onPressed: ocrText.isEmpty ? null : () => _copyOcr(context, ocrText),
                         icon: const Icon(Icons.copy, size: 16),
                         label: const Text('복사'),
-                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        style: TextButton.styleFrom(
+                          foregroundColor: _Asana.coralHover,
+                          visualDensity: VisualDensity.compact,
+                        ),
                       ),
                     ],
                   ),
                   SelectableText(
                     ocrText.isEmpty ? '(인식된 텍스트 없음)' : ocrText,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: _Asana.ink),
                   ),
                 ],
               ),
@@ -695,14 +828,17 @@ class _ExifPart extends StatelessWidget {
         if (rows.isEmpty)
           Text(
             origin == ImageOrigin.camera ? '스캐너가 원본 EXIF를 내보내지 않아 기기 정보만 합성됩니다' : '추가 EXIF 필드 없음',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: const TextStyle(fontSize: 12, color: _Asana.inkMuted),
           )
         else
           ...rows,
         if (raw != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: SelectableText('$raw', style: const TextStyle(fontFamily: 'monospace', fontSize: 11)),
+            child: SelectableText(
+              '$raw',
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: _Asana.inkMuted),
+            ),
           ),
       ],
     );
@@ -716,16 +852,19 @@ class _OriginChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (origin) {
-      ImageOrigin.camera => ('카메라', Colors.green),
-      ImageOrigin.screenshot => ('스크린샷', Colors.blue),
-      ImageOrigin.download => ('다운로드', Colors.orange),
-      ImageOrigin.unknown => ('알 수 없음', Colors.grey),
+    final (label, fg, bg) = switch (origin) {
+      ImageOrigin.camera => ('카메라', _Asana.green, _Asana.greenSoft),
+      ImageOrigin.screenshot => ('스크린샷', _Asana.blue, _Asana.blueSoft),
+      ImageOrigin.download => ('다운로드', _Asana.amber, _Asana.amberSoft),
+      ImageOrigin.unknown => ('알 수 없음', _Asana.inkMuted, _Asana.surface3),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-      child: Text(label, style: TextStyle(color: color.shade800, fontSize: 12)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      child: Text(
+        label,
+        style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w500),
+      ),
     );
   }
 }
@@ -743,8 +882,13 @@ class _MetaRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 80, child: Text(label, style: Theme.of(context).textTheme.bodySmall)),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
+          SizedBox(
+            width: 80,
+            child: Text(label, style: const TextStyle(fontSize: 12, color: _Asana.inkMuted)),
+          ),
+          Expanded(
+            child: Text(value, style: const TextStyle(fontSize: 13, color: _Asana.ink)),
+          ),
         ],
       ),
     );
