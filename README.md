@@ -26,7 +26,7 @@ Both platforms implement the full path end-to-end: camera (document scanner) and
 ```dart
 import 'package:flutter_receipt_scanner/flutter_receipt_scanner.dart';
 
-final result = await scan(const ScanReceiptOptions(maxPages: 1));
+final result = await scan(options: const ScanReceiptOptions(maxPages: 1));
 switch (result.status) {
   case ScanStatus.success:
     for (final image in result.images) {
