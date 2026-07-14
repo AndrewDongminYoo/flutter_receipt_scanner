@@ -20,7 +20,9 @@ void main() {
     expect(q.confidence, 0.9);
   });
 
-  test('gate disabled when ocr is false: everything passes, no rejects', () {
+  test('ocr:false alone bypasses the gate even with an active floor', () {
+    // Image is below the active floor (1 char < 12, 1 line < 2); it must still
+    // pass because ocr is off — isolates the `!ocr` arm of the disjunction.
     final native = ScanReceiptResult(
       status: ScanStatus.success,
       images: [_img('x')],
@@ -28,6 +30,23 @@ void main() {
     final r = applyOcrFloor(
       native,
       ocr: false,
+      floor: const OcrFloorOrDisabled.floor(kDefaultOcrFloor),
+    );
+    expect(r.status, ScanStatus.success);
+    expect(r.images.length, 1);
+    expect(r.rejectedImages, isEmpty);
+  });
+
+  test('disabled floor alone bypasses the gate even when ocr is true', () {
+    // Same below-floor image, but with ocr on and the floor disabled — isolates
+    // the `floor.isDisabled` arm of the disjunction.
+    final native = ScanReceiptResult(
+      status: ScanStatus.success,
+      images: [_img('x')],
+    );
+    final r = applyOcrFloor(
+      native,
+      ocr: true,
       floor: const OcrFloorOrDisabled.disabled(),
     );
     expect(r.status, ScanStatus.success);
