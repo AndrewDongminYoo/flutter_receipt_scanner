@@ -66,6 +66,7 @@ class ReceiptScannerExampleApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: scheme,
+        fontFamily: 'Inter',
         scaffoldBackgroundColor: _Asana.canvas,
         appBarTheme: const AppBarTheme(
           backgroundColor: _Asana.canvas,
