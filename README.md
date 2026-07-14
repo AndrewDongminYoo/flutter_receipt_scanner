@@ -7,18 +7,19 @@ The native layers own **image primitives only** — receipt domain parsing (stor
 
 ## Status
 
-Walking-skeleton milestone.
-Only the iOS `source: "camera"` path is implemented end-to-end (VisionKit document scanner → JPEG → Vision OCR → typed result → Dart OCR-floor gate).
-Every other path (Android, iOS gallery + crop editor, `autoRotate` pixel rotation) currently returns an `unimplemented` error.
+Both platforms implement the full path end-to-end: camera (document scanner) and gallery + crop editor, with orientation normalization, `autoRotate` pixel rotation, JPEG compression, EXIF extraction, on-device OCR, and the Dart OCR-floor gate.
+
+- iOS: VisionKit document scanner + PHPicker → Vision OCR.
+- Android: GMS document scanner + system photo picker → ML Kit OCR.
 
 ## Packages
 
-| Package | Responsibility |
-| --- | --- |
-| `flutter_receipt_scanner` | App-facing API: `scan()` and the Dart-side OCR-floor acceptance gate. |
+| Package                                      | Responsibility                                                          |
+| -------------------------------------------- | ----------------------------------------------------------------------- |
+| `flutter_receipt_scanner`                    | App-facing API: `scan()` and the Dart-side OCR-floor acceptance gate.   |
 | `flutter_receipt_scanner_platform_interface` | Abstract platform interface plus the Pigeon-generated message contract. |
-| `flutter_receipt_scanner_ios` | iOS (VisionKit + Vision) implementation. |
-| `flutter_receipt_scanner_android` | Android implementation (skeleton stub). |
+| `flutter_receipt_scanner_ios`                | iOS (VisionKit + Vision) implementation.                                |
+| `flutter_receipt_scanner_android`            | Android (GMS document scanner + ML Kit) implementation.                 |
 
 ## Usage
 
@@ -42,16 +43,18 @@ The output `file://` JPEG URIs are stable until the next `scan()` call and do no
 
 ## Host app permissions
 
-- iOS `Info.plist`: `NSCameraUsageDescription` (camera scan). `NSPhotoLibraryUsageDescription` once the gallery path lands.
-- Android: none for the skeleton milestone.
+- iOS `Info.plist`: `NSCameraUsageDescription` (camera scan) and `NSPhotoLibraryUsageDescription` (gallery scan).
+- Android: none — the GMS document scanner and the system photo picker run out-of-process and require no app-declared permission.
 
 ## Development
 
 ```bash
-dart run pigeon --input pigeons/messages.dart   # regenerate the wire contract
-melos run analyze                                # analyze all packages
-melos run test --no-select                       # test all packages
+melos run generate   # regenerate the Pigeon wire contract in every platform package
+melos run analyze    # analyze all packages
+melos run test       # test all packages
 ```
+
+The Pigeon schema lives per platform package (`flutter_receipt_scanner_ios/pigeons/messages.dart` and `flutter_receipt_scanner_android/pigeons/messages.dart`), kept identical except for the Swift/Kotlin output config. `melos run generate` runs Pigeon in each; to regenerate one package, run `dart run pigeon --input pigeons/messages.dart` from inside that package.
 
 Dart is formatted at 120 columns (`dart format --line-length 120`) and linted with `very_good_analysis`.
 Kotlin, Swift, YAML, and Markdown are owned by trunk; Dart is intentionally left to `flutter`/`melos`.
