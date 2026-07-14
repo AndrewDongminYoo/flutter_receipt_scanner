@@ -26,3 +26,7 @@ jobs:
       flutter_version: 3.44.6
       format_line_length: 120
       working_directory: flutter_receipt_scanner_platform_interface
+      # Pigeon-generated wire code is a single source of truth regenerated from
+      # pigeons/messages.dart; exclude it from the 100% coverage gate rather than
+      # hand-testing (or hand-editing) generated output.
+      coverage_excludes: "**/*.g.dart"
