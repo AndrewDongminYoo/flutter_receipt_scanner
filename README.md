@@ -61,4 +61,4 @@ Kotlin, Swift, YAML, and Markdown are owned by trunk; Dart is intentionally left
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+BSD 3-Clause — see [LICENSE](LICENSE).

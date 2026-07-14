@@ -1358,7 +1358,7 @@ git commit -m "feat(android): add skeleton stub returning unimplemented"
 - Modify: `packages/flutter_receipt_scanner/example/lib/main.dart`
 - Modify: `packages/flutter_receipt_scanner/example/ios/Runner/Info.plist` (camera usage string)
 - Create: `README.md` (root — usage + scope note)
-- Create: `LICENSE` (MIT, matching the RN package license holder)
+- Create: `LICENSE` (BSD 3-Clause)
 
 **Interfaces:**
 
@@ -1466,7 +1466,7 @@ Expected: Swift compiles (validates Task 5 symbol reconciliation). Then run on a
 
 - [ ] **Step 6: Write root `README.md`** (usage + ADR-003 scope note + host-permission note: iOS `NSCameraUsageDescription`).
 
-- [ ] **Step 7: Add `LICENSE`** (MIT, holder "Dongmin Yu").
+- [ ] **Step 7: Add `LICENSE`** (BSD 3-Clause, holder "Dongmin Yu").
 
 - [ ] **Step 8: Commit**
 
