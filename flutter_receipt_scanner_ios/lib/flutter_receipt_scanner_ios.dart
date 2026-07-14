@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
-import 'package:flutter_receipt_scanner_ios/src/messages.g.dart';
 import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scanner_platform_interface.dart';
 
 /// The iOS implementation of [FlutterReceiptScannerPlatform].

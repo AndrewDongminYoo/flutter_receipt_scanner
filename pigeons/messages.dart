@@ -1,11 +1,18 @@
 import 'package:pigeon/pigeon.dart';
 
+// ignore_for_file: not_initialized_non_nullable_instance_field
+// Single source of truth for the host<->native wire contract. Emits the Dart
+// client into the platform-interface package (shared by both platform packages)
+// and the Swift/Kotlin hosts into their respective native packages. Run from the
+// repo root via `melos run generate`.
 @ConfigurePigeon(
   PigeonOptions(
-    dartOut: 'lib/src/messages.g.dart',
+    dartOut: 'flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart',
     dartPackageName: 'flutter_receipt_scanner',
-    swiftOut: 'ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
+    swiftOut: 'flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
     swiftOptions: SwiftOptions(),
+    kotlinOut: 'flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
+    kotlinOptions: KotlinOptions(package: 'com.example.flutter_receipt_scanner_android'),
   ),
 )
 enum ScanSourceWire { camera, gallery }

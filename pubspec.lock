@@ -364,7 +364,7 @@ packages:
     source: hosted
     version: "7.0.2"
   pigeon:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: pigeon
       sha256: a8b124eda229d9b0a07ecff9710c6aa7f3cd65595b982c28e41f4e8f88ffc09a

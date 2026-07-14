@@ -1,5 +1,4 @@
 import 'package:flutter_receipt_scanner_ios/flutter_receipt_scanner_ios.dart';
-import 'package:flutter_receipt_scanner_ios/src/messages.g.dart';
 import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scanner_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 
