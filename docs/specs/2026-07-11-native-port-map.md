@@ -233,11 +233,13 @@ Both output pixels are orientation-normalized and both report `exif.orientation 
 
 ---
 
-## 6. autoRotate (OCR-confidence / geometry-based rotation)
+## 6. autoRotate (text-angle rotation + line geometry)
 
-Two **deliberately different** algorithms — do not unify. `autoRotate` only bakes pixels when `ocr==true` and a non-zero rotation was detected; when `autoRotate==false`, detection still corrects the OCR _text_ (180° reads) but pixels are not rotated.
+**[UPDATED 2026-07-25 — synced to RN `react-native-receipt-scanner` v0.7.0]** The two per-platform heuristics below are **no longer the primary signal**. Both platforms now decide rotation primarily from the **per-line text angle** (`OcrGeometry.dominantQuarterTurn` — ML Kit `Text.Line.getAngle` on Android, the Vision observation quad `topLeft`→`topRight` on iOS), because the angle carries _direction_ and so separates 90 from 270 and catches a plain 180 flip — cases neither the count nor the aspect heuristic can reach. §6.1 (iOS count) and §6.2 (Android aspect) are retained as the **fallback** used only when the angle sample is too small or too split to judge. The old "two deliberately different algorithms — do not unify / do not port iOS's multi-pass to Android" guidance is **superseded**: the unified signal _is_ the angle; the per-platform code that survives is only the fallback. This sync also added per-line OCR **geometry** (`ocrGeometry` option → `ReceiptImage.ocrLines`): after a rotation is baked, the image is re-recognized so the text order and boxes belong to the shipped frame; boxes that can't be re-measured are remapped with `OcrGeometry.rotateClockwise` + `clamp`. See the shared `OcrGeometry` on both platforms.
 
-### 6.1 iOS multi-pass count-based (`recognizeAndDetectRotationInImage:`)
+`autoRotate` only bakes pixels when `ocr==true` and a non-zero rotation was detected; when `autoRotate==false`, detection still corrects the OCR _text_ (180° reads) but pixels are not rotated.
+
+### 6.1 iOS multi-pass count-based — now the fallback (`OcrProcessor.recognize`)
 
 **[DOC DRIFT — `ocr-orientation-correction.md` v2.0]** describes a confidence-Q formula (`Q0=mean(conf)×clamp(count/10)`, thresholds 0.80 / ×1.15). **The code does NOT use confidence for routing** — it uses **non-empty observation counts**. Implement the code:
 
@@ -251,7 +253,7 @@ Two **deliberately different** algorithms — do not unify. `autoRotate` only ba
 
 - Rotation helper `rotate:byDegrees:` is **CCW** (90→`M_PI_2`, 270→`-M_PI_2`); `cgImageByRotating:` (pixel bake) uses the **same CCW convention** → internally consistent.
 
-### 6.2 Android single-pass aspect-mismatch (`recognizeWithRotationDetection`, spec v1.3)
+### 6.2 Android single-pass aspect-mismatch — now the fallback (`recognizeWithRotationDetection`)
 
 Relies on ML Kit Korean being **rotation-invariant** (field-validated 16.0.0; multi-pass probes returned identical results, so probing is useless). Single Pass 0:
 
@@ -314,13 +316,13 @@ Priority: `earlyOrigin` (PHAsset) → extracted EXIF → raw source props → `u
 ## 9. Top porting risks (priority order)
 
 1. **rotationDegrees CW/CCW is opposite per platform** (iOS `cgImageByRotating:90`=CCW; Android `postRotate(90)`=CW). Each is internally self-consistent because detection + pixel-rotation share a convention _within_ the platform. Keep rotation **native-internal, per-platform**; never introduce a shared Dart rotation type or normalize the value — doing so silently breaks one platform. It is never on the Pigeon surface.
-2. **Two different OCR-rotation algorithms that must stay different.** Android's single-pass `lineAspect`-vs-`imageAspect` mismatch depends on `text-recognition-korean` being rotation-invariant (validated 16.0.0, pinned 16.0.1, manual regression gate). If the Flutter Android plugin pulls a different ML Kit version the assumption breaks with no automated signal. Do not port iOS's multi-pass to Android; pin the ML Kit version and keep the guard.
+2. **Rotation now shares a text-angle primary signal (see §6 UPDATED 2026-07-25).** Both platforms decide rotation from `OcrGeometry.dominantQuarterTurn`; the iOS count-probe and Android aspect-mismatch survive only as the fallback. The old "keep the two algorithms different / do not port iOS's multi-pass to Android" rule is superseded. The ML Kit version pin (`text-recognition-korean` 16.0.1) still matters — the fallback's rotation-invariance assumption and the per-line confidence field both depend on it — so keep the pin and the guard.
 3. **Async result must survive the VC/Activity round-trip.** RN used retained delegates (iOS) and `pendingPromise` + `ActivityEventListener` (Android). The Flutter port must: iOS — hold strong refs to the camera/gallery/crop delegate objects on the plugin impl until the completion fires (skeleton already retains `apiImpl` but not per-flow delegates); Android — make the plugin `ActivityAware` + register a `PluginRegistry.ActivityResultListener`, holding the Pigeon `callback` across **both** the GMS scanner and `CropEditorActivity` results. This is the classic Flutter-plugin failure point and the biggest delta from the current stub (Android `scan()` is entirely unimplemented and not ActivityAware).
 4. **ADR-004 iOS crop-editor fixes must port verbatim** (they fail only on real devices, not the simulator): `UIButton` not `UIBarButtonItem`; button bar `view.bottomAnchor -34` not `safeAreaLayoutGuide`; handles added before the button bar for hit-test z-order; `VNImageRequestHandler(cgImage:orientation:)` not `initWithCIImage:`; bake orientation (`imageByApplyingOrientation:`) before `CIPerspectiveCorrection`; fresh `CIContext` per call.
 5. **autoRotate pipeline order differs and is load-bearing.** iOS OCRs the CGImage _before_ encoding and bakes rotation into pixels; Android OCRs the _encoded file_ after, then `rotateFileInPlace`, and **`writeExifToFile` must run last** (a later re-compress strips the tags). Also the iOS gallery batch **must serialize** editor presentations (`queuedItems`/`processNextQueuedItem`) — a parallel `present` for-loop makes UIKit silently drop all but the first and the Promise/completion hangs forever.
 
 ## 10. Doc-drift summary (implement code, not these docs)
 
-- iOS OCR routing is **count-based**, not the confidence-Q formula in `ocr-orientation-correction.md` v2.0.
+- iOS OCR routing is **text-angle-primary with a count-based fallback** (see §6 UPDATED 2026-07-25), not the confidence-Q formula in `ocr-orientation-correction.md` v2.0.
 - Android OCR **confidence is populated** (bundled recognizer), contradicting platform-asymmetries §2.2.
 - Android **does write output-file EXIF** (`writeExifToFile`), contradicting platform-asymmetries §1.1 / ADR-006 D11 "deferred" — but only a subset of tags.
