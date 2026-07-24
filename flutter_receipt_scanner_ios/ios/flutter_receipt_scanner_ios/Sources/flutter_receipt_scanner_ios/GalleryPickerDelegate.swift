@@ -24,7 +24,6 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
 
     private let options: ScanOptionsWire
     private weak var presentingVC: UIViewController?
-    private let hasLibraryAccess: Bool
     private let completion: (Result<ScanResultWire, Error>) -> Void
 
     private var results: [ReceiptImageWire] = []
@@ -34,12 +33,10 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
     init(
         options: ScanOptionsWire,
         presentingViewController: UIViewController,
-        hasLibraryAccess: Bool,
         completion: @escaping (Result<ScanResultWire, Error>) -> Void
     ) {
         self.options = options
         presentingVC = presentingViewController
-        self.hasLibraryAccess = hasLibraryAccess
         self.completion = completion
     }
 
@@ -81,6 +78,10 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
         Float(options.minimumTextHeight ?? 0)
     }
 
+    private var ocrGeometry: Bool {
+        options.ocrGeometry ?? false
+    }
+
     // MARK: - PHPickerViewControllerDelegate
 
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
@@ -115,9 +116,6 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
         let item = queuedItems[queueIndex]
         queueIndex += 1
 
-        // PHAsset fetch is synchronous for local identifiers — safe on main.
-        let earlyOrigin = OriginClassifier.earlyOrigin(for: item, hasLibraryAccess: hasLibraryAccess)
-
         item.itemProvider.loadDataRepresentation(
             forTypeIdentifier: UTType.image.identifier
         ) { data, error in
@@ -132,7 +130,9 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
                 self.didFinishOneItem(nil)
                 return
             }
-            self.detectAndCrop(image: image, source: source, earlyOrigin: earlyOrigin)
+            // PHPicker runs without library access, so PHAsset origin lookup is
+            // unavailable — origin is classified from EXIF further down the pipeline.
+            self.detectAndCrop(image: image, source: source, earlyOrigin: nil)
         }
     }
 
@@ -194,6 +194,7 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
         var ocrText: String?
         var confidence: Double?
         var rotationDegrees = 0
+        var ocrOutcome: OcrOutcome?
         if runOcr {
             let outcome = OcrProcessor.recognize(
                 cropped, minimumTextHeight: minimumTextHeight, autoRotate: autoRotate
@@ -201,6 +202,7 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
             ocrText = outcome.text
             confidence = outcome.confidence
             rotationDegrees = outcome.rotationDegrees
+            ocrOutcome = outcome
         }
 
         var encodeCG = cropped
@@ -231,6 +233,12 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
             ?? .unknown
 
         let hasText = !(ocrText?.isEmpty ?? true)
+        // `encodeCG` is the output frame; the outcome's boxes already sit in it.
+        let ocrLines = ocrOutcome.flatMap {
+            OcrProcessor.ocrLinesWire(
+                $0, outputSize: CGSize(width: encodeCG.width, height: encodeCG.height), enabled: ocrGeometry
+            )
+        }
         let result = ReceiptImageWire(
             uri: encoded.url.absoluteString,
             width: Int64(encodeCG.width),
@@ -243,7 +251,8 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
             ocrQuality: hasText
                 ? OcrQualityWire(textLength: nil, lineCount: nil, confidence: confidence)
                 : nil,
-            exif: exif?.wire
+            exif: exif?.wire,
+            ocrLines: ocrLines
         )
         didFinishOneItem(result)
     }

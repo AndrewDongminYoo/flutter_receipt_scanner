@@ -45,6 +45,7 @@ class ScanOptionsWire {
     this.autoRotate,
     this.includeRawExif,
     this.minimumTextHeight,
+    this.ocrGeometry,
   });
 
   ScanSourceWire? source;
@@ -67,6 +68,8 @@ class ScanOptionsWire {
 
   double? minimumTextHeight;
 
+  bool? ocrGeometry;
+
   Object encode() {
     return <Object?>[
       source,
@@ -79,6 +82,7 @@ class ScanOptionsWire {
       autoRotate,
       includeRawExif,
       minimumTextHeight,
+      ocrGeometry,
     ];
   }
 
@@ -95,6 +99,7 @@ class ScanOptionsWire {
       autoRotate: result[7] as bool?,
       includeRawExif: result[8] as bool?,
       minimumTextHeight: result[9] as double?,
+      ocrGeometry: result[10] as bool?,
     );
   }
 }
@@ -297,6 +302,53 @@ class OcrQualityWire {
   }
 }
 
+/// One recognized text line's box, in top-left-origin pixels of the output image.
+class OcrLineWire {
+  OcrLineWire({
+    required this.text,
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    this.confidence,
+  });
+
+  String text;
+
+  int x;
+
+  int y;
+
+  int width;
+
+  int height;
+
+  double? confidence;
+
+  Object encode() {
+    return <Object?>[
+      text,
+      x,
+      y,
+      width,
+      height,
+      confidence,
+    ];
+  }
+
+  static OcrLineWire decode(Object result) {
+    result as List<Object?>;
+    return OcrLineWire(
+      text: result[0]! as String,
+      x: result[1]! as int,
+      y: result[2]! as int,
+      width: result[3]! as int,
+      height: result[4]! as int,
+      confidence: result[5] as double?,
+    );
+  }
+}
+
 class ReceiptImageWire {
   ReceiptImageWire({
     required this.uri,
@@ -309,6 +361,7 @@ class ReceiptImageWire {
     this.ocrText,
     this.ocrQuality,
     this.exif,
+    this.ocrLines,
   });
 
   String uri;
@@ -331,6 +384,8 @@ class ReceiptImageWire {
 
   ReceiptExifWire? exif;
 
+  List<OcrLineWire>? ocrLines;
+
   Object encode() {
     return <Object?>[
       uri,
@@ -343,6 +398,7 @@ class ReceiptImageWire {
       ocrText,
       ocrQuality,
       exif,
+      ocrLines,
     ];
   }
 
@@ -359,6 +415,7 @@ class ReceiptImageWire {
       ocrText: result[7] as String?,
       ocrQuality: result[8] as OcrQualityWire?,
       exif: result[9] as ReceiptExifWire?,
+      ocrLines: (result[10] as List<Object?>?)?.cast<OcrLineWire>(),
     );
   }
 }
@@ -422,11 +479,14 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is OcrQualityWire) {
       buffer.putUint8(135);
       writeValue(buffer, value.encode());
-    } else if (value is ReceiptImageWire) {
+    } else if (value is OcrLineWire) {
       buffer.putUint8(136);
       writeValue(buffer, value.encode());
-    } else if (value is ScanResultWire) {
+    } else if (value is ReceiptImageWire) {
       buffer.putUint8(137);
+      writeValue(buffer, value.encode());
+    } else if (value is ScanResultWire) {
+      buffer.putUint8(138);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -454,8 +514,10 @@ class _PigeonCodec extends StandardMessageCodec {
       case 135:
         return OcrQualityWire.decode(readValue(buffer)!);
       case 136:
-        return ReceiptImageWire.decode(readValue(buffer)!);
+        return OcrLineWire.decode(readValue(buffer)!);
       case 137:
+        return ReceiptImageWire.decode(readValue(buffer)!);
+      case 138:
         return ScanResultWire.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);

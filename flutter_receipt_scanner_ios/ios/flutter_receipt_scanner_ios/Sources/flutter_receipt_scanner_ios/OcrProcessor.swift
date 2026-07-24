@@ -6,17 +6,29 @@ import Vision
 struct OcrOutcome {
     let text: String?
     let confidence: Double?
-    /// Detected upright rotation, in degrees, using the iOS CCW convention
-    /// (see the native port map §6.1 / §6.3). 0 when no rotation is warranted.
+    /// Detected upright rotation, in degrees, using the iOS CCW convention (see
+    /// the native port map §6). 0 when no rotation is warranted. The caller bakes
+    /// it into the output pixels via `ImageProcessor.rotated(_:byDegreesCCW:)`.
     let rotationDegrees: Int
+    /// Number of recognized lines in the chosen pass.
+    let lineCount: Int
+    /// Per-line geometry in top-left pixels of `passSize` — the frame the chosen
+    /// pass ran on, i.e. the *rotated* frame whenever `rotationDegrees` is
+    /// non-zero, so it already matches the image the caller ships.
+    let lines: [OcrLineBox]
+    /// Pixel size of the frame `lines` sit in.
+    let passSize: CGSize
 }
 
-/// Korean/English on-device OCR with orientation detection.
+/// Korean/English on-device OCR with text-angle rotation detection.
 ///
-/// Faithful port of the RN `RNOcrProcessor` behavior: `usesLanguageCorrection`
-/// is off (receipt prices/codes are not dictionary words), `minimumTextHeight`
-/// is honored (iOS-only), and rotation is chosen by a count-based multi-pass
-/// heuristic — NOT the confidence formula in the (drifted) design doc.
+/// Faithful port of the RN `RNOcrProcessor` (v2.0): the primary rotation signal
+/// is the text angle read off each Vision observation's quad, which carries
+/// direction and so separates 90 from 270 and catches a plain 180 flip. The
+/// older count-based multi-pass probe stays as the fallback. When a rotation is
+/// chosen the image is actually rotated and re-recognized, so `lines` and the
+/// text order belong to the frame that ships. `usesLanguageCorrection` is off
+/// (receipt prices/codes are not dictionary words).
 enum OcrProcessor {
     /// Default minimum text height as a fraction of image height (1/32).
     static let defaultMinTextHeight: Float = 1.0 / 32.0
@@ -26,67 +38,105 @@ enum OcrProcessor {
     private static let rotateCommitRatio = 1.3
 
     /// Recognizes text and, when `autoRotate` is on, detects the upright rotation.
-    ///
-    /// When `autoRotate` is false the text is still recognized (and 180° reads are
-    /// corrected implicitly by the recognizer) but `rotationDegrees` is 0.
     static func recognize(
         _ cg: CGImage,
         minimumTextHeight: Float,
         autoRotate: Bool
     ) -> OcrOutcome {
         let effectiveHeight = minimumTextHeight > 0 ? minimumTextHeight : defaultMinTextHeight
+        let size0 = CGSize(width: cg.width, height: cg.height)
+        let pass0 = recognizeText(cg, orientation: 0, level: .accurate, minHeight: effectiveHeight, pixelSize: size0)
 
-        let pass0 = recognizeText(cg, orientation: 0, level: .accurate, minHeight: effectiveHeight)
-        guard autoRotate, pass0.count >= minLinesToJudgeOrientation else {
-            return OcrOutcome(text: pass0.text, confidence: pass0.confidence, rotationDegrees: 0)
-        }
+        // Skeleton: "0° accepted". Every early return ships pass0's upright boxes.
+        let upright = OcrOutcome(
+            text: pass0.text, confidence: pass0.confidence, rotationDegrees: 0,
+            lineCount: pass0.count, lines: pass0.lines, passSize: size0
+        )
+        guard autoRotate, pass0.count >= minLinesToJudgeOrientation else { return upright }
 
-        let aspect = Double(cg.width) / Double(max(cg.height, 1))
-        let isLandscape = aspect > 1
-        // Fast paths: a clearly-upright page needs no probing.
-        if !isLandscape, pass0.count >= uprightLineCount {
-            return OcrOutcome(text: pass0.text, confidence: pass0.confidence, rotationDegrees: 0)
-        }
-        if isLandscape, pass0.count >= uprightLineCount, aspect <= 1.5 {
-            return OcrOutcome(text: pass0.text, confidence: pass0.confidence, rotationDegrees: 0)
-        }
-
-        let probes = isLandscape ? [90, 180, 270] : [180]
-        var bestDegrees = 0
-        var bestCount = pass0.count
-        var bestProbeText: String?
-        for degrees in probes {
-            let probe = recognizeText(cg, orientation: degrees, level: .fast, minHeight: effectiveHeight)
-            if probe.count > bestCount {
-                bestCount = probe.count
-                bestDegrees = degrees
-                bestProbeText = probe.text
+        // Primary signal: the angle of the text itself. Read off the observation
+        // quad, it carries direction the line *count* cannot — which is precisely
+        // why a 180°-flipped receipt (plenty of lines, every one upside down) was
+        // never detected. Runs ahead of the count fast paths for that reason.
+        let textAngle = OcrGeometry.dominantQuarterTurn(fromAngles: pass0.angles)
+        if textAngle != OcrGeometry.quarterTurnUnknown {
+            let correction = OcrGeometry.correctionForTextAngle(textAngle)
+            // Only act on a quarter turn, never a confirmed 0: the probe loop is
+            // still live on iOS versions where Vision is not rotation-robust, so
+            // letting a 0 short-circuit it would regress them if the angle turns
+            // out to be reported in Vision's own reading frame.
+            if correction != 0 {
+                // `correction` is clockwise (canonical); rotate the pixels the
+                // complementary CCW amount and re-recognize on that frame.
+                if let rotated = measureRotated(cg, ccwDegrees: (360 - correction) % 360, minHeight: effectiveHeight) {
+                    return rotated
+                }
+                // The rotated re-read failed — ship the upright result rather than
+                // a rotation whose boxes we cannot place.
+                return upright
             }
         }
 
+        // Fast paths: a clearly-upright page needs no probing.
+        let aspect = Double(cg.width) / Double(max(cg.height, 1))
+        let isLandscape = aspect > 1
+        if !isLandscape, pass0.count >= uprightLineCount { return upright }
+        if isLandscape, pass0.count >= uprightLineCount, aspect <= 1.5 { return upright }
+
+        // Fallback: count-based multi-pass probe.
+        let probes = isLandscape ? [90, 180, 270] : [180]
+        var bestDegrees = 0
+        var bestCount = pass0.count
+        for degrees in probes {
+            let probe = recognizeText(
+                cg, orientation: degrees, level: .fast, minHeight: effectiveHeight, pixelSize: size0
+            )
+            if probe.count > bestCount {
+                bestCount = probe.count
+                bestDegrees = degrees
+            }
+        }
         // Bias against rotating: a false rotation is worse than a missed one.
         guard bestDegrees != 0, Double(bestCount) >= Double(pass0.count) * rotateCommitRatio else {
-            return OcrOutcome(text: pass0.text, confidence: pass0.confidence, rotationDegrees: 0)
+            return upright
         }
+        if let rotated = measureRotated(cg, ccwDegrees: bestDegrees, minHeight: effectiveHeight) {
+            return rotated
+        }
+        return upright
+    }
 
-        let finalPass = recognizeText(cg, orientation: bestDegrees, level: .accurate, minHeight: effectiveHeight)
-        // On final-pass failure fall back to the winning probe's text (matches the
-        // committed rotation), not the 0° pass0 text; pass0 is the last resort.
-        let text = finalPass.text ?? bestProbeText ?? pass0.text
-        return OcrOutcome(text: text, confidence: finalPass.confidence, rotationDegrees: bestDegrees)
+    /// Rotates `cg` by `ccwDegrees` and re-recognizes on that frame, so the text
+    /// order and boxes belong to the image that ships. Returns nil when the pass
+    /// finds no text — an empty re-read counts as a failed one, and the caller
+    /// keeps its upright result rather than committing a rotation it can't place.
+    private static func measureRotated(_ cg: CGImage, ccwDegrees: Int, minHeight: Float) -> OcrOutcome? {
+        let rotated = ImageProcessor.rotated(cg, byDegreesCCW: ccwDegrees)
+        let size = CGSize(width: rotated.width, height: rotated.height)
+        let pass = recognizeText(rotated, orientation: 0, level: .accurate, minHeight: minHeight, pixelSize: size)
+        guard pass.text != nil else { return nil }
+        return OcrOutcome(
+            text: pass.text, confidence: pass.confidence, rotationDegrees: ccwDegrees,
+            lineCount: pass.count, lines: pass.lines, passSize: size
+        )
     }
 
     private struct Pass {
         let text: String?
         let confidence: Double?
         let count: Int
+        let lines: [OcrLineBox]
+        /// Per-observation clockwise text angles — the iOS counterpart of ML Kit's
+        /// `Text.Line.getAngle`, read off each observation quad.
+        let angles: [CGFloat]
     }
 
     private static func recognizeText(
         _ cg: CGImage,
         orientation degrees: Int,
         level: VNRequestTextRecognitionLevel,
-        minHeight: Float
+        minHeight: Float,
+        pixelSize: CGSize
     ) -> Pass {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = level
@@ -97,23 +147,30 @@ enum OcrProcessor {
         let handler = VNImageRequestHandler(cgImage: cg, orientation: cgOrientation(for: degrees), options: [:])
         try? handler.perform([request])
         guard let observations = request.results, !observations.isEmpty else {
-            return Pass(text: nil, confidence: nil, count: 0)
+            return Pass(text: nil, confidence: nil, count: 0, lines: [], angles: [])
         }
 
-        var lines: [String] = []
+        var lineStrings: [String] = []
+        var lines: [OcrLineBox] = []
+        var angles: [CGFloat] = []
         var confSum: Float = 0
         var confCount = 0
         for obs in observations {
             guard let top = obs.topCandidates(1).first else { continue }
             let trimmed = top.string.trimmingCharacters(in: .whitespaces)
             if trimmed.isEmpty { continue }
-            lines.append(top.string)
+            lineStrings.append(top.string)
             confSum += top.confidence
             confCount += 1
+            angles.append(OcrGeometry.clockwiseAngle(fromTopLeft: obs.topLeft, topRight: obs.topRight))
+            let box = OcrGeometry.rect(fromNormalizedBox: obs.boundingBox, pixelSize: pixelSize)
+            if box.width > 0, box.height > 0 {
+                lines.append(OcrLineBox(text: top.string, box: box, confidence: Double(top.confidence)))
+            }
         }
-        let text = lines.isEmpty ? nil : lines.joined(separator: "\n")
+        let text = lineStrings.isEmpty ? nil : lineStrings.joined(separator: "\n")
         let confidence = confCount == 0 ? nil : Double(confSum / Float(confCount))
-        return Pass(text: text, confidence: confidence, count: lines.count)
+        return Pass(text: text, confidence: confidence, count: lineStrings.count, lines: lines, angles: angles)
     }
 
     /// Maps a CCW rotation in degrees to the `CGImagePropertyOrientation` that
@@ -124,6 +181,26 @@ enum OcrProcessor {
         case 180: return .down
         case 270: return .right
         default: return .up
+        }
+    }
+
+    /// Places `outcome`'s per-line boxes in the `outputSize` frame and maps them
+    /// to the wire type, or nil when geometry wasn't requested. The boxes already
+    /// sit in the chosen pass's (rotated) frame, so this only rescales onto the
+    /// encoded output size and clamps — see `OcrGeometry.linesByRotating`.
+    static func ocrLinesWire(_ outcome: OcrOutcome, outputSize: CGSize, enabled: Bool) -> [OcrLineWire]? {
+        guard enabled else { return nil }
+        return OcrGeometry.linesByRotating(
+            outcome.lines, frameSize: outcome.passSize, clockwiseDegrees: 0, outputSize: outputSize
+        ).map { line in
+            OcrLineWire(
+                text: line.text,
+                x: Int64(line.box.minX.rounded()),
+                y: Int64(line.box.minY.rounded()),
+                width: Int64(line.box.width.rounded()),
+                height: Int64(line.box.height.rounded()),
+                confidence: line.confidence
+            )
         }
     }
 }

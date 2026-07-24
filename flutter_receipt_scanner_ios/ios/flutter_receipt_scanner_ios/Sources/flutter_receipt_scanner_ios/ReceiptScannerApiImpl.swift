@@ -1,5 +1,4 @@
 import Flutter
-import Photos
 import PhotosUI
 import UIKit
 import VisionKit
@@ -17,6 +16,9 @@ import VisionKit
 final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     VNDocumentCameraViewControllerDelegate
 {
+    /// Upper bound on pages / multi-select count, matching Android.
+    private static let maxPagesCeiling = 10
+
     private var completion: ((Result<ScanResultWire, Error>) -> Void)?
     private var options: ScanOptionsWire?
     /// Retained for the whole gallery flow — PHPickerViewController holds its
@@ -93,45 +95,24 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
                 )))
                 return
             }
-            // Library access only populates PHPickerResult.assetIdentifier (used
-            // for screenshot origin detection). The picker itself works without it.
-            let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-            switch status {
-            case .notDetermined:
-                PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
-                    DispatchQueue.main.async {
-                        self.presentPicker(
-                            options: options,
-                            presenter: presenter,
-                            hasLibraryAccess: newStatus == .authorized || newStatus == .limited
-                        )
-                    }
-                }
-            case .authorized, .limited:
-                self.presentPicker(options: options, presenter: presenter, hasLibraryAccess: true)
-            default:
-                self.presentPicker(options: options, presenter: presenter, hasLibraryAccess: false)
-            }
+            self.presentPicker(options: options, presenter: presenter)
         }
     }
 
     private func presentPicker(
         options: ScanOptionsWire,
-        presenter: UIViewController,
-        hasLibraryAccess: Bool
+        presenter: UIViewController
     ) {
-        var config: PHPickerConfiguration = hasLibraryAccess
-            // Initializing with the photo library populates assetIdentifier.
-            ? PHPickerConfiguration(photoLibrary: .shared())
-            : PHPickerConfiguration()
+        // PHPicker works without Photos authorization — never prompt. Origin is
+        // classified from EXIF alone (no PHAsset lookup), so no library access is needed.
+        var config = PHPickerConfiguration()
         config.filter = .images
-        // selectionLimit 0 means unlimited in PHPicker — clamp to at least 1.
-        config.selectionLimit = max(1, Int(options.maxPages ?? 1))
+        // selectionLimit 0 means unlimited in PHPicker — clamp to 1...maxPagesCeiling.
+        config.selectionLimit = min(Self.maxPagesCeiling, max(1, Int(options.maxPages ?? 1)))
 
         let delegate = GalleryPickerDelegate(
             options: options,
             presentingViewController: presenter,
-            hasLibraryAccess: hasLibraryAccess,
             completion: { [weak self] result in self?.finish(result) }
         )
         galleryDelegate = delegate
@@ -149,7 +130,7 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     ) {
         controller.dismiss(animated: true)
         let opts = options ?? ScanOptionsWire()
-        let pageCount = min(scan.pageCount, max(1, Int(opts.maxPages ?? 1)))
+        let pageCount = min(scan.pageCount, min(Self.maxPagesCeiling, max(1, Int(opts.maxPages ?? 1))))
         var pages: [UIImage] = []
         for index in 0 ..< pageCount {
             pages.append(scan.imageOfPage(at: index))
@@ -198,6 +179,7 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
         let autoRotate = options.autoRotate ?? true
         var ocrText: String?
         var confidence: Double?
+        var ocrLines: [OcrLineWire]?
         if runOcr {
             let minHeight = Float(options.minimumTextHeight ?? 0)
             let outcome = OcrProcessor.recognize(cg, minimumTextHeight: minHeight, autoRotate: autoRotate)
@@ -206,6 +188,10 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
             if autoRotate, outcome.rotationDegrees != 0 {
                 cg = ImageProcessor.rotated(cg, byDegreesCCW: outcome.rotationDegrees)
             }
+            // `cg` is now the output frame; the outcome's boxes already sit in it.
+            ocrLines = OcrProcessor.ocrLinesWire(
+                outcome, outputSize: CGSize(width: cg.width, height: cg.height), enabled: options.ocrGeometry ?? false
+            )
         }
 
         let includeExif = options.includeExif ?? true
@@ -226,7 +212,8 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
             ocrQuality: ocrText == nil ? nil : OcrQualityWire(
                 textLength: nil, lineCount: nil, confidence: confidence
             ),
-            exif: exif?.wire
+            exif: exif?.wire,
+            ocrLines: ocrLines
         )
     }
 

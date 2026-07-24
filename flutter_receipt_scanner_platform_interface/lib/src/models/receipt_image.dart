@@ -22,6 +22,43 @@ final class OcrQuality {
   final double? confidence;
 }
 
+/// One recognized text line and the axis-aligned box it occupies.
+///
+/// Coordinates are top-left-origin pixels of the shipped image
+/// ([ReceiptImage.width] x [ReceiptImage.height], post-rotation, post-crop).
+/// Populated only when the `ocrGeometry` option was set. Lines with empty text
+/// or a degenerate box are omitted, so this does not line up index-wise with
+/// [ReceiptImage.ocrText]'s newline-separated lines.
+final class OcrLine {
+  /// Creates one OCR line box.
+  const OcrLine({
+    required this.text,
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    this.confidence,
+  });
+
+  /// The recognized line text.
+  final String text;
+
+  /// Left edge of the box, in output-image pixels.
+  final int x;
+
+  /// Top edge of the box, in output-image pixels.
+  final int y;
+
+  /// Box width in pixels.
+  final int width;
+
+  /// Box height in pixels.
+  final int height;
+
+  /// Per-line OCR confidence (0.0–1.0), when the recognizer reported one.
+  final double? confidence;
+}
+
 /// One image returned by a scan. Backed by a JPEG file in the app cache
 /// directory; the [uri] is stable until the next scan call and does not survive
 /// app restarts.
@@ -38,6 +75,7 @@ final class ReceiptImage {
     this.ocrText,
     this.ocrQuality,
     this.exif,
+    this.ocrLines,
   });
 
   /// `file://`-scheme URI to the cached JPEG.
@@ -70,6 +108,9 @@ final class ReceiptImage {
   /// EXIF white-list. Present only when `includeExif` is true.
   final ReceiptExif? exif;
 
+  /// Per-line OCR text-region boxes. Present only when `ocrGeometry` was set.
+  final List<OcrLine>? ocrLines;
+
   /// Returns a copy with the given fields replaced.
   ReceiptImage copyWith({OcrQuality? ocrQuality}) => ReceiptImage(
     uri: uri,
@@ -82,5 +123,6 @@ final class ReceiptImage {
     ocrText: ocrText,
     ocrQuality: ocrQuality ?? this.ocrQuality,
     exif: exif,
+    ocrLines: ocrLines,
   );
 }

@@ -1,29 +1,12 @@
 import Foundation
 import ImageIO
-import Photos
-import PhotosUI
 
 /// Classifies a gallery photo's `imageOrigin` (native port map §7.1).
 ///
-/// Priority: PHAsset screenshot subtype → extracted EXIF → raw source props →
-/// `.unknown`. Faithful port of the origin helpers in RN `RNGalleryPickerDelegate`.
+/// Priority: extracted EXIF → raw source props → `.unknown`. Faithful port of the
+/// origin helpers in RN `RNGalleryPickerDelegate`. PHAsset-based screenshot
+/// detection was dropped so the gallery flow never prompts for Photos access.
 enum OriginClassifier {
-    /// Definitive origin from the Photos library, when library access populated
-    /// the picker's `assetIdentifier`. Returns `.screenshot` for screenshots,
-    /// otherwise nil (Photos has no "download" subtype — EXIF heuristics run later).
-    static func earlyOrigin(
-        for result: PHPickerResult,
-        hasLibraryAccess: Bool
-    ) -> ImageOriginWire? {
-        guard hasLibraryAccess, let identifier = result.assetIdentifier else { return nil }
-        let assets = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
-        guard let asset = assets.firstObject else { return nil }
-        if asset.mediaSubtypes.contains(.photoScreenshot) {
-            return .screenshot
-        }
-        return nil
-    }
-
     /// Classifies origin from three EXIF indicators.
     /// - `dateTimeOriginal` present → camera (shutter timestamp, strongest signal).
     /// - `make` && `model` (no timestamp) → camera (device IDs, still camera-like).

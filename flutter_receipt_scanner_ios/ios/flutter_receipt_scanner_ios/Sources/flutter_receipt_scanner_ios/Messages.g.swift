@@ -94,6 +94,7 @@ struct ScanOptionsWire {
     var autoRotate: Bool? = nil
     var includeRawExif: Bool? = nil
     var minimumTextHeight: Double? = nil
+    var ocrGeometry: Bool? = nil
 
     // swift-format-ignore: AlwaysUseLowerCamelCase
     static func fromList(_ pigeonVar_list: [Any?]) -> ScanOptionsWire? {
@@ -107,6 +108,7 @@ struct ScanOptionsWire {
         let autoRotate: Bool? = nilOrValue(pigeonVar_list[7])
         let includeRawExif: Bool? = nilOrValue(pigeonVar_list[8])
         let minimumTextHeight: Double? = nilOrValue(pigeonVar_list[9])
+        let ocrGeometry: Bool? = nilOrValue(pigeonVar_list[10])
 
         return ScanOptionsWire(
             source: source,
@@ -118,7 +120,8 @@ struct ScanOptionsWire {
             cropAutoConfirm: cropAutoConfirm,
             autoRotate: autoRotate,
             includeRawExif: includeRawExif,
-            minimumTextHeight: minimumTextHeight
+            minimumTextHeight: minimumTextHeight,
+            ocrGeometry: ocrGeometry
         )
     }
 
@@ -134,6 +137,7 @@ struct ScanOptionsWire {
             autoRotate,
             includeRawExif,
             minimumTextHeight,
+            ocrGeometry,
         ]
     }
 }
@@ -306,6 +310,48 @@ struct OcrQualityWire {
     }
 }
 
+/// One recognized text line's box, in top-left-origin pixels of the output image.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct OcrLineWire {
+    var text: String
+    var x: Int64
+    var y: Int64
+    var width: Int64
+    var height: Int64
+    var confidence: Double? = nil
+
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> OcrLineWire? {
+        let text = pigeonVar_list[0] as! String
+        let x = pigeonVar_list[1] as! Int64
+        let y = pigeonVar_list[2] as! Int64
+        let width = pigeonVar_list[3] as! Int64
+        let height = pigeonVar_list[4] as! Int64
+        let confidence: Double? = nilOrValue(pigeonVar_list[5])
+
+        return OcrLineWire(
+            text: text,
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            confidence: confidence
+        )
+    }
+
+    func toList() -> [Any?] {
+        return [
+            text,
+            x,
+            y,
+            width,
+            height,
+            confidence,
+        ]
+    }
+}
+
 /// Generated class from Pigeon that represents data sent in messages.
 struct ReceiptImageWire {
     var uri: String
@@ -318,6 +364,7 @@ struct ReceiptImageWire {
     var ocrText: String? = nil
     var ocrQuality: OcrQualityWire? = nil
     var exif: ReceiptExifWire? = nil
+    var ocrLines: [OcrLineWire]? = nil
 
     // swift-format-ignore: AlwaysUseLowerCamelCase
     static func fromList(_ pigeonVar_list: [Any?]) -> ReceiptImageWire? {
@@ -331,6 +378,7 @@ struct ReceiptImageWire {
         let ocrText: String? = nilOrValue(pigeonVar_list[7])
         let ocrQuality: OcrQualityWire? = nilOrValue(pigeonVar_list[8])
         let exif: ReceiptExifWire? = nilOrValue(pigeonVar_list[9])
+        let ocrLines: [OcrLineWire]? = nilOrValue(pigeonVar_list[10])
 
         return ReceiptImageWire(
             uri: uri,
@@ -342,7 +390,8 @@ struct ReceiptImageWire {
             imageOrigin: imageOrigin,
             ocrText: ocrText,
             ocrQuality: ocrQuality,
-            exif: exif
+            exif: exif,
+            ocrLines: ocrLines
         )
     }
 
@@ -358,6 +407,7 @@ struct ReceiptImageWire {
             ocrText,
             ocrQuality,
             exif,
+            ocrLines,
         ]
     }
 }
@@ -420,8 +470,10 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
         case 135:
             return OcrQualityWire.fromList(readValue() as! [Any?])
         case 136:
-            return ReceiptImageWire.fromList(readValue() as! [Any?])
+            return OcrLineWire.fromList(readValue() as! [Any?])
         case 137:
+            return ReceiptImageWire.fromList(readValue() as! [Any?])
+        case 138:
             return ScanResultWire.fromList(readValue() as! [Any?])
         default:
             return super.readValue(ofType: type)
@@ -452,11 +504,14 @@ private class MessagesPigeonCodecWriter: FlutterStandardWriter {
         } else if let value = value as? OcrQualityWire {
             super.writeByte(135)
             super.writeValue(value.toList())
-        } else if let value = value as? ReceiptImageWire {
+        } else if let value = value as? OcrLineWire {
             super.writeByte(136)
             super.writeValue(value.toList())
-        } else if let value = value as? ScanResultWire {
+        } else if let value = value as? ReceiptImageWire {
             super.writeByte(137)
+            super.writeValue(value.toList())
+        } else if let value = value as? ScanResultWire {
+            super.writeByte(138)
             super.writeValue(value.toList())
         } else {
             super.writeValue(value)

@@ -7,12 +7,17 @@ import 'package:pigeon/pigeon.dart';
 // repo root via `melos run generate`.
 @ConfigurePigeon(
   PigeonOptions(
-    dartOut: 'flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart',
+    dartOut:
+        'flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart',
     dartPackageName: 'flutter_receipt_scanner',
-    swiftOut: 'flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
+    swiftOut:
+        'flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
     swiftOptions: SwiftOptions(),
-    kotlinOut: 'flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
-    kotlinOptions: KotlinOptions(package: 'com.example.flutter_receipt_scanner_android'),
+    kotlinOut:
+        'flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
+    kotlinOptions: KotlinOptions(
+      package: 'com.example.flutter_receipt_scanner_android',
+    ),
   ),
 )
 enum ScanSourceWire { camera, gallery }
@@ -32,6 +37,7 @@ class ScanOptionsWire {
   bool? autoRotate;
   bool? includeRawExif;
   double? minimumTextHeight;
+  bool? ocrGeometry;
 }
 
 class GpsDataWire {
@@ -73,6 +79,16 @@ class OcrQualityWire {
   double? confidence;
 }
 
+/// One recognized text line's box, in top-left-origin pixels of the output image.
+class OcrLineWire {
+  String text;
+  int x;
+  int y;
+  int width;
+  int height;
+  double? confidence;
+}
+
 class ReceiptImageWire {
   String uri;
   int width;
@@ -84,6 +100,7 @@ class ReceiptImageWire {
   String? ocrText;
   OcrQualityWire? ocrQuality;
   ReceiptExifWire? exif;
+  List<OcrLineWire>? ocrLines;
 }
 
 class ScanResultWire {
