@@ -93,13 +93,16 @@ enum OcrGeometry {
 
     /// Clockwise angle in degrees of the text running from `topLeft` to
     /// `topRight`. Both points come from `VNRectangleObservation`: normalized,
-    /// **bottom-left** origin. Negating the y component moves to the top-left
-    /// origin the rest of this package uses, which is what turns Vision's
-    /// convention into the clockwise one Android's `Text.Line.getAngle` reports.
-    static func clockwiseAngle(fromTopLeft topLeft: CGPoint, topRight: CGPoint) -> CGFloat {
-        let dx = topRight.x - topLeft.x
-        let dy = topRight.y - topLeft.y
-        return CGFloat(atan2(Double(-dy), Double(dx)) * 180.0 / .pi)
+    /// **bottom-left** origin. The deltas are scaled by `pixelSize` first —
+    /// ML Kit's `Text.Line.getAngle` (the cross-platform contract) measures in
+    /// pixel space, and on a non-square image an unscaled atan2 distorts the
+    /// angle by the frame's aspect ratio. Negating the y component moves to the
+    /// top-left origin the rest of this package uses, which is what turns
+    /// Vision's convention into ML Kit's clockwise one.
+    static func clockwiseAngle(fromTopLeft topLeft: CGPoint, topRight: CGPoint, pixelSize: CGSize) -> CGFloat {
+        let dx = Double(topRight.x - topLeft.x) * Double(pixelSize.width)
+        let dy = Double(topRight.y - topLeft.y) * Double(pixelSize.height)
+        return CGFloat(atan2(-dy, dx) * 180.0 / .pi)
     }
 
     /// Rounds a clockwise text angle to the nearest quarter turn, normalized into

@@ -18,6 +18,11 @@ struct OcrOutcome {
     let lines: [OcrLineBox]
     /// Pixel size of the frame `lines` sit in.
     let passSize: CGSize
+    /// The already-rotated bitmap the chosen pass measured on, when
+    /// `rotationDegrees` is non-zero. Callers must encode THIS frame instead of
+    /// rotating again: it saves a full-size redraw and guarantees the shipped
+    /// pixels and the measured boxes share one frame.
+    let rotatedFrame: CGImage?
 }
 
 /// Korean/English on-device OCR with text-angle rotation detection.
@@ -50,7 +55,7 @@ enum OcrProcessor {
         // Skeleton: "0° accepted". Every early return ships pass0's upright boxes.
         let upright = OcrOutcome(
             text: pass0.text, confidence: pass0.confidence, rotationDegrees: 0,
-            lineCount: pass0.count, lines: pass0.lines, passSize: size0
+            lineCount: pass0.count, lines: pass0.lines, passSize: size0, rotatedFrame: nil
         )
         guard autoRotate, pass0.count >= minLinesToJudgeOrientation else { return upright }
 
@@ -68,12 +73,10 @@ enum OcrProcessor {
             if correction != 0 {
                 // `correction` is clockwise (canonical); rotate the pixels the
                 // complementary CCW amount and re-recognize on that frame.
-                if let rotated = measureRotated(cg, ccwDegrees: (360 - correction) % 360, minHeight: effectiveHeight) {
-                    return rotated
-                }
-                // The rotated re-read failed — ship the upright result rather than
-                // a rotation whose boxes we cannot place.
-                return upright
+                return measureRotated(
+                    cg, ccwDegrees: (360 - correction) % 360, minHeight: effectiveHeight,
+                    fallback: pass0, fallbackSize: size0
+                )
             }
         }
 
@@ -100,24 +103,38 @@ enum OcrProcessor {
         guard bestDegrees != 0, Double(bestCount) >= Double(pass0.count) * rotateCommitRatio else {
             return upright
         }
-        if let rotated = measureRotated(cg, ccwDegrees: bestDegrees, minHeight: effectiveHeight) {
-            return rotated
-        }
-        return upright
+        return measureRotated(
+            cg, ccwDegrees: bestDegrees, minHeight: effectiveHeight, fallback: pass0, fallbackSize: size0
+        )
     }
 
     /// Rotates `cg` by `ccwDegrees` and re-recognizes on that frame, so the text
-    /// order and boxes belong to the image that ships. Returns nil when the pass
-    /// finds no text — an empty re-read counts as a failed one, and the caller
-    /// keeps its upright result rather than committing a rotation it can't place.
-    private static func measureRotated(_ cg: CGImage, ccwDegrees: Int, minHeight: Float) -> OcrOutcome? {
+    /// order and boxes belong to the image that ships. The rotation is always
+    /// committed (RN parity — see the port map §6): an empty re-read indicts the
+    /// re-read, not the receipt, because reaching here means `fallback` (pass0)
+    /// found enough text to detect the rotation. In that case the pre-rotation
+    /// text ships and its boxes are remapped into the rotated frame — the same
+    /// fallback Android's `runOcrAndAutoRotate` uses.
+    private static func measureRotated(
+        _ cg: CGImage, ccwDegrees: Int, minHeight: Float, fallback: Pass, fallbackSize: CGSize
+    ) -> OcrOutcome {
         let rotated = ImageProcessor.rotated(cg, byDegreesCCW: ccwDegrees)
         let size = CGSize(width: rotated.width, height: rotated.height)
         let pass = recognizeText(rotated, orientation: 0, level: .accurate, minHeight: minHeight, pixelSize: size)
-        guard pass.text != nil else { return nil }
+        if pass.text != nil {
+            return OcrOutcome(
+                text: pass.text, confidence: pass.confidence, rotationDegrees: ccwDegrees,
+                lineCount: pass.count, lines: pass.lines, passSize: size, rotatedFrame: rotated
+            )
+        }
+        // The frame is rotated CCW, so boxes move the complementary CW amount.
+        let remapped = OcrGeometry.linesByRotating(
+            fallback.lines, frameSize: fallbackSize,
+            clockwiseDegrees: (360 - ccwDegrees) % 360, outputSize: size
+        )
         return OcrOutcome(
-            text: pass.text, confidence: pass.confidence, rotationDegrees: ccwDegrees,
-            lineCount: pass.count, lines: pass.lines, passSize: size
+            text: fallback.text, confidence: fallback.confidence, rotationDegrees: ccwDegrees,
+            lineCount: fallback.count, lines: remapped, passSize: size, rotatedFrame: rotated
         )
     }
 
@@ -162,7 +179,9 @@ enum OcrProcessor {
             lineStrings.append(top.string)
             confSum += top.confidence
             confCount += 1
-            angles.append(OcrGeometry.clockwiseAngle(fromTopLeft: obs.topLeft, topRight: obs.topRight))
+            angles.append(
+                OcrGeometry.clockwiseAngle(fromTopLeft: obs.topLeft, topRight: obs.topRight, pixelSize: pixelSize)
+            )
             let box = OcrGeometry.rect(fromNormalizedBox: obs.boundingBox, pixelSize: pixelSize)
             if box.width > 0, box.height > 0 {
                 lines.append(OcrLineBox(text: top.string, box: box, confidence: Double(top.confidence)))
@@ -192,14 +211,17 @@ enum OcrProcessor {
         guard enabled else { return nil }
         return OcrGeometry.linesByRotating(
             outcome.lines, frameSize: outcome.passSize, clockwiseDegrees: 0, outputSize: outputSize
-        ).map { line in
-            OcrLineWire(
-                text: line.text,
-                x: Int64(line.box.minX.rounded()),
-                y: Int64(line.box.minY.rounded()),
-                width: Int64(line.box.width.rounded()),
-                height: Int64(line.box.height.rounded()),
-                confidence: line.confidence
+        ).compactMap { line in
+            // Round the edges and derive the extents from them, so x + width can
+            // never overshoot the clamped frame; slivers that round to zero area
+            // drop instead of shipping the degenerate boxes the wire doc forbids.
+            let x = Int64(line.box.minX.rounded())
+            let y = Int64(line.box.minY.rounded())
+            let width = Int64(line.box.maxX.rounded()) - x
+            let height = Int64(line.box.maxY.rounded()) - y
+            guard width > 0, height > 0 else { return nil }
+            return OcrLineWire(
+                text: line.text, x: x, y: y, width: width, height: height, confidence: line.confidence
             )
         }
     }

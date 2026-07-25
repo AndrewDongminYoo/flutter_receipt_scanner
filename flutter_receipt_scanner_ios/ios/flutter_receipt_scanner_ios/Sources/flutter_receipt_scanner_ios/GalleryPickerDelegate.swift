@@ -132,7 +132,7 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
             }
             // PHPicker runs without library access, so PHAsset origin lookup is
             // unavailable — origin is classified from EXIF further down the pipeline.
-            self.detectAndCrop(image: image, source: source, earlyOrigin: nil)
+            self.detectAndCrop(image: image, source: source)
         }
     }
 
@@ -140,13 +140,12 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
     /// confirms when enabled and confident enough, otherwise presents the editor.
     private func detectAndCrop(
         image: UIImage,
-        source: CGImageSource,
-        earlyOrigin: ImageOriginWire?
+        source: CGImageSource
     ) {
         let (corners, confidence) = QuadDetector.detectCorners(in: image)
 
         if cropAutoConfirm, let corners, confidence >= Self.cropAutoConfirmMinConfidence {
-            applyCropAndFinish(image: image, corners: corners, source: source, earlyOrigin: earlyOrigin)
+            applyCropAndFinish(image: image, corners: corners, source: source)
             return
         }
 
@@ -161,7 +160,7 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
                     self.didFinishOneItem(nil)
                     return
                 }
-                self.processAndFinish(cropped: cropped, source: source, earlyOrigin: earlyOrigin)
+                self.processAndFinish(cropped: cropped, source: source)
             }
             editor.modalPresentationStyle = .fullScreen
             presentingVC.present(editor, animated: true)
@@ -173,14 +172,13 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
     private func applyCropAndFinish(
         image: UIImage,
         corners: [CGPoint],
-        source: CGImageSource,
-        earlyOrigin: ImageOriginWire?
+        source: CGImageSource
     ) {
         guard let cropped = QuadDetector.perspectiveCorrected(image, corners: corners) else {
             didFinishOneItem(nil)
             return
         }
-        processAndFinish(cropped: cropped, source: source, earlyOrigin: earlyOrigin)
+        processAndFinish(cropped: cropped, source: source)
     }
 
     /// Encodes, optionally OCRs (before encode, so rotation can bake into pixels),
@@ -188,8 +186,7 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
     /// Must run on a background thread.
     private func processAndFinish(
         cropped: CGImage,
-        source: CGImageSource,
-        earlyOrigin: ImageOriginWire?
+        source: CGImageSource
     ) {
         var ocrText: String?
         var confidence: Double?
@@ -207,7 +204,10 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
 
         var encodeCG = cropped
         if autoRotate, rotationDegrees != 0 {
-            encodeCG = ImageProcessor.rotated(cropped, byDegreesCCW: rotationDegrees)
+            // Reuse the frame the outcome measured on — rotating again would
+            // redraw the full image and could silently disagree with it.
+            encodeCG = ocrOutcome?.rotatedFrame
+                ?? ImageProcessor.rotated(cropped, byDegreesCCW: rotationDegrees)
         }
 
         // Gallery imports forward the real source EXIF (unlike the camera path,
@@ -225,10 +225,11 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
             return
         }
 
-        // Priority: PHAsset subtype → extracted EXIF → raw source props → unknown.
-        // The source read is gated on exif being nil so we don't decode twice.
-        let imageOrigin = earlyOrigin
-            ?? OriginClassifier.origin(fromExif: exif?.wire)
+        // Priority: extracted EXIF → raw source props → unknown. PHAsset subtype
+        // detection was dropped with the permissionless picker, so `.screenshot`
+        // is Android-only (port map §7.1). The source read is gated on exif being
+        // nil so we don't decode twice.
+        let imageOrigin = OriginClassifier.origin(fromExif: exif?.wire)
             ?? (exif == nil ? OriginClassifier.origin(fromSource: source) : nil)
             ?? .unknown
 

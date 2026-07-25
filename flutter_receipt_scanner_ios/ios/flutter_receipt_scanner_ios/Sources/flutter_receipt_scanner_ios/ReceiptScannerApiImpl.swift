@@ -186,7 +186,9 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
             ocrText = outcome.text
             confidence = outcome.confidence
             if autoRotate, outcome.rotationDegrees != 0 {
-                cg = ImageProcessor.rotated(cg, byDegreesCCW: outcome.rotationDegrees)
+                // Reuse the frame the outcome measured on — rotating again would
+                // redraw the full image and could silently disagree with it.
+                cg = outcome.rotatedFrame ?? ImageProcessor.rotated(cg, byDegreesCCW: outcome.rotationDegrees)
             }
             // `cg` is now the output frame; the outcome's boxes already sit in it.
             ocrLines = OcrProcessor.ocrLinesWire(
