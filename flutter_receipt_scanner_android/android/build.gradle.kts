@@ -1,28 +1,21 @@
+plugins {
+    id("com.android.library")
+    // Applied without a version: AGP + Kotlin come from the consuming app's
+    // settings pluginManagement (the example resolves AGP 9.0.1 / Kotlin 2.3.20),
+    // so nothing is pinned here. Declaring it explicitly also wires the Kotlin
+    // unit-test compilation (compileDebugUnitTestKotlin). Flutter nudges toward
+    // "built-in Kotlin" instead, but that broader migration is left for later.
+    id("org.jetbrains.kotlin.android")
+}
+
 group = "com.example.flutter_receipt_scanner_android"
 version = "0.1.0"
-
-buildscript {
-    val kotlinVersion = "2.0.21"
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.6.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-    }
-}
 
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
-}
-
-plugins {
-    id("com.android.library")
 }
 
 android {
@@ -63,4 +56,5 @@ dependencies {
     implementation("com.google.mlkit:text-recognition-korean:16.0.1")
     implementation("androidx.exifinterface:exifinterface:1.4.2")
     implementation("androidx.activity:activity-ktx:1.10.1")
+    testImplementation("junit:junit:4.13.2")
 }
