@@ -302,53 +302,6 @@ class OcrQualityWire {
   }
 }
 
-/// One recognized text line's box, in top-left-origin pixels of the output image.
-class OcrLineWire {
-  OcrLineWire({
-    required this.text,
-    required this.x,
-    required this.y,
-    required this.width,
-    required this.height,
-    this.confidence,
-  });
-
-  String text;
-
-  int x;
-
-  int y;
-
-  int width;
-
-  int height;
-
-  double? confidence;
-
-  Object encode() {
-    return <Object?>[
-      text,
-      x,
-      y,
-      width,
-      height,
-      confidence,
-    ];
-  }
-
-  static OcrLineWire decode(Object result) {
-    result as List<Object?>;
-    return OcrLineWire(
-      text: result[0]! as String,
-      x: result[1]! as int,
-      y: result[2]! as int,
-      width: result[3]! as int,
-      height: result[4]! as int,
-      confidence: result[5] as double?,
-    );
-  }
-}
-
 class ReceiptImageWire {
   ReceiptImageWire({
     required this.uri,
@@ -451,6 +404,58 @@ class ScanResultWire {
   }
 }
 
+/// One recognized text line's box, in top-left-origin pixels of the output image.
+///
+/// Declared after [ScanResultWire] on purpose: Pigeon assigns codec bytes in
+/// declaration order, so new wire classes are appended at the end to keep the
+/// byte assignments of already-shipped types stable.
+class OcrLineWire {
+  OcrLineWire({
+    required this.text,
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    this.confidence,
+  });
+
+  String text;
+
+  int x;
+
+  int y;
+
+  int width;
+
+  int height;
+
+  double? confidence;
+
+  Object encode() {
+    return <Object?>[
+      text,
+      x,
+      y,
+      width,
+      height,
+      confidence,
+    ];
+  }
+
+  static OcrLineWire decode(Object result) {
+    result as List<Object?>;
+    return OcrLineWire(
+      text: result[0]! as String,
+      x: result[1]! as int,
+      y: result[2]! as int,
+      width: result[3]! as int,
+      height: result[4]! as int,
+      confidence: result[5] as double?,
+    );
+  }
+}
+
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -458,34 +463,34 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is ScanSourceWire) {
+    }    else if (value is ScanSourceWire) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    } else if (value is ImageOriginWire) {
+    }    else if (value is ImageOriginWire) {
       buffer.putUint8(130);
       writeValue(buffer, value.index);
-    } else if (value is ScanStatusWire) {
+    }    else if (value is ScanStatusWire) {
       buffer.putUint8(131);
       writeValue(buffer, value.index);
-    } else if (value is ScanOptionsWire) {
+    }    else if (value is ScanOptionsWire) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    } else if (value is GpsDataWire) {
+    }    else if (value is GpsDataWire) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
-    } else if (value is ReceiptExifWire) {
+    }    else if (value is ReceiptExifWire) {
       buffer.putUint8(134);
       writeValue(buffer, value.encode());
-    } else if (value is OcrQualityWire) {
+    }    else if (value is OcrQualityWire) {
       buffer.putUint8(135);
       writeValue(buffer, value.encode());
-    } else if (value is OcrLineWire) {
+    }    else if (value is ReceiptImageWire) {
       buffer.putUint8(136);
       writeValue(buffer, value.encode());
-    } else if (value is ReceiptImageWire) {
+    }    else if (value is ScanResultWire) {
       buffer.putUint8(137);
       writeValue(buffer, value.encode());
-    } else if (value is ScanResultWire) {
+    }    else if (value is OcrLineWire) {
       buffer.putUint8(138);
       writeValue(buffer, value.encode());
     } else {
@@ -496,29 +501,29 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129:
+      case 129: 
         final int? value = readValue(buffer) as int?;
         return value == null ? null : ScanSourceWire.values[value];
-      case 130:
+      case 130: 
         final int? value = readValue(buffer) as int?;
         return value == null ? null : ImageOriginWire.values[value];
-      case 131:
+      case 131: 
         final int? value = readValue(buffer) as int?;
         return value == null ? null : ScanStatusWire.values[value];
-      case 132:
+      case 132: 
         return ScanOptionsWire.decode(readValue(buffer)!);
-      case 133:
+      case 133: 
         return GpsDataWire.decode(readValue(buffer)!);
-      case 134:
+      case 134: 
         return ReceiptExifWire.decode(readValue(buffer)!);
-      case 135:
+      case 135: 
         return OcrQualityWire.decode(readValue(buffer)!);
-      case 136:
-        return OcrLineWire.decode(readValue(buffer)!);
-      case 137:
+      case 136: 
         return ReceiptImageWire.decode(readValue(buffer)!);
-      case 138:
+      case 137: 
         return ScanResultWire.decode(readValue(buffer)!);
+      case 138: 
+        return OcrLineWire.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -530,8 +535,8 @@ class ReceiptScannerApi {
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
   ReceiptScannerApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
-    : pigeonVar_binaryMessenger = binaryMessenger,
-      pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+      : pigeonVar_binaryMessenger = binaryMessenger,
+        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -539,14 +544,14 @@ class ReceiptScannerApi {
   final String pigeonVar_messageChannelSuffix;
 
   Future<ScanResultWire> scan(ScanOptionsWire options) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.flutter_receipt_scanner.ReceiptScannerApi.scan$pigeonVar_messageChannelSuffix';
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_receipt_scanner.ReceiptScannerApi.scan$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final List<Object?>? pigeonVar_replyList = await pigeonVar_channel.send(<Object?>[options]) as List<Object?>?;
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(<Object?>[options]) as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);
     } else if (pigeonVar_replyList.length > 1) {

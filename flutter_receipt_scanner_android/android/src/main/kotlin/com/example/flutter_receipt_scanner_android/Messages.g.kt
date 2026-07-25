@@ -295,42 +295,6 @@ data class OcrQualityWire(
         )
 }
 
-/**
- * One recognized text line's box, in top-left-origin pixels of the output image.
- *
- * Generated class from Pigeon that represents data sent in messages.
- */
-data class OcrLineWire(
-    val text: String,
-    val x: Long,
-    val y: Long,
-    val width: Long,
-    val height: Long,
-    val confidence: Double? = null,
-) {
-    companion object {
-        fun fromList(pigeonVar_list: List<Any?>): OcrLineWire {
-            val text = pigeonVar_list[0] as String
-            val x = pigeonVar_list[1] as Long
-            val y = pigeonVar_list[2] as Long
-            val width = pigeonVar_list[3] as Long
-            val height = pigeonVar_list[4] as Long
-            val confidence = pigeonVar_list[5] as Double?
-            return OcrLineWire(text, x, y, width, height, confidence)
-        }
-    }
-
-    fun toList(): List<Any?> =
-        listOf(
-            text,
-            x,
-            y,
-            width,
-            height,
-            confidence,
-        )
-}
-
 /** Generated class from Pigeon that represents data sent in messages. */
 data class ReceiptImageWire(
     val uri: String,
@@ -401,6 +365,46 @@ data class ScanResultWire(
         )
 }
 
+/**
+ * One recognized text line's box, in top-left-origin pixels of the output image.
+ *
+ * Declared after [ScanResultWire] on purpose: Pigeon assigns codec bytes in
+ * declaration order, so new wire classes are appended at the end to keep the
+ * byte assignments of already-shipped types stable.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class OcrLineWire(
+    val text: String,
+    val x: Long,
+    val y: Long,
+    val width: Long,
+    val height: Long,
+    val confidence: Double? = null,
+) {
+    companion object {
+        fun fromList(pigeonVar_list: List<Any?>): OcrLineWire {
+            val text = pigeonVar_list[0] as String
+            val x = pigeonVar_list[1] as Long
+            val y = pigeonVar_list[2] as Long
+            val width = pigeonVar_list[3] as Long
+            val height = pigeonVar_list[4] as Long
+            val confidence = pigeonVar_list[5] as Double?
+            return OcrLineWire(text, x, y, width, height, confidence)
+        }
+    }
+
+    fun toList(): List<Any?> =
+        listOf(
+            text,
+            x,
+            y,
+            width,
+            height,
+            confidence,
+        )
+}
+
 private open class MessagesPigeonCodec : StandardMessageCodec() {
     override fun readValueOfType(
         type: Byte,
@@ -451,19 +455,19 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 
             136.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
-                    OcrLineWire.fromList(it)
+                    ReceiptImageWire.fromList(it)
                 }
             }
 
             137.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
-                    ReceiptImageWire.fromList(it)
+                    ScanResultWire.fromList(it)
                 }
             }
 
             138.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
-                    ScanResultWire.fromList(it)
+                    OcrLineWire.fromList(it)
                 }
             }
 
@@ -513,17 +517,17 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
                 writeValue(stream, value.toList())
             }
 
-            is OcrLineWire -> {
+            is ReceiptImageWire -> {
                 stream.write(136)
                 writeValue(stream, value.toList())
             }
 
-            is ReceiptImageWire -> {
+            is ScanResultWire -> {
                 stream.write(137)
                 writeValue(stream, value.toList())
             }
 
-            is ScanResultWire -> {
+            is OcrLineWire -> {
                 stream.write(138)
                 writeValue(stream, value.toList())
             }

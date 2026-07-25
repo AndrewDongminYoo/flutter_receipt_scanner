@@ -79,16 +79,6 @@ class OcrQualityWire {
   double? confidence;
 }
 
-/// One recognized text line's box, in top-left-origin pixels of the output image.
-class OcrLineWire {
-  String text;
-  int x;
-  int y;
-  int width;
-  int height;
-  double? confidence;
-}
-
 class ReceiptImageWire {
   String uri;
   int width;
@@ -107,6 +97,20 @@ class ScanResultWire {
   ScanStatusWire status;
   List<ReceiptImageWire> images;
   List<ReceiptImageWire> rejectedImages;
+}
+
+/// One recognized text line's box, in top-left-origin pixels of the output image.
+///
+/// Declared after [ScanResultWire] on purpose: Pigeon assigns codec bytes in
+/// declaration order, so new wire classes are appended at the end to keep the
+/// byte assignments of already-shipped types stable.
+class OcrLineWire {
+  String text;
+  int x;
+  int y;
+  int width;
+  int height;
+  double? confidence;
 }
 
 @HostApi()

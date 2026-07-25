@@ -310,48 +310,6 @@ struct OcrQualityWire {
     }
 }
 
-/// One recognized text line's box, in top-left-origin pixels of the output image.
-///
-/// Generated class from Pigeon that represents data sent in messages.
-struct OcrLineWire {
-    var text: String
-    var x: Int64
-    var y: Int64
-    var width: Int64
-    var height: Int64
-    var confidence: Double? = nil
-
-    // swift-format-ignore: AlwaysUseLowerCamelCase
-    static func fromList(_ pigeonVar_list: [Any?]) -> OcrLineWire? {
-        let text = pigeonVar_list[0] as! String
-        let x = pigeonVar_list[1] as! Int64
-        let y = pigeonVar_list[2] as! Int64
-        let width = pigeonVar_list[3] as! Int64
-        let height = pigeonVar_list[4] as! Int64
-        let confidence: Double? = nilOrValue(pigeonVar_list[5])
-
-        return OcrLineWire(
-            text: text,
-            x: x,
-            y: y,
-            width: width,
-            height: height,
-            confidence: confidence
-        )
-    }
-
-    func toList() -> [Any?] {
-        return [
-            text,
-            x,
-            y,
-            width,
-            height,
-            confidence,
-        ]
-    }
-}
-
 /// Generated class from Pigeon that represents data sent in messages.
 struct ReceiptImageWire {
     var uri: String
@@ -440,6 +398,52 @@ struct ScanResultWire {
     }
 }
 
+/// One recognized text line's box, in top-left-origin pixels of the output image.
+///
+/// Declared after [ScanResultWire] on purpose: Pigeon assigns codec bytes in
+/// declaration order, so new wire classes are appended at the end to keep the
+/// byte assignments of already-shipped types stable.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct OcrLineWire {
+    var text: String
+    var x: Int64
+    var y: Int64
+    var width: Int64
+    var height: Int64
+    var confidence: Double? = nil
+
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> OcrLineWire? {
+        let text = pigeonVar_list[0] as! String
+        let x = pigeonVar_list[1] as! Int64
+        let y = pigeonVar_list[2] as! Int64
+        let width = pigeonVar_list[3] as! Int64
+        let height = pigeonVar_list[4] as! Int64
+        let confidence: Double? = nilOrValue(pigeonVar_list[5])
+
+        return OcrLineWire(
+            text: text,
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            confidence: confidence
+        )
+    }
+
+    func toList() -> [Any?] {
+        return [
+            text,
+            x,
+            y,
+            width,
+            height,
+            confidence,
+        ]
+    }
+}
+
 private class MessagesPigeonCodecReader: FlutterStandardReader {
     override func readValue(ofType type: UInt8) -> Any? {
         switch type {
@@ -470,11 +474,11 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
         case 135:
             return OcrQualityWire.fromList(readValue() as! [Any?])
         case 136:
-            return OcrLineWire.fromList(readValue() as! [Any?])
-        case 137:
             return ReceiptImageWire.fromList(readValue() as! [Any?])
-        case 138:
+        case 137:
             return ScanResultWire.fromList(readValue() as! [Any?])
+        case 138:
+            return OcrLineWire.fromList(readValue() as! [Any?])
         default:
             return super.readValue(ofType: type)
         }
@@ -504,13 +508,13 @@ private class MessagesPigeonCodecWriter: FlutterStandardWriter {
         } else if let value = value as? OcrQualityWire {
             super.writeByte(135)
             super.writeValue(value.toList())
-        } else if let value = value as? OcrLineWire {
+        } else if let value = value as? ReceiptImageWire {
             super.writeByte(136)
             super.writeValue(value.toList())
-        } else if let value = value as? ReceiptImageWire {
+        } else if let value = value as? ScanResultWire {
             super.writeByte(137)
             super.writeValue(value.toList())
-        } else if let value = value as? ScanResultWire {
+        } else if let value = value as? OcrLineWire {
             super.writeByte(138)
             super.writeValue(value.toList())
         } else {
