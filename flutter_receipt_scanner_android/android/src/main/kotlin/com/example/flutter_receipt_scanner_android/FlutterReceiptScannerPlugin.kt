@@ -199,6 +199,8 @@ class FlutterReceiptScannerPlugin :
                 // Report under the documented PROCESSING_FAILED code (the public error
                 // contract has no OUT_OF_MEMORY); the message still names the cause.
                 reject("PROCESSING_FAILED", "Image too large to process: ${e.message ?: "out of memory"}")
+            } catch (e: Exception) {
+                reject("PROCESSING_FAILED", e.message ?: "Image processing failed")
             } finally {
                 ocr.close()
             }
@@ -258,6 +260,8 @@ class FlutterReceiptScannerPlugin :
                 // Report under the documented PROCESSING_FAILED code (the public error
                 // contract has no OUT_OF_MEMORY); the message still names the cause.
                 reject("PROCESSING_FAILED", "Image too large to process: ${e.message ?: "out of memory"}")
+            } catch (e: Exception) {
+                reject("PROCESSING_FAILED", e.message ?: "Gallery processing failed")
             } finally {
                 ocr.close()
             }
