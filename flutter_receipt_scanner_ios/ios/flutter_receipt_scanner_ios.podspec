@@ -16,7 +16,7 @@ On-device receipt image acquisition and OCR via VisionKit and Vision.
   s.source_files = 'flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/**/*'
   s.dependency 'Flutter'
   s.platform = :ios, '16.0'
-  s.frameworks = 'VisionKit', 'Vision', 'PhotosUI', 'CoreImage', 'ImageIO', 'CoreGraphics', 'UniformTypeIdentifiers'
+  s.frameworks = 'VisionKit', 'Vision', 'PhotosUI', 'CoreImage', 'ImageIO', 'CoreGraphics', 'UniformTypeIdentifiers', 'UIKit'
 
   # Flutter.framework does not contain a i386 slice.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
