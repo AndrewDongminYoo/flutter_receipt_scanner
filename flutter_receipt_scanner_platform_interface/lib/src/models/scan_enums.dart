@@ -13,6 +13,10 @@ enum ImageOrigin {
   camera,
 
   /// System screenshot.
+  ///
+  /// **Android only.** iOS uses the permissionless `PHPickerViewController`,
+  /// which exposes no asset-subtype signal, so screenshots there classify as
+  /// [download] (no camera EXIF) instead.
   screenshot,
 
   /// Saved from a network source; no camera-style EXIF.

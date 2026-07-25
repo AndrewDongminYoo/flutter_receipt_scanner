@@ -43,7 +43,7 @@ The output `file://` JPEG URIs are stable until the next `scan()` call and do no
 
 ## Host app permissions
 
-- iOS `Info.plist`: `NSCameraUsageDescription` (camera scan) and `NSPhotoLibraryUsageDescription` (gallery scan).
+- iOS `Info.plist`: `NSCameraUsageDescription` (camera scan). No photo-library key is needed — the gallery flow uses the permissionless `PHPickerViewController`.
 - Android: none — the GMS document scanner and the system photo picker run out-of-process and require no app-declared permission.
 
 ## Development
