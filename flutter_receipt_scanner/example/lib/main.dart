@@ -122,6 +122,7 @@ class _ScanScreenState extends State<ScanScreen> {
   int _maxPages = 1;
   double _quality = 0.82;
   bool _autoRotate = true;
+  bool _ocrGeometry = false;
   double _minimumTextHeight = 0;
   bool _includeGpsExif = false;
   bool _includeRawExif = false;
@@ -158,6 +159,7 @@ class _ScanScreenState extends State<ScanScreen> {
           autoRotate: _autoRotate,
           cropAutoConfirm: _cropAutoConfirm,
           minimumTextHeight: _minimumTextHeight,
+          ocrGeometry: _ocrGeometry,
         ),
         ocrFloor: _floorEnabled
             ? OcrFloorOrDisabled.floor(
@@ -292,6 +294,12 @@ class _ScanScreenState extends State<ScanScreen> {
             subtitle: _ocr ? null : const Text('OCR이 켜져 있어야 적용됩니다'),
             value: _autoRotate,
             onChanged: _ocr ? (v) => setState(() => _autoRotate = v) : null,
+          ),
+          SwitchListTile(
+            title: const Text('줄별 OCR 좌표 (ocrGeometry)'),
+            subtitle: Text(_ocr ? '줄 단위 텍스트 박스를 ocrLines로 반환합니다' : 'OCR이 켜져 있어야 적용됩니다'),
+            value: _ocrGeometry,
+            onChanged: _ocr ? (v) => setState(() => _ocrGeometry = v) : null,
           ),
           _ChipRow<double>(
             label: '최소 텍스트 높이 (minimumTextHeight)',

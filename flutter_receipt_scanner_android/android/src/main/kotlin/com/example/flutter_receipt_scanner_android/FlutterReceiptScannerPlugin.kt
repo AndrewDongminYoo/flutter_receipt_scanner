@@ -37,6 +37,9 @@ class FlutterReceiptScannerPlugin :
     private companion object {
         const val SCAN_REQUEST_CODE = 0x5EC0
         const val GALLERY_REQUEST_CODE = 0x5EC1
+
+        /** Upper bound on pages / multi-select count, matching iOS. */
+        const val MAX_PAGES = 10
     }
 
     // MARK: - FlutterPlugin
@@ -87,7 +90,7 @@ class FlutterReceiptScannerPlugin :
         pendingOptions = options
         executor.execute { appContext?.let { ImageProcessor.deletePreviousSessionFiles(it) } }
 
-        val maxPages = maxOf(1, (options.maxPages ?: 1).toInt())
+        val maxPages = (options.maxPages ?: 1).toInt().coerceIn(1, MAX_PAGES)
 
         // Gallery path: the system photo picker + custom quad-crop editor live in
         // CropEditorActivity, which returns cached file:// URIs + per-image corners.
@@ -193,7 +196,11 @@ class FlutterReceiptScannerPlugin :
                     resolve(ScanResultWire(status = ScanStatusWire.SUCCESS, images = images, rejectedImages = emptyList()))
                 }
             } catch (e: OutOfMemoryError) {
-                reject("OUT_OF_MEMORY", e.message)
+                // Report under the documented PROCESSING_FAILED code (the public error
+                // contract has no OUT_OF_MEMORY); the message still names the cause.
+                reject("PROCESSING_FAILED", "Image too large to process: ${e.message ?: "out of memory"}")
+            } catch (e: Exception) {
+                reject("PROCESSING_FAILED", e.message ?: "Image processing failed")
             } finally {
                 ocr.close()
             }
@@ -207,9 +214,21 @@ class FlutterReceiptScannerPlugin :
         if (pendingCallback == null) return
         val options = pendingOptions ?: ScanOptionsWire()
 
+        if (resultCode != Activity.RESULT_OK) {
+            resolve(ScanResultWire(status = ScanStatusWire.CANCELLED, images = emptyList(), rejectedImages = emptyList()))
+            return
+        }
+
+        // The crop editor reports an enforced-limit failure (e.g. an oversized image)
+        // as RESULT_OK + EXTRA_ERROR so it is not mistaken for a user cancel.
+        data?.getStringExtra(CropEditorActivity.EXTRA_ERROR)?.let { error ->
+            reject("PROCESSING_FAILED", error)
+            return
+        }
+
         val uris = data?.getStringArrayExtra(CropEditorActivity.EXTRA_ORIGINAL_URIS)
         val allCorners = data?.getFloatArrayExtra(CropEditorActivity.EXTRA_ALL_CORNERS)
-        if (resultCode != Activity.RESULT_OK || uris.isNullOrEmpty() || allCorners == null) {
+        if (uris.isNullOrEmpty() || allCorners == null) {
             resolve(ScanResultWire(status = ScanStatusWire.CANCELLED, images = emptyList(), rejectedImages = emptyList()))
             return
         }
@@ -238,7 +257,11 @@ class FlutterReceiptScannerPlugin :
                     resolve(ScanResultWire(status = ScanStatusWire.SUCCESS, images = images, rejectedImages = emptyList()))
                 }
             } catch (e: OutOfMemoryError) {
-                reject("OUT_OF_MEMORY", e.message)
+                // Report under the documented PROCESSING_FAILED code (the public error
+                // contract has no OUT_OF_MEMORY); the message still names the cause.
+                reject("PROCESSING_FAILED", "Image too large to process: ${e.message ?: "out of memory"}")
+            } catch (e: Exception) {
+                reject("PROCESSING_FAILED", e.message ?: "Gallery processing failed")
             } finally {
                 ocr.close()
             }

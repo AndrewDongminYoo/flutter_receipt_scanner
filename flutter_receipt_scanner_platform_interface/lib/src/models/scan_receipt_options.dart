@@ -16,12 +16,13 @@ final class ScanReceiptOptions {
     this.autoRotate = true,
     this.includeRawExif = false,
     this.minimumTextHeight = 0,
+    this.ocrGeometry = false,
   });
 
   /// Acquisition path.
   final ScanSource source;
 
-  /// Maximum pages the user may capture (coerced to `>= 1` natively).
+  /// Maximum pages the user may capture (coerced to `1..10` natively).
   final int maxPages;
 
   /// JPEG compression quality in `[0.0, 1.0]`.
@@ -47,4 +48,8 @@ final class ScanReceiptOptions {
 
   /// iOS-only Vision `minimumTextHeight` fraction; `0` uses the package default.
   final double minimumTextHeight;
+
+  /// Attach per-line OCR text-region boxes on `ReceiptImage.ocrLines`. Requires
+  /// [ocr]; the boxes are expressed in the output image's pixel space.
+  final bool ocrGeometry;
 }

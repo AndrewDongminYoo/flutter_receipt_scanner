@@ -94,6 +94,7 @@ data class ScanOptionsWire(
     val autoRotate: Boolean? = null,
     val includeRawExif: Boolean? = null,
     val minimumTextHeight: Double? = null,
+    val ocrGeometry: Boolean? = null,
 ) {
     companion object {
         fun fromList(pigeonVar_list: List<Any?>): ScanOptionsWire {
@@ -107,6 +108,7 @@ data class ScanOptionsWire(
             val autoRotate = pigeonVar_list[7] as Boolean?
             val includeRawExif = pigeonVar_list[8] as Boolean?
             val minimumTextHeight = pigeonVar_list[9] as Double?
+            val ocrGeometry = pigeonVar_list[10] as Boolean?
             return ScanOptionsWire(
                 source,
                 maxPages,
@@ -118,6 +120,7 @@ data class ScanOptionsWire(
                 autoRotate,
                 includeRawExif,
                 minimumTextHeight,
+                ocrGeometry,
             )
         }
     }
@@ -134,6 +137,7 @@ data class ScanOptionsWire(
             autoRotate,
             includeRawExif,
             minimumTextHeight,
+            ocrGeometry,
         )
 }
 
@@ -303,6 +307,7 @@ data class ReceiptImageWire(
     val ocrText: String? = null,
     val ocrQuality: OcrQualityWire? = null,
     val exif: ReceiptExifWire? = null,
+    val ocrLines: List<OcrLineWire>? = null,
 ) {
     companion object {
         fun fromList(pigeonVar_list: List<Any?>): ReceiptImageWire {
@@ -316,7 +321,8 @@ data class ReceiptImageWire(
             val ocrText = pigeonVar_list[7] as String?
             val ocrQuality = pigeonVar_list[8] as OcrQualityWire?
             val exif = pigeonVar_list[9] as ReceiptExifWire?
-            return ReceiptImageWire(uri, width, height, fileName, mimeType, fileSize, imageOrigin, ocrText, ocrQuality, exif)
+            val ocrLines = pigeonVar_list[10] as List<OcrLineWire>?
+            return ReceiptImageWire(uri, width, height, fileName, mimeType, fileSize, imageOrigin, ocrText, ocrQuality, exif, ocrLines)
         }
     }
 
@@ -332,6 +338,7 @@ data class ReceiptImageWire(
             ocrText,
             ocrQuality,
             exif,
+            ocrLines,
         )
 }
 
@@ -355,6 +362,46 @@ data class ScanResultWire(
             status,
             images,
             rejectedImages,
+        )
+}
+
+/**
+ * One recognized text line's box, in top-left-origin pixels of the output image.
+ *
+ * Declared after [ScanResultWire] on purpose: Pigeon assigns codec bytes in
+ * declaration order, so new wire classes are appended at the end to keep the
+ * byte assignments of already-shipped types stable.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class OcrLineWire(
+    val text: String,
+    val x: Long,
+    val y: Long,
+    val width: Long,
+    val height: Long,
+    val confidence: Double? = null,
+) {
+    companion object {
+        fun fromList(pigeonVar_list: List<Any?>): OcrLineWire {
+            val text = pigeonVar_list[0] as String
+            val x = pigeonVar_list[1] as Long
+            val y = pigeonVar_list[2] as Long
+            val width = pigeonVar_list[3] as Long
+            val height = pigeonVar_list[4] as Long
+            val confidence = pigeonVar_list[5] as Double?
+            return OcrLineWire(text, x, y, width, height, confidence)
+        }
+    }
+
+    fun toList(): List<Any?> =
+        listOf(
+            text,
+            x,
+            y,
+            width,
+            height,
+            confidence,
         )
 }
 
@@ -418,6 +465,12 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
                 }
             }
 
+            138.toByte() -> {
+                return (readValue(buffer) as? List<Any?>)?.let {
+                    OcrLineWire.fromList(it)
+                }
+            }
+
             else -> {
                 super.readValueOfType(type, buffer)
             }
@@ -471,6 +524,11 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 
             is ScanResultWire -> {
                 stream.write(137)
+                writeValue(stream, value.toList())
+            }
+
+            is OcrLineWire -> {
+                stream.write(138)
                 writeValue(stream, value.toList())
             }
 

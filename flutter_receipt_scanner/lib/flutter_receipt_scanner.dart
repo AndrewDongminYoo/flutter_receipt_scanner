@@ -2,6 +2,7 @@ export 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scann
     show
         GpsData,
         ImageOrigin,
+        OcrLine,
         OcrQuality,
         ReceiptExif,
         ReceiptImage,

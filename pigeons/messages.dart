@@ -7,12 +7,17 @@ import 'package:pigeon/pigeon.dart';
 // repo root via `melos run generate`.
 @ConfigurePigeon(
   PigeonOptions(
-    dartOut: 'flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart',
+    dartOut:
+        'flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart',
     dartPackageName: 'flutter_receipt_scanner',
-    swiftOut: 'flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
+    swiftOut:
+        'flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
     swiftOptions: SwiftOptions(),
-    kotlinOut: 'flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
-    kotlinOptions: KotlinOptions(package: 'com.example.flutter_receipt_scanner_android'),
+    kotlinOut:
+        'flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
+    kotlinOptions: KotlinOptions(
+      package: 'com.example.flutter_receipt_scanner_android',
+    ),
   ),
 )
 enum ScanSourceWire { camera, gallery }
@@ -32,6 +37,7 @@ class ScanOptionsWire {
   bool? autoRotate;
   bool? includeRawExif;
   double? minimumTextHeight;
+  bool? ocrGeometry;
 }
 
 class GpsDataWire {
@@ -84,12 +90,27 @@ class ReceiptImageWire {
   String? ocrText;
   OcrQualityWire? ocrQuality;
   ReceiptExifWire? exif;
+  List<OcrLineWire>? ocrLines;
 }
 
 class ScanResultWire {
   ScanStatusWire status;
   List<ReceiptImageWire> images;
   List<ReceiptImageWire> rejectedImages;
+}
+
+/// One recognized text line's box, in top-left-origin pixels of the output image.
+///
+/// Declared after [ScanResultWire] on purpose: Pigeon assigns codec bytes in
+/// declaration order, so new wire classes are appended at the end to keep the
+/// byte assignments of already-shipped types stable.
+class OcrLineWire {
+  String text;
+  int x;
+  int y;
+  int width;
+  int height;
+  double? confidence;
 }
 
 @HostApi()

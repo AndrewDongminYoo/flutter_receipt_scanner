@@ -35,6 +35,7 @@ ScanOptionsWire _optionsToWire(ScanReceiptOptions o) => ScanOptionsWire(
   autoRotate: o.autoRotate,
   includeRawExif: o.includeRawExif,
   minimumTextHeight: o.minimumTextHeight,
+  ocrGeometry: o.ocrGeometry,
 );
 
 ScanSourceWire _sourceToWire(ScanSource s) => switch (s) {
@@ -72,6 +73,7 @@ ReceiptImage _imageFromWire(ReceiptImageWire w) => ReceiptImage(
   ocrText: w.ocrText,
   ocrQuality: _ocrQualityFromWire(w.ocrQuality),
   exif: _exifFromWire(w.exif),
+  ocrLines: w.ocrLines?.map(_ocrLineFromWire).toList(growable: false),
 );
 
 OcrQuality? _ocrQualityFromWire(OcrQualityWire? w) => w == null
@@ -81,6 +83,15 @@ OcrQuality? _ocrQualityFromWire(OcrQualityWire? w) => w == null
         lineCount: w.lineCount ?? 0,
         confidence: w.confidence,
       );
+
+OcrLine _ocrLineFromWire(OcrLineWire w) => OcrLine(
+  text: w.text,
+  x: w.x,
+  y: w.y,
+  width: w.width,
+  height: w.height,
+  confidence: w.confidence,
+);
 
 GpsData? _gpsFromWire(GpsDataWire? w) => w == null || w.latitude == null || w.longitude == null
     ? null

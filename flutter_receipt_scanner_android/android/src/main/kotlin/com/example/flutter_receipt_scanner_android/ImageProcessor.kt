@@ -66,11 +66,12 @@ object ImageProcessor {
     private const val LOG_TAG = "ReceiptScanner.Image"
 
     /**
-     * Longer-side cap (px) for the gallery re-decode. Lower than 4096 because
-     * [applyExifRotation]'s transient peak is risky on 2GB-RAM devices; raising it
-     * costs visible OCR accuracy only above ~3000 px on Korean receipts.
+     * Longer-side cap (px) for every full-resolution decode — the camera page and
+     * the gallery re-decode. Lower than 4096 because [applyExifRotation]'s transient
+     * peak is risky on 2GB-RAM devices; raising it costs visible OCR accuracy only
+     * above ~3000 px on Korean receipts.
      */
-    private const val GALLERY_MAX_DIM = 3072
+    private const val MAX_PROCESSING_DIM = 3072
 
     /** EXIF tag values whose payload is binary or large enough to bloat the IPC bridge. */
     private val rawTagDenyList: Set<String> =
@@ -116,22 +117,23 @@ object ImageProcessor {
             ?.forEach { it.delete() }
     }
 
-    /** Decodes [uri] and applies its source EXIF rotation so pixels are upright. */
+    /**
+     * Decodes [uri] bounded to [MAX_PROCESSING_DIM] and applies its source EXIF
+     * rotation so pixels are upright. Bounding the decode keeps a very high-res
+     * camera page from peaking memory during rotation on low-RAM devices.
+     */
     fun decodeOriented(
         context: Context,
         uri: Uri,
     ): Bitmap? {
         val decoded =
-            context.contentResolver.openInputStream(uri)?.use {
-                BitmapFactory.decodeStream(it)
-            } ?: return null
-        val orientation =
-            context.contentResolver.openInputStream(uri)?.use {
-                ExifInterface(it).getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION,
-                    ExifInterface.ORIENTATION_NORMAL,
-                )
-            } ?: ExifInterface.ORIENTATION_NORMAL
+            try {
+                decodeBitmapSampled(context, uri, MAX_PROCESSING_DIM).first
+            } catch (e: Exception) {
+                Log.w(LOG_TAG, "decodeOriented: failed to decode uri=$uri", e)
+                return null
+            }
+        val orientation = readExifOrientation(context, uri)
         return applyExifOrientation(decoded, orientation)
     }
 
@@ -226,7 +228,7 @@ object ImageProcessor {
     }
 
     /**
-     * Gallery path: re-decodes [uri] at [GALLERY_MAX_DIM], re-applies the source EXIF
+     * Gallery path: re-decodes [uri] at [MAX_PROCESSING_DIM], re-applies the source EXIF
      * rotation, scales the full-resolution [corners] into the decoded bitmap's space
      * (the editor measured them against the 2048-px preview decode, so the sample
      * factors differ), perspective-corrects, and reads the source EXIF.
@@ -248,7 +250,7 @@ object ImageProcessor {
         includeRawExif: Boolean,
     ): GalleryImage {
         val exifOrientation = readExifOrientation(context, uri)
-        val (raw, sample) = decodeBitmapSampled(context, uri, GALLERY_MAX_DIM)
+        val (raw, sample) = decodeBitmapSampled(context, uri, MAX_PROCESSING_DIM)
         val oriented = applyExifRotation(raw, exifOrientation)
         // corners arrive in full-resolution oriented space (the editor's originalWidth/Height,
         // derived from the 2048 preview sample); scale by 1/sample to match this decode.

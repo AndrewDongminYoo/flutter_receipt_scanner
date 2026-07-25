@@ -19,7 +19,7 @@ The RN JS layer (`scan.tsx`) owns the OCR-floor acceptance gate and the quality 
 - **`ScanResult.rejectedImages` is always an empty list from native** (the Pigeon field is non-null; send `[]`). All processed captures go into `images`.
 - **`OcrQuality`: native fills `confidence` only.** Leave `textLength` and `lineCount` null — Dart derives them from `ocrText`. (RN native sent `ocrQuality = {confidence}` and JS re-derived the other two; mirror that.)
 - **`ReceiptImage.imageOrigin` is always present** (non-null in schema). `exif`, `ocrText`, `ocrQuality` are conditional on options.
-- Errors: RN rejected the Promise with codes (`SCAN_IN_PROGRESS`, `NO_ACTIVITY`, `NOT_SUPPORTED`/`SCANNER_INIT_FAILED`, `PROCESSING_FAILED`, `OUT_OF_MEMORY`). In Pigeon, fail the completion with `PigeonError`/`FlutterError` using the same codes.
+- Errors: RN rejected the Promise with codes (`SCAN_IN_PROGRESS`, `NO_ACTIVITY`, `NOT_SUPPORTED`/`SCANNER_INIT_FAILED`, `PROCESSING_FAILED`, `OUT_OF_MEMORY`). In Pigeon, fail the completion with `PigeonError`/`FlutterError` using the same codes. **[UPDATED 2026-07-25]** `OUT_OF_MEMORY` is retired: the shipped plugin reports OOM under `PROCESSING_FAILED` (the public error contract has no `OUT_OF_MEMORY`); the message still names the cause.
 - **Do NOT port the RN "module name string must match across 3 files" rule** — Pigeon generates channel names. Not applicable.
 - `ReceiptExif.raw` is `Map<String, Object?>`. iOS forwards String/Number/Array values; Android forwards all-String. The map type holds both — keep the platform difference, do not coerce.
 
@@ -63,7 +63,7 @@ The RN JS layer (`scan.tsx`) owns the OCR-floor acceptance gate and the quality 
 2. Build `GmsDocumentScannerOptions`: `.setGalleryImportAllowed(false)` (critical — see ADR-005; in-camera gallery import goes through GMS which strips EXIF and collapses origin to unknown), `.setPageLimit(maxPages)`, `RESULT_FORMAT_JPEG`, `SCANNER_MODE_FULL`.
 3. `GmsDocumentScanning.getClient(...).getStartScanIntent(activity)` → on success `activity.startIntentSenderForResult(intentSender, SCAN_REQUEST_CODE, …)`; on failure reject `SCANNER_INIT_FAILED` (special-case `GmsNetworkStack`/`AuthPII` messages → friendly Play-Services text).
 4. `onActivityResult(SCAN_REQUEST_CODE)` → `handleCameraResult`: `RESULT_CANCELED` → `buildCancelled()`; else parse `GmsDocumentScanningResult.fromActivityResultIntent(data)`, iterate `.pages`. On the single-thread `executor`:
-   - `imageProcessor.process(page.imageUri, quality, includeExif, includeGpsExif, includeRawExif, synthesizeDeviceInfo = true)` (§3/§4).
+   - `imageProcessor.process(page.imageUri, quality, includeExif, includeGpsExif, includeRawExif, synthesizeDeviceInfo = true)` (§3/§4). Camera pages decode through the same sampled decode as gallery (`MAX_PROCESSING_DIM = 3072`), so GMS scanner output is bounded to ~3072 px on the long edge (power-of-2 sampling can land lower) — a deliberate memory cap, not full resolution.
    - `runOcr(...)` on the encoded file (§5) — **OCR runs after encode** on Android.
    - `applyAutoRotateIfNeeded(file, rotationDegrees, autoRotate, quality)` → rotates file in place (§6).
    - `writeExifToFile(file, exifData)` — **must run last** (§4.3).
@@ -91,9 +91,7 @@ Both platforms: system photo picker → detect a document quad → present a 4-h
 
 #### Picker & auth
 
-- If `PHPhotoLibrary.authorizationStatus == notDetermined`, request authorization (only to populate `PHPickerResult.assetIdentifier` for origin detection — the picker itself works without it). Present `PHPickerViewController`:
-  - `config.filter = imagesFilter`, `config.selectionLimit = maxPages`.
-  - If authorized/limited: init config `initWithPhotoLibrary:` so `assetIdentifier` is populated.
+- **[UPDATED 2026-07-25]** Fully permissionless: present `PHPickerViewController` with a plain `PHPickerConfiguration` (`config.filter = imagesFilter`, `config.selectionLimit = maxPages`). Never call `initWithPhotoLibrary:` and never request `PHPhotoLibrary` authorization — those steps existed only to populate `assetIdentifier` for the PHAsset origin lookup, which was removed (see "Per item" step 1 and §7.1).
 
 #### Per-photo serialization (ADR / AGENTS.md anti-pattern — load-bearing)
 
@@ -101,7 +99,7 @@ Both platforms: system photo picker → detect a document quad → present a 4-h
 
 #### Per item
 
-1. `earlyOrigin = originForPickerResult(item)` — synchronous `PHAsset` fetch; returns `screenshot` if `mediaSubtypes & PHAssetMediaSubtypePhotoScreenshot`, else nil (§7).
+1. ~~`earlyOrigin = originForPickerResult(item)` — synchronous `PHAsset` fetch; returns `screenshot` if `mediaSubtypes & PHAssetMediaSubtypePhotoScreenshot`, else nil (§7).~~ **[UPDATED 2026-07-25]** Removed (upstream RN v0.7.0 change): the PHAsset lookup triggered the Photos permission prompt, so the picker is now fully permissionless and origin comes from EXIF only (§7.1). `screenshot` is Android-only.
 2. `loadDataRepresentationForTypeIdentifier: UTTypeImage` → `NSData`. Wrap `CGImageSourceCreateWithData` in an ARC holder (`RNCGImageSourceHolder`) so every early-return path releases it. `UIImage imageWithData:`.
 3. `detectCornersForImage:` (§2.3). If `cropAutoConfirm && corners && confidence >= 0.85` → skip editor, `applyCropAndFinishImage:` directly on the background thread.
 4. Otherwise present `RNCropEditorViewController` (main queue) seeded with the detected corners (or nil → 10% inset default). On confirm the editor renders the crop on a background thread and calls back with a `CGImageRef`; on cancel → nil → skip this photo, continue batch.
@@ -117,7 +115,7 @@ Both platforms: system photo picker → detect a document quad → present a 4-h
 - Confirm dismisses immediately, then renders `perspectiveCorrectedCGImage:corners:` on a background queue.
 - Localized strings: `RNReceiptScanner_cropInstruction` / `_cancelButton` / `_confirmButton` (defaults "Drag the corners to frame the document" / "Cancel" / "Use Photo").
 
-**Framework APIs:** `PhotosUI.PHPickerViewController`, `Photos.PHAsset`, `Vision` (`VNDetectDocumentSegmentationRequest`, `VNDetectRectanglesRequest`), `CoreImage.CIPerspectiveCorrection`, `UIKit`, `UniformTypeIdentifiers`.
+**Framework APIs:** `PhotosUI.PHPickerViewController`, `Vision` (`VNDetectDocumentSegmentationRequest`, `VNDetectRectanglesRequest`), `CoreImage.CIPerspectiveCorrection`, `UIKit`, `UniformTypeIdentifiers`. (`Photos.PHAsset` dropped 2026-07-25 with the permissionless picker.)
 
 ### 2.2 Android (`CropEditorActivity.kt` + `QuadCropView.kt`, dispatched by `ReceiptScannerModule.handleGalleryResult`)
 
@@ -131,7 +129,7 @@ Both platforms: system photo picker → detect a document quad → present a 4-h
 6. `handleGalleryResult` in the module: for each `(uriStr, corners8)` on the executor:
    - `imageProcessor.processGallery(uri, corners, quality, includeExif, includeGpsExif, includeRawExif)` — re-decodes at `GALLERY_MAX_DIM=3072`, re-applies EXIF rotation, **scales corners by `1/sample`** to match the decoded bitmap, perspective-corrects, encodes JPEG, reads EXIF (forced `orientation=NORMAL`) (§3/§4).
    - `inferOrigin(uri, exifData)` (§7); `runOcr`; `applyAutoRotateIfNeeded`; `writeExifToFile` (last); `buildImage`.
-   - `buildSuccess`. Wrap in `try/catch(OutOfMemoryError)` → reject `OUT_OF_MEMORY`.
+   - `buildSuccess`. Wrap in `try/catch(OutOfMemoryError)` → reject `PROCESSING_FAILED` with an OOM message (**[UPDATED 2026-07-25]** the retired `OUT_OF_MEMORY` code is not in the public error contract), plus a generic `catch (Exception)` → `PROCESSING_FAILED` so no failure can strand the pending callback.
 
 **Crop view (`QuadCropView`)** — deliberately mirrors iOS: handle radius 16dp, touch radius 40dp, accent `0xFF007AFF`, fill accent@0x33, stroke accent@0xE6. Corner order fixed `tl[0],tr[1],br[2],bl[3]`. `userHasAdjusted` gate: once the user drags a handle, late-arriving auto-detection (`setCorners`) is ignored so it can't overwrite manual work; `resetUserAdjusted()` on image transition. `getCornersInImageSpace` maps view→full-res by `originalW/displayW`, `originalH/displayH`.
 
@@ -233,11 +231,13 @@ Both output pixels are orientation-normalized and both report `exif.orientation 
 
 ---
 
-## 6. autoRotate (OCR-confidence / geometry-based rotation)
+## 6. autoRotate (text-angle rotation + line geometry)
 
-Two **deliberately different** algorithms — do not unify. `autoRotate` only bakes pixels when `ocr==true` and a non-zero rotation was detected; when `autoRotate==false`, detection still corrects the OCR _text_ (180° reads) but pixels are not rotated.
+**[UPDATED 2026-07-25 — synced to RN `react-native-receipt-scanner` v0.7.0]** The two per-platform heuristics below are **no longer the primary signal**. Both platforms now decide rotation primarily from the **per-line text angle** (`OcrGeometry.dominantQuarterTurn` — ML Kit `Text.Line.getAngle` on Android, the Vision observation quad `topLeft`→`topRight` on iOS), because the angle carries _direction_ and so separates 90 from 270 and catches a plain 180 flip — cases neither the count nor the aspect heuristic can reach. §6.1 (iOS count) and §6.2 (Android aspect) are retained as the **fallback** used only when the angle sample is too small or too split to judge. The old "two deliberately different algorithms — do not unify / do not port iOS's multi-pass to Android" guidance is **superseded**: the unified signal _is_ the angle; the per-platform code that survives is only the fallback. This sync also added per-line OCR **geometry** (`ocrGeometry` option → `ReceiptImage.ocrLines`): after a rotation is baked, the image is re-recognized so the text order and boxes belong to the shipped frame; boxes that can't be re-measured are remapped with `OcrGeometry.rotateClockwise` + `clamp`. See the shared `OcrGeometry` on both platforms.
 
-### 6.1 iOS multi-pass count-based (`recognizeAndDetectRotationInImage:`)
+`autoRotate` only bakes pixels when `ocr==true` and a non-zero rotation was detected; when `autoRotate==false`, detection still corrects the OCR _text_ (180° reads) but pixels are not rotated.
+
+### 6.1 iOS multi-pass count-based — now the fallback (`OcrProcessor.recognize`)
 
 **[DOC DRIFT — `ocr-orientation-correction.md` v2.0]** describes a confidence-Q formula (`Q0=mean(conf)×clamp(count/10)`, thresholds 0.80 / ×1.15). **The code does NOT use confidence for routing** — it uses **non-empty observation counts**. Implement the code:
 
@@ -251,7 +251,7 @@ Two **deliberately different** algorithms — do not unify. `autoRotate` only ba
 
 - Rotation helper `rotate:byDegrees:` is **CCW** (90→`M_PI_2`, 270→`-M_PI_2`); `cgImageByRotating:` (pixel bake) uses the **same CCW convention** → internally consistent.
 
-### 6.2 Android single-pass aspect-mismatch (`recognizeWithRotationDetection`, spec v1.3)
+### 6.2 Android single-pass aspect-mismatch — now the fallback (`recognizeWithRotationDetection`)
 
 Relies on ML Kit Korean being **rotation-invariant** (field-validated 16.0.0; multi-pass probes returned identical results, so probing is useless). Single Pass 0:
 
@@ -278,9 +278,9 @@ Same 4-value enum (`ImageOrigin{camera,screenshot,download,unknown}`), different
 
 ### 7.1 iOS (gallery)
 
-Priority: `earlyOrigin` (PHAsset) → extracted EXIF → raw source props → `unknown`.
+**[UPDATED 2026-07-25]** Priority: extracted EXIF → raw source props → `unknown`. The `earlyOrigin` (PHAsset) step was removed with the permissionless picker (upstream RN v0.7.0), so **`screenshot` is unreachable on iOS** — screenshots (no camera EXIF) classify as `download`. `screenshot` is an Android-only value now.
 
-- **PHAsset:** if `assetIdentifier` available and `mediaSubtypes & PHAssetMediaSubtypePhotoScreenshot` → `screenshot`. **No "download" subtype exists** in Photos.
+- ~~**PHAsset:** if `assetIdentifier` available and `mediaSubtypes & PHAssetMediaSubtypePhotoScreenshot` → `screenshot`. **No "download" subtype exists** in Photos.~~ (Removed — see above.)
 - **EXIF heuristic `OriginFromExifFields(make,model,dateTime)`:** `dateTimeOriginal` present → `camera` (shutter timestamp, strongest signal); else `make && model` → `camera`; else `!make && !model` → `download` (no camera metadata at all); else (make XOR model) → nil/ambiguous → falls through to `unknown`.
 - The source-ref read is gated on `exifData==nil` to avoid decoding TIFF/EXIF twice.
 
@@ -297,9 +297,9 @@ Priority: `earlyOrigin` (PHAsset) → extracted EXIF → raw source props → `u
 
 ### 8.1 iOS
 
-- **Frameworks (podspec `s.frameworks`):** `VisionKit`, `Vision`, `PhotosUI`, `ImageIO`, `CoreImage`, `CoreGraphics`, `UniformTypeIdentifiers`. Plus `Photos` (`PHAsset`) and `UIKit`.
+- **Frameworks (podspec `s.frameworks`):** `VisionKit`, `Vision`, `PhotosUI`, `ImageIO`, `CoreImage`, `CoreGraphics`, `UniformTypeIdentifiers`. Plus `UIKit`. (`Photos` dropped 2026-07-25 — no `PHAsset` use remains.)
 - **Deployment target: iOS 16.0** — Korean OCR via `VNRecognizeTextRequest` requires it; there is no Latin-only fallback (ADR-006). Set in the `_ios` plugin podspec / `Package.swift`.
-- **Host Info.plist (consuming app):** `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`. **No location key** — `includeGpsExif` only copies embedded EXIF GPS, no `CLLocationManager`.
+- **Host Info.plist (consuming app):** `NSCameraUsageDescription` only. **[UPDATED 2026-07-25]** `NSPhotoLibraryUsageDescription` is no longer needed — the gallery flow uses the permissionless `PHPickerViewController` with no PHAsset lookup. **No location key** — `includeGpsExif` only copies embedded EXIF GPS, no `CLLocationManager`.
 - Localizable strings: `RNReceiptScanner_cropInstruction` / `_cancelButton` / `_confirmButton` (rename to a Flutter-appropriate prefix but keep the default-value fallback pattern).
 
 ### 8.2 Android
@@ -314,13 +314,13 @@ Priority: `earlyOrigin` (PHAsset) → extracted EXIF → raw source props → `u
 ## 9. Top porting risks (priority order)
 
 1. **rotationDegrees CW/CCW is opposite per platform** (iOS `cgImageByRotating:90`=CCW; Android `postRotate(90)`=CW). Each is internally self-consistent because detection + pixel-rotation share a convention _within_ the platform. Keep rotation **native-internal, per-platform**; never introduce a shared Dart rotation type or normalize the value — doing so silently breaks one platform. It is never on the Pigeon surface.
-2. **Two different OCR-rotation algorithms that must stay different.** Android's single-pass `lineAspect`-vs-`imageAspect` mismatch depends on `text-recognition-korean` being rotation-invariant (validated 16.0.0, pinned 16.0.1, manual regression gate). If the Flutter Android plugin pulls a different ML Kit version the assumption breaks with no automated signal. Do not port iOS's multi-pass to Android; pin the ML Kit version and keep the guard.
+2. **Rotation now shares a text-angle primary signal (see §6 UPDATED 2026-07-25).** Both platforms decide rotation from `OcrGeometry.dominantQuarterTurn`; the iOS count-probe and Android aspect-mismatch survive only as the fallback. The old "keep the two algorithms different / do not port iOS's multi-pass to Android" rule is superseded. The ML Kit version pin (`text-recognition-korean` 16.0.1) still matters — the fallback's rotation-invariance assumption and the per-line confidence field both depend on it — so keep the pin and the guard.
 3. **Async result must survive the VC/Activity round-trip.** RN used retained delegates (iOS) and `pendingPromise` + `ActivityEventListener` (Android). The Flutter port must: iOS — hold strong refs to the camera/gallery/crop delegate objects on the plugin impl until the completion fires (skeleton already retains `apiImpl` but not per-flow delegates); Android — make the plugin `ActivityAware` + register a `PluginRegistry.ActivityResultListener`, holding the Pigeon `callback` across **both** the GMS scanner and `CropEditorActivity` results. This is the classic Flutter-plugin failure point and the biggest delta from the current stub (Android `scan()` is entirely unimplemented and not ActivityAware).
 4. **ADR-004 iOS crop-editor fixes must port verbatim** (they fail only on real devices, not the simulator): `UIButton` not `UIBarButtonItem`; button bar `view.bottomAnchor -34` not `safeAreaLayoutGuide`; handles added before the button bar for hit-test z-order; `VNImageRequestHandler(cgImage:orientation:)` not `initWithCIImage:`; bake orientation (`imageByApplyingOrientation:`) before `CIPerspectiveCorrection`; fresh `CIContext` per call.
 5. **autoRotate pipeline order differs and is load-bearing.** iOS OCRs the CGImage _before_ encoding and bakes rotation into pixels; Android OCRs the _encoded file_ after, then `rotateFileInPlace`, and **`writeExifToFile` must run last** (a later re-compress strips the tags). Also the iOS gallery batch **must serialize** editor presentations (`queuedItems`/`processNextQueuedItem`) — a parallel `present` for-loop makes UIKit silently drop all but the first and the Promise/completion hangs forever.
 
 ## 10. Doc-drift summary (implement code, not these docs)
 
-- iOS OCR routing is **count-based**, not the confidence-Q formula in `ocr-orientation-correction.md` v2.0.
+- iOS OCR routing is **text-angle-primary with a count-based fallback** (see §6 UPDATED 2026-07-25), not the confidence-Q formula in `ocr-orientation-correction.md` v2.0.
 - Android OCR **confidence is populated** (bundled recognizer), contradicting platform-asymmetries §2.2.
 - Android **does write output-file EXIF** (`writeExifToFile`), contradicting platform-asymmetries §1.1 / ADR-006 D11 "deferred" — but only a subset of tags.
