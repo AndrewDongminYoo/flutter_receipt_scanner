@@ -16,7 +16,11 @@ data class OcrOutcome(
      * the native port map §6). 0 when no rotation is warranted.
      */
     val rotationDegrees: Int,
-    /** Number of recognized lines — feeds the Dart OCR-floor gate and the re-read check. */
+    /**
+     * Number of recognized ML Kit lines, blank-text ones included. Reporting
+     * only: the wire's `ocrQuality.lineCount` stays null and Dart derives its
+     * own count from `ocrText` (port map §"OcrQuality").
+     */
     val lineCount: Int,
     /**
      * Per-line geometry in the coordinates of the image handed to

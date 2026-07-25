@@ -161,7 +161,9 @@ object ResultBuilder {
                     Log.w(LOG_TAG, "Re-OCR after auto-rotate failed", e)
                     null
                 }
-            if (refreshed != null && refreshed.lineCount > 0) {
+            // Require real text, not a positive lineCount: lineCount includes
+            // blank ML Kit lines, and what ships below is refreshed.text.
+            if (refreshed != null && !refreshed.text.isNullOrBlank()) {
                 // Fresh boxes were measured on the output frame — no remap owed.
                 result = refreshed
                 remapDegrees = 0
