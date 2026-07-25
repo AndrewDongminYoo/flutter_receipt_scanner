@@ -91,9 +91,7 @@ Both platforms: system photo picker → detect a document quad → present a 4-h
 
 #### Picker & auth
 
-- If `PHPhotoLibrary.authorizationStatus == notDetermined`, request authorization (only to populate `PHPickerResult.assetIdentifier` for origin detection — the picker itself works without it). Present `PHPickerViewController`:
-  - `config.filter = imagesFilter`, `config.selectionLimit = maxPages`.
-  - If authorized/limited: init config `initWithPhotoLibrary:` so `assetIdentifier` is populated.
+- **[UPDATED 2026-07-25]** Fully permissionless: present `PHPickerViewController` with a plain `PHPickerConfiguration` (`config.filter = imagesFilter`, `config.selectionLimit = maxPages`). Never call `initWithPhotoLibrary:` and never request `PHPhotoLibrary` authorization — those steps existed only to populate `assetIdentifier` for the PHAsset origin lookup, which was removed (see "Per item" step 1 and §7.1).
 
 #### Per-photo serialization (ADR / AGENTS.md anti-pattern — load-bearing)
 
