@@ -1,6 +1,6 @@
 name: flutter_receipt_scanner_ios
 description: iOS implementation of the flutter_receipt_scanner plugin.
-version: 0.1.0
+version: 0.2.0
 homepage: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
 repository: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
 issue_tracker: https://github.com/AndrewDongminYoo/flutter_receipt_scanner/issues
@@ -29,7 +29,7 @@ flutter:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_receipt_scanner_platform_interface: ^0.1.0
+  flutter_receipt_scanner_platform_interface: ^0.2.0
 
 dev_dependencies:
   flutter_test:

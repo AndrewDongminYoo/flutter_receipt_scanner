@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+### Added
+
+- Re-export `OcrLine` so applications can consume per-line OCR geometry from scan results.
+
 ## 0.1.0
 
 Initial release.

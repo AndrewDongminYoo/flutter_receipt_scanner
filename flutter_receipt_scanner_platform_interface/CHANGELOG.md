@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0
+
+### Added
+
+- `ScanReceiptOptions.ocrGeometry` for requesting per-line OCR text-region boxes.
+- `OcrLine` and `ReceiptImage.ocrLines` for OCR text, confidence, and output-image pixel geometry.
+
+### Changed
+
+- Document the native `maxPages` coercion range as 1 through 10.
+- Clarify that screenshot origin detection is Android-only.
+
 ## 0.1.0
 
 Initial release.
