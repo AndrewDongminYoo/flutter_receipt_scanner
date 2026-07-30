@@ -76,7 +76,7 @@ Future<ScanReceiptResult> scan({
 
 ```dart
 final class MergedOcrResult {
-  const MergedOcrResult({
+  MergedOcrResult({
     required this.text,
     required this.isComplete,
     required this.pageUris,

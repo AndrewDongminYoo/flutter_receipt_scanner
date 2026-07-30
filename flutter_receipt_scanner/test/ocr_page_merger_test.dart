@@ -150,7 +150,23 @@ void main() {
     );
   });
 
-  test('long overlap compares the bounded suffix and prefix', () {
+  test(
+    'long exact overlap beyond the fuzzy comparison limit is emitted once',
+    () {
+      final shared = 'A' * 600;
+
+      final result = mergeReceiptOcrPages([
+        _page(0, '첫 페이지\n$shared'),
+        _page(1, '$shared\n마지막 페이지'),
+      ]);
+
+      expect(result.text, '첫 페이지\n$shared\n마지막 페이지');
+      expect(result.isComplete, isTrue);
+      expect(result.unmatchedBoundaryIndexes, isEmpty);
+    },
+  );
+
+  test('long partial overlap preserves the unproven line suffix', () {
     final shared = 'A' * 600;
 
     final result = mergeReceiptOcrPages([
@@ -158,8 +174,9 @@ void main() {
       _page(1, '$shared-RIGHT\n마지막 페이지'),
     ]);
 
-    expect(result.isComplete, isTrue);
-    expect(result.unmatchedBoundaryIndexes, isEmpty);
+    expect(result.text, '첫 페이지\nLEFT-$shared\n$shared-RIGHT\n마지막 페이지');
+    expect(result.isComplete, isFalse);
+    expect(result.unmatchedBoundaryIndexes, [0]);
   });
 
   test('larger exact repeated overlap wins over the shorter candidate', () {

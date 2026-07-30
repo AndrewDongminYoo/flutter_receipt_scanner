@@ -73,26 +73,20 @@ _Overlap? _findOverlap(List<String> leftLines, List<String> rightLines) {
   final rightLimit = math.min(_maxWindowLines, rightLines.length);
   final leftWindows = List.generate(
     leftLimit,
-    (index) => _comparisonText(
-      leftLines.sublist(leftLines.length - index - 1),
-      keepEnd: true,
-    ),
+    (index) => _comparisonText(leftLines.sublist(leftLines.length - index - 1)),
     growable: false,
   );
   final rightWindows = List.generate(
     rightLimit,
-    (index) => _comparisonText(
-      rightLines.sublist(0, index + 1),
-      keepEnd: false,
-    ),
+    (index) => _comparisonText(rightLines.sublist(0, index + 1)),
     growable: false,
   );
   _Overlap? best;
 
-  for (var leftCount = 1; leftCount <= leftLimit; leftCount++) {
-    final left = leftWindows[leftCount - 1];
-    for (var rightCount = 1; rightCount <= rightLimit; rightCount++) {
-      final right = rightWindows[rightCount - 1];
+  for (var rightCount = 1; rightCount <= rightLimit; rightCount++) {
+    final right = rightWindows[rightCount - 1];
+    for (var leftCount = 1; leftCount <= leftLimit; leftCount++) {
+      final left = leftWindows[leftCount - 1];
       final singleLine = leftCount == 1 || rightCount == 1;
       final minimumCharacters = singleLine ? _minimumSingleLineCharacters : _minimumWindowCharacters;
       final minimumSimilarity = singleLine ? _minimumSingleLineSimilarity : _minimumWindowSimilarity;
@@ -101,7 +95,9 @@ _Overlap? _findOverlap(List<String> leftLines, List<String> rightLines) {
       final longerLength = math.max(left.length, right.length);
       if ((longerLength - shorterLength) / longerLength > 1 - minimumSimilarity) continue;
 
-      final similarity = _similarity(left, right);
+      final exactMatch = left == right;
+      if (!exactMatch && longerLength > _maxComparisonCharacters) continue;
+      final similarity = exactMatch ? 1.0 : _similarity(left, right);
       if (similarity < minimumSimilarity) continue;
 
       final candidate = _Overlap(
@@ -116,13 +112,8 @@ _Overlap? _findOverlap(List<String> leftLines, List<String> rightLines) {
   return best;
 }
 
-String _comparisonText(List<String> lines, {required bool keepEnd}) {
-  final normalized = lines.map((line) => line.toLowerCase().replaceAll(_whitespace, ' ').trim()).join(' ');
-  if (normalized.length <= _maxComparisonCharacters) return normalized;
-  return keepEnd
-      ? normalized.substring(normalized.length - _maxComparisonCharacters)
-      : normalized.substring(0, _maxComparisonCharacters);
-}
+String _comparisonText(List<String> lines) =>
+    lines.map((line) => line.toLowerCase().replaceAll(_whitespace, ' ').trim()).join(' ');
 
 double _similarity(String left, String right) {
   final longestLength = math.max(left.length, right.length);
@@ -168,8 +159,6 @@ final class _Overlap {
     if (comparedCharacters != other.comparedCharacters) {
       return comparedCharacters > other.comparedCharacters;
     }
-    if (similarity != other.similarity) return similarity > other.similarity;
-    if (rightLineCount != other.rightLineCount) return rightLineCount < other.rightLineCount;
-    return leftLineCount < other.leftLineCount;
+    return similarity > other.similarity;
   }
 }
