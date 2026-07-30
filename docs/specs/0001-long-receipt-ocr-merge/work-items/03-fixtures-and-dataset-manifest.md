@@ -19,16 +19,16 @@ KORIE is deferred until its archive and dataset-specific license are verified.
 
 ## Acceptance criteria
 
-- [ ] The canonical logical fixture is exactly 1,200 × 13,200 pixels.
-- [ ] Six page fixtures are exactly 1,200 × 2,640 pixels with 528-pixel adjacent overlap.
-- [ ] Regeneration produces deterministic checksums.
-- [ ] Missing-page, unmatched-boundary, repeated-line, segmentation-difference, and below-floor variants exist.
-- [ ] Canonical page OCR strings merge byte-for-byte to the canonical normalized receipt text.
-- [ ] Failure variants return exact incomplete diagnostics.
-- [ ] The dataset manifest records source URL, access date, license, expected public files, annotations, scripts, checksums when stable, and intended role.
-- [ ] Normal tests and CI require no network, authentication, Kaggle, Hugging Face, or third-party receipt photos.
-- [ ] Humyn is not used as character-error-rate ground truth.
-- [ ] Formatting, fixture tests, workspace analysis, and the full workspace test suite pass.
+- [x] The canonical logical fixture is exactly 1,200 × 13,200 pixels.
+- [x] Six page fixtures are exactly 1,200 × 2,640 pixels with 528-pixel adjacent overlap.
+- [x] Regeneration produces deterministic checksums.
+- [x] Missing-page, unmatched-boundary, repeated-line, segmentation-difference, and below-floor variants exist.
+- [x] Canonical page OCR strings merge byte-for-byte to the canonical normalized receipt text.
+- [x] Failure variants return exact incomplete diagnostics.
+- [x] The dataset manifest records source URL, access date, license, expected public files, annotations, scripts, checksums when stable, and intended role.
+- [x] Normal tests and CI require no network, authentication, Kaggle, Hugging Face, or third-party receipt photos.
+- [x] Humyn is not used as character-error-rate ground truth.
+- [x] Formatting, fixture tests, workspace analysis, and the full workspace test suite pass.
 
 ## Covers
 
