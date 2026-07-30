@@ -18,6 +18,23 @@ void main() {
     expect(scanButton, findsOneWidget);
   });
 
+  testWidgets('multi-page OCR option becomes available for a multi-page camera scan', (tester) async {
+    await tester.pumpWidget(const ReceiptScannerExampleApp());
+
+    final maxPagesLabel = find.text('최대 페이지 수 (maxPages)');
+    await tester.scrollUntilVisible(maxPagesLabel, 200);
+    final maxPagesRow = find.ancestor(of: maxPagesLabel, matching: find.byType(Row)).first;
+    await tester.tap(find.descendant(of: maxPagesRow, matching: find.byIcon(Icons.add)));
+    await tester.pump();
+
+    final mergeOption = find.widgetWithText(SwitchListTile, '여러 페이지 OCR 이어붙이기 (mergeOcrPages)');
+    await tester.scrollUntilVisible(mergeOption, 200);
+    expect(tester.widget<SwitchListTile>(mergeOption).onChanged, isNotNull);
+    await tester.tap(mergeOption);
+    await tester.pump();
+    expect(tester.widget<SwitchListTile>(mergeOption).value, isTrue);
+  });
+
   testWidgets('result screen shows status, image card, and reveals the copy button', (tester) async {
     final result = ScanReceiptResult(
       status: ScanStatus.success,
@@ -34,6 +51,11 @@ void main() {
           ocrQuality: const OcrQuality(textLength: 16, lineCount: 2, confidence: 0.9),
         ),
       ],
+      mergedOcr: MergedOcrResult(
+        text: 'Store Example\nItem A 1000\nTotal 1000',
+        isComplete: true,
+        pageUris: const ['file:///tmp/receipt.jpg', 'file:///tmp/receipt-2.jpg'],
+      ),
     );
 
     await tester.pumpWidget(
@@ -43,13 +65,19 @@ void main() {
     );
 
     expect(find.textContaining('스캔 성공'), findsOneWidget);
+    expect(find.text('병합된 OCR'), findsOneWidget);
+    expect(find.text('완전한 병합'), findsOneWidget);
+    expect(find.textContaining('Store Example'), findsOneWidget);
+    expect(find.textContaining('Total 1000'), findsOneWidget);
     expect(find.text('페이지 1'), findsOneWidget);
+    expect(find.text('복사'), findsOneWidget);
 
     // The copy button lives inside the collapsed "OCR 텍스트" tile.
-    final ocrTile = find.text('OCR 텍스트');
-    await tester.scrollUntilVisible(ocrTile, 200);
+    final ocrTile = find.text('OCR 텍스트').first;
+    await tester.drag(find.byType(ListView), const Offset(0, -800));
+    await tester.pumpAndSettle();
     await tester.tap(ocrTile);
     await tester.pumpAndSettle();
-    expect(find.text('복사'), findsOneWidget);
+    expect(find.text('복사'), findsNWidgets(2));
   });
 }

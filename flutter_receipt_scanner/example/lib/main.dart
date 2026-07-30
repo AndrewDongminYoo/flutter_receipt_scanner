@@ -127,6 +127,7 @@ class _ScanScreenState extends State<ScanScreen> {
   bool _includeGpsExif = false;
   bool _includeRawExif = false;
   bool _cropAutoConfirm = false;
+  bool _mergeOcrPages = false;
 
   // OCR-floor gate (a separate `scan(ocrFloor:)` argument, not a native option).
   bool _floorEnabled = true;
@@ -138,6 +139,8 @@ class _ScanScreenState extends State<ScanScreen> {
   ({String code, String message})? _error;
 
   bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
+
+  bool get _canMergeOcrPages => _source == ScanSource.camera && _ocr && _maxPages >= 2;
 
   Future<void> _runScan() async {
     setState(() {
@@ -170,6 +173,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 ),
               )
             : const OcrFloorOrDisabled.disabled(),
+        mergeOcrPages: _mergeOcrPages,
       );
     } on PlatformException catch (e) {
       error = (code: e.code, message: e.message ?? '');
@@ -235,7 +239,10 @@ class _ScanScreenState extends State<ScanScreen> {
               ButtonSegment(value: ScanSource.gallery, label: Text('갤러리'), icon: Icon(Icons.photo_library)),
             ],
             selected: {_source},
-            onSelectionChanged: (s) => setState(() => _source = s.first),
+            onSelectionChanged: (selection) => setState(() {
+              _source = selection.first;
+              if (_source != ScanSource.camera) _mergeOcrPages = false;
+            }),
           ),
           if (_source == ScanSource.gallery) ...[
             const SizedBox(height: 12),
@@ -257,7 +264,10 @@ class _ScanScreenState extends State<ScanScreen> {
           SwitchListTile(
             title: const Text('OCR · 한국어 + 라틴 텍스트 인식'),
             value: _ocr,
-            onChanged: (v) => setState(() => _ocr = v),
+            onChanged: (value) => setState(() {
+              _ocr = value;
+              if (!_ocr) _mergeOcrPages = false;
+            }),
           ),
           SwitchListTile(
             title: const Text('EXIF 메타데이터 포함'),
@@ -269,7 +279,24 @@ class _ScanScreenState extends State<ScanScreen> {
             value: _maxPages,
             min: 1,
             max: 10,
-            onChanged: (v) => setState(() => _maxPages = v),
+            onChanged: (value) => setState(() {
+              _maxPages = value;
+              if (_maxPages < 2) _mergeOcrPages = false;
+            }),
+          ),
+          SwitchListTile(
+            title: const Text('여러 페이지 OCR 이어붙이기 (mergeOcrPages)'),
+            subtitle: Text(
+              !_ocr
+                  ? 'OCR이 켜져 있어야 사용할 수 있습니다'
+                  : _source != ScanSource.camera
+                  ? '카메라 스캔에서만 사용할 수 있습니다'
+                  : _maxPages < 2
+                  ? '최대 페이지 수를 2 이상으로 설정하세요'
+                  : '촬영 순서대로 OCR 텍스트를 이어붙이고 경계 진단을 반환합니다',
+            ),
+            value: _mergeOcrPages,
+            onChanged: _canMergeOcrPages ? (value) => setState(() => _mergeOcrPages = value) : null,
           ),
           _ChipRow<double>(
             label: 'JPEG 품질 (quality)',
@@ -441,6 +468,7 @@ class ResultScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _StatusBanner(result),
+          if (result.mergedOcr case final mergedOcr?) ...[const SizedBox(height: 16), _MergedOcrCard(mergedOcr)],
           if (result.images.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(
@@ -465,6 +493,74 @@ class ResultScreen extends StatelessWidget {
             label: const Text('다시 스캔하기'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MergedOcrCard extends StatelessWidget {
+  const _MergedOcrCard(this.result);
+
+  final MergedOcrResult result;
+
+  void _copyText(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: result.text));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('병합된 OCR 텍스트를 복사했습니다'), duration: Duration(seconds: 1)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unmatchedBoundaries = result.unmatchedBoundaryIndexes.map((index) => '${index + 1}–${index + 2}').join(', ');
+    final rejectedPages = result.rejectedPageIndexes.map((index) => '${index + 1}').join(', ');
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '병합된 OCR',
+                    style: TextStyle(fontWeight: FontWeight.w700, color: _Asana.ink),
+                  ),
+                ),
+                Text(
+                  result.isComplete ? '완전한 병합' : '확인 필요',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: result.isComplete ? _Asana.success : _Asana.warningInk,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _MetaRow('페이지 수', '${result.pageUris.length}'),
+            _MetaRow('경계 미확인', unmatchedBoundaries.isEmpty ? '없음' : unmatchedBoundaries),
+            _MetaRow('OCR 기준 미달', rejectedPages.isEmpty ? '없음' : rejectedPages),
+            _DetailTile(
+              title: '이어붙인 텍스트',
+              initiallyExpanded: true,
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: result.text.isEmpty ? null : () => _copyText(context),
+                    icon: const Icon(Icons.copy, size: 16),
+                    label: const Text('복사'),
+                  ),
+                ),
+                SelectableText(
+                  result.text.isEmpty ? '(인식된 텍스트 없음)' : result.text,
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: _Asana.ink),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
