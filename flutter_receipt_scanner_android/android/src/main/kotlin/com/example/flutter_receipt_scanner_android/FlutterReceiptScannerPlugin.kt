@@ -177,6 +177,9 @@ class FlutterReceiptScannerPlugin :
         val result = GmsDocumentScanningResult.fromActivityResultIntent(data)
         val pages = result?.pages ?: emptyList()
         val options = pendingOptions ?: ScanOptionsWire()
+        // GMS enforces setPageLimit in-UI, so the expected value is zero — computed defensively.
+        val effectiveMaxPages = (options.maxPages ?: 1).toInt().coerceIn(1, MAX_PAGES)
+        val discardedPageCount = (pages.size - effectiveMaxPages).coerceAtLeast(0).toLong()
 
         executor.execute {
             val context = appContext
@@ -193,7 +196,14 @@ class FlutterReceiptScannerPlugin :
                 if (images.isEmpty() && pages.isNotEmpty()) {
                     reject("PROCESSING_FAILED", "Failed to process the scanned pages.")
                 } else {
-                    resolve(ScanResultWire(status = ScanStatusWire.SUCCESS, images = images, rejectedImages = emptyList()))
+                    resolve(
+                        ScanResultWire(
+                            status = ScanStatusWire.SUCCESS,
+                            images = images,
+                            rejectedImages = emptyList(),
+                            discardedPageCount = discardedPageCount,
+                        ),
+                    )
                 }
             } catch (e: OutOfMemoryError) {
                 // Report under the documented PROCESSING_FAILED code (the public error

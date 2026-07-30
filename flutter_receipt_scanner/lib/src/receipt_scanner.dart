@@ -33,16 +33,29 @@ Future<ScanReceiptResult> scan({
     for (var index = 0; index < orderedPages.length; index++)
       if (rejectedUris.contains(orderedPages[index].uri)) index,
   };
-  final mergedOcr = mergeReceiptOcrPages(
+  var mergedOcr = mergeReceiptOcrPages(
     orderedPages,
     rejectedPageIndexes: rejectedPageIndexes,
   );
+  if (native.discardedPageCount > 0 && mergedOcr.isComplete) {
+    // A natively dropped page means the logical receipt is not fully covered,
+    // even when every returned adjacent boundary is proven (supersedes the
+    // unconditional one-page completeness rule of spec 0001).
+    mergedOcr = MergedOcrResult(
+      text: mergedOcr.text,
+      isComplete: false,
+      pageUris: mergedOcr.pageUris,
+      unmatchedBoundaryIndexes: mergedOcr.unmatchedBoundaryIndexes,
+      rejectedPageIndexes: mergedOcr.rejectedPageIndexes,
+    );
+  }
 
   return ScanReceiptResult(
     status: gated.status,
     images: gated.images,
     rejectedImages: gated.rejectedImages,
     mergedOcr: mergedOcr,
+    discardedPageCount: gated.discardedPageCount,
   );
 }
 

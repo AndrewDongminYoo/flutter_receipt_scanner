@@ -97,6 +97,11 @@ class ScanResultWire {
   ScanStatusWire status;
   List<ReceiptImageWire> images;
   List<ReceiptImageWire> rejectedImages;
+
+  /// Natively captured pages dropped before processing (absent means zero).
+  /// iOS can exceed `maxPages` because VisionKit cannot enforce a page limit
+  /// in its UI; declared last to keep existing wire positions stable.
+  int? discardedPageCount;
 }
 
 /// One recognized text line's box, in top-left-origin pixels of the output image.

@@ -347,13 +347,20 @@ data class ScanResultWire(
     val status: ScanStatusWire,
     val images: List<ReceiptImageWire>,
     val rejectedImages: List<ReceiptImageWire>,
+    /**
+     * Natively captured pages dropped before processing (absent means zero).
+     * iOS can exceed `maxPages` because VisionKit cannot enforce a page limit
+     * in its UI; declared last to keep existing wire positions stable.
+     */
+    val discardedPageCount: Long? = null,
 ) {
     companion object {
         fun fromList(pigeonVar_list: List<Any?>): ScanResultWire {
             val status = pigeonVar_list[0] as ScanStatusWire
             val images = pigeonVar_list[1] as List<ReceiptImageWire>
             val rejectedImages = pigeonVar_list[2] as List<ReceiptImageWire>
-            return ScanResultWire(status, images, rejectedImages)
+            val discardedPageCount = pigeonVar_list[3] as Long?
+            return ScanResultWire(status, images, rejectedImages, discardedPageCount)
         }
     }
 
@@ -362,6 +369,7 @@ data class ScanResultWire(
             status,
             images,
             rejectedImages,
+            discardedPageCount,
         )
 }
 

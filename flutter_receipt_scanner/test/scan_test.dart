@@ -242,6 +242,58 @@ void main() {
     },
   );
 
+  test('discarded native pages force an incomplete merge', () async {
+    final platform = _RecordingPlatform(
+      result: ScanReceiptResult(
+        status: ScanStatus.success,
+        images: [
+          _image(
+            'file:///tmp/first.jpg',
+            '서울 마트\n상품 A 1,000\n중간 합계 1,000',
+          ),
+          _image(
+            'file:///tmp/second.jpg',
+            '상품 A 1,000\n중간 합계 1,000\nTOTAL 1,100',
+          ),
+        ],
+        discardedPageCount: 1,
+      ),
+    );
+    FlutterReceiptScannerPlatform.instance = platform;
+
+    final result = await scan(
+      options: const ScanReceiptOptions(maxPages: 2),
+      mergeOcrPages: true,
+    );
+
+    // Every returned boundary is proven, but a natively dropped page means the
+    // logical receipt is not fully covered — never claim completeness.
+    expect(result.mergedOcr?.isComplete, isFalse);
+    expect(result.mergedOcr?.unmatchedBoundaryIndexes, isEmpty);
+    expect(result.mergedOcr?.rejectedPageIndexes, isEmpty);
+    expect(
+      result.mergedOcr?.text,
+      '서울 마트\n상품 A 1,000\n중간 합계 1,000\nTOTAL 1,100',
+    );
+    expect(result.discardedPageCount, 1);
+  });
+
+  test('discarded count is preserved when merging is disabled', () async {
+    final platform = _RecordingPlatform(
+      result: ScanReceiptResult(
+        status: ScanStatus.success,
+        images: _defaultResult.images,
+        discardedPageCount: 2,
+      ),
+    );
+    FlutterReceiptScannerPlatform.instance = platform;
+
+    final result = await scan(options: const ScanReceiptOptions(maxPages: 3));
+
+    expect(result.discardedPageCount, 2);
+    expect(result.mergedOcr, isNull);
+  });
+
   test('cancellation never attaches merged OCR', () async {
     final platform = _RecordingPlatform(
       result: const ScanReceiptResult(status: ScanStatus.cancelled),

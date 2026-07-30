@@ -468,7 +468,10 @@ class ResultScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _StatusBanner(result),
-          if (result.mergedOcr case final mergedOcr?) ...[const SizedBox(height: 16), _MergedOcrCard(mergedOcr)],
+          if (result.mergedOcr case final mergedOcr?) ...[
+            const SizedBox(height: 16),
+            _MergedOcrCard(mergedOcr, discardedPageCount: result.discardedPageCount),
+          ],
           if (result.images.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(
@@ -499,9 +502,12 @@ class ResultScreen extends StatelessWidget {
 }
 
 class _MergedOcrCard extends StatelessWidget {
-  const _MergedOcrCard(this.result);
+  const _MergedOcrCard(this.result, {required this.discardedPageCount});
 
   final MergedOcrResult result;
+
+  /// maxPages 초과로 네이티브에서 폐기된 페이지 수 (iOS에서만 0보다 클 수 있음).
+  final int discardedPageCount;
 
   void _copyText(BuildContext context) {
     Clipboard.setData(ClipboardData(text: result.text));
@@ -539,6 +545,7 @@ class _MergedOcrCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _MetaRow('페이지 수', '${result.pageUris.length}'),
+            if (discardedPageCount > 0) _MetaRow('폐기된 페이지', '$discardedPageCount장 (maxPages 초과로 미처리)'),
             _MetaRow('경계 미확인', unmatchedBoundaries.isEmpty ? '없음' : unmatchedBoundaries),
             _MetaRow('OCR 기준 미달', rejectedPages.isEmpty ? '없음' : rejectedPages),
             _DetailTile(

@@ -267,8 +267,18 @@ void main() {
       expect(result.images, isEmpty);
       expect(result.rejectedImages, isEmpty);
       expect(result.mergedOcr, isNull);
+      expect(result.discardedPageCount, 0);
     },
   );
+
+  test('ScanReceiptResult holds an explicit discarded page count', () {
+    const result = ScanReceiptResult(
+      status: ScanStatus.success,
+      discardedPageCount: 2,
+    );
+
+    expect(result.discardedPageCount, 2);
+  });
 
   test('MergedOcrResult holds immutable merge diagnostics', () {
     final pageUris = ['file:///tmp/first.jpg', 'file:///tmp/second.jpg'];

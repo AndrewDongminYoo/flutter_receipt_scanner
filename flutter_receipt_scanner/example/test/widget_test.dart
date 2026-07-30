@@ -67,6 +67,8 @@ void main() {
     expect(find.textContaining('스캔 성공'), findsOneWidget);
     expect(find.text('병합된 OCR'), findsOneWidget);
     expect(find.text('완전한 병합'), findsOneWidget);
+    // 폐기된 페이지가 없으면 해당 진단 행은 렌더링되지 않는다.
+    expect(find.text('폐기된 페이지'), findsNothing);
     expect(find.textContaining('Store Example'), findsOneWidget);
     expect(find.textContaining('Total 1000'), findsOneWidget);
     expect(find.text('페이지 1'), findsOneWidget);
@@ -79,5 +81,27 @@ void main() {
     await tester.tap(ocrTile);
     await tester.pumpAndSettle();
     expect(find.text('복사'), findsNWidgets(2));
+  });
+
+  testWidgets('result screen surfaces natively discarded pages', (tester) async {
+    final result = ScanReceiptResult(
+      status: ScanStatus.success,
+      mergedOcr: MergedOcrResult(
+        text: 'Store Example\nItem A 1000',
+        isComplete: false,
+        pageUris: const ['file:///tmp/receipt.jpg'],
+      ),
+      discardedPageCount: 1,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ResultScreen(result: result, source: ScanSource.camera),
+      ),
+    );
+
+    expect(find.text('폐기된 페이지'), findsOneWidget);
+    expect(find.text('1장 (maxPages 초과로 미처리)'), findsOneWidget);
+    expect(find.text('확인 필요'), findsOneWidget);
   });
 }

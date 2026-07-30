@@ -130,7 +130,11 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
     ) {
         controller.dismiss(animated: true)
         let opts = options ?? ScanOptionsWire()
-        let pageCount = min(scan.pageCount, min(Self.maxPagesCeiling, max(1, Int(opts.maxPages ?? 1))))
+        let effectiveMaxPages = min(Self.maxPagesCeiling, max(1, Int(opts.maxPages ?? 1)))
+        let pageCount = min(scan.pageCount, effectiveMaxPages)
+        // VisionKit cannot enforce a page limit in its UI — keep the first
+        // `maxPages` pages unchanged and surface how many were dropped.
+        let discardedPageCount = Int64(max(0, scan.pageCount - effectiveMaxPages))
         var pages: [UIImage] = []
         for index in 0 ..< pageCount {
             pages.append(scan.imageOfPage(at: index))
@@ -147,7 +151,12 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
                 )))
                 return
             }
-            self?.finish(.success(ScanResultWire(status: .success, images: images, rejectedImages: [])))
+            self?.finish(.success(ScanResultWire(
+                status: .success,
+                images: images,
+                rejectedImages: [],
+                discardedPageCount: discardedPageCount
+            )))
         }
     }
 

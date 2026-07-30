@@ -11,6 +11,7 @@ final class ScanReceiptResult {
     this.images = const [],
     this.rejectedImages = const [],
     this.mergedOcr,
+    this.discardedPageCount = 0,
   });
 
   /// Outcome of the scan.
@@ -24,4 +25,10 @@ final class ScanReceiptResult {
 
   /// Ordered OCR text assembled by the app-facing package when requested.
   final MergedOcrResult? mergedOcr;
+
+  /// Natively captured pages dropped before processing.
+  ///
+  /// Non-zero only on iOS, whose VisionKit scanner cannot enforce a page limit
+  /// in its UI: pages beyond `maxPages` are discarded and counted here.
+  final int discardedPageCount;
 }

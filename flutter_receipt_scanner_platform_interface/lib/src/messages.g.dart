@@ -378,6 +378,7 @@ class ScanResultWire {
     required this.status,
     required this.images,
     required this.rejectedImages,
+    this.discardedPageCount,
   });
 
   ScanStatusWire status;
@@ -386,11 +387,17 @@ class ScanResultWire {
 
   List<ReceiptImageWire> rejectedImages;
 
+  /// Natively captured pages dropped before processing (absent means zero).
+  /// iOS can exceed `maxPages` because VisionKit cannot enforce a page limit
+  /// in its UI; declared last to keep existing wire positions stable.
+  int? discardedPageCount;
+
   Object encode() {
     return <Object?>[
       status,
       images,
       rejectedImages,
+      discardedPageCount,
     ];
   }
 
@@ -400,6 +407,7 @@ class ScanResultWire {
       status: result[0]! as ScanStatusWire,
       images: (result[1] as List<Object?>?)!.cast<ReceiptImageWire>(),
       rejectedImages: (result[2] as List<Object?>?)!.cast<ReceiptImageWire>(),
+      discardedPageCount: result[3] as int?,
     );
   }
 }

@@ -375,17 +375,23 @@ struct ScanResultWire {
     var status: ScanStatusWire
     var images: [ReceiptImageWire]
     var rejectedImages: [ReceiptImageWire]
+    /// Natively captured pages dropped before processing (absent means zero).
+    /// iOS can exceed `maxPages` because VisionKit cannot enforce a page limit
+    /// in its UI; declared last to keep existing wire positions stable.
+    var discardedPageCount: Int64? = nil
 
     // swift-format-ignore: AlwaysUseLowerCamelCase
     static func fromList(_ pigeonVar_list: [Any?]) -> ScanResultWire? {
         let status = pigeonVar_list[0] as! ScanStatusWire
         let images = pigeonVar_list[1] as! [ReceiptImageWire]
         let rejectedImages = pigeonVar_list[2] as! [ReceiptImageWire]
+        let discardedPageCount: Int64? = nilOrValue(pigeonVar_list[3])
 
         return ScanResultWire(
             status: status,
             images: images,
-            rejectedImages: rejectedImages
+            rejectedImages: rejectedImages,
+            discardedPageCount: discardedPageCount
         )
     }
 
@@ -394,6 +400,7 @@ struct ScanResultWire {
             status,
             images,
             rejectedImages,
+            discardedPageCount,
         ]
     }
 }

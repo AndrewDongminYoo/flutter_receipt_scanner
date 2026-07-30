@@ -90,7 +90,11 @@ ScanReceiptResult applyOcrFloor(
   }).toList();
 
   if (!ocr || floor.isDisabled) {
-    return ScanReceiptResult(status: ScanStatus.success, images: annotated);
+    return ScanReceiptResult(
+      status: ScanStatus.success,
+      images: annotated,
+      discardedPageCount: native.discardedPageCount,
+    );
   }
 
   final passed = <ReceiptImage>[];
@@ -105,11 +109,13 @@ ScanReceiptResult applyOcrFloor(
     return ScanReceiptResult(
       status: ScanStatus.rejected,
       rejectedImages: rejected,
+      discardedPageCount: native.discardedPageCount,
     );
   }
   return ScanReceiptResult(
     status: ScanStatus.success,
     images: passed,
     rejectedImages: rejected,
+    discardedPageCount: native.discardedPageCount,
   );
 }

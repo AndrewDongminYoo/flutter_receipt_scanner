@@ -47,6 +47,7 @@ ScanReceiptResult _resultFromWire(ScanResultWire w) => ScanReceiptResult(
   status: _statusFromWire(w.status),
   images: w.images.map(_imageFromWire).toList(growable: false),
   rejectedImages: w.rejectedImages.map(_imageFromWire).toList(growable: false),
+  discardedPageCount: w.discardedPageCount ?? 0,
 );
 
 ScanStatus _statusFromWire(ScanStatusWire s) => switch (s) {

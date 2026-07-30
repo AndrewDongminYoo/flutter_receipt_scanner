@@ -55,6 +55,27 @@ void main() {
   });
 
   test(
+    'scan maps wire discardedPageCount and defaults an absent one to zero',
+    () async {
+      final withCount = ScanResultWire(
+        status: ScanStatusWire.success,
+        images: <ReceiptImageWire>[],
+        rejectedImages: <ReceiptImageWire>[],
+        discardedPageCount: 2,
+      );
+      final mapped = await FlutterReceiptScannerIos(
+        api: _FakeReceiptScannerApi(withCount),
+      ).scan(const ScanReceiptOptions());
+      expect(mapped.discardedPageCount, 2);
+
+      final absent = await FlutterReceiptScannerIos(
+        api: _FakeReceiptScannerApi(_emptySuccess()),
+      ).scan(const ScanReceiptOptions());
+      expect(absent.discardedPageCount, 0);
+    },
+  );
+
+  test(
     'scan maps the wire result (status, images, exif, gps) to models',
     () async {
       final image = ReceiptImageWire(
