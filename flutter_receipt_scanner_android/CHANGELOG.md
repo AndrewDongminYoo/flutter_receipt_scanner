@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+### Added
+
+- Populate `discardedPageCount` defensively (expected `0` — the GMS scanner enforces `setPageLimit` in its UI).
+
 ## 0.3.0
 
 ### Changed

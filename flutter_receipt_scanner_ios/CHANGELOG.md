@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+### Added
+
+- Populate `discardedPageCount` when VisionKit returns more pages than `maxPages`; the first `maxPages` pages are still processed unchanged.
+
 ## 0.3.0
 
 ### Changed

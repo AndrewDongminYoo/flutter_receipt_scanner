@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+### Added
+
+- `ScanReceiptResult.discardedPageCount` (default `0`) and the optional `ScanResultWire.discardedPageCount` wire field for natively dropped scanner pages.
+
 ## 0.3.0
 
 ### Added

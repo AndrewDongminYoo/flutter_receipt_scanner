@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+### Added
+
+- `ScanReceiptResult.discardedPageCount` surfaces scanner pages natively dropped beyond `maxPages` (iOS-only in practice — VisionKit cannot enforce a page limit in its UI).
+
+### Changed
+
+- `mergeOcrPages` never reports `MergedOcrResult.isComplete == true` when pages were natively discarded, even if every returned seam is proven.
+
 ## 0.3.0
 
 ### Added

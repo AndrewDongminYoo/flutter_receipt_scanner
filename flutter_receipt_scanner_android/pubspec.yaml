@@ -1,6 +1,6 @@
 name: flutter_receipt_scanner_android
 description: Android implementation of the flutter_receipt_scanner plugin.
-version: 0.3.0
+version: 0.4.0
 homepage: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
 repository: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
 issue_tracker: https://github.com/AndrewDongminYoo/flutter_receipt_scanner/issues
@@ -28,7 +28,7 @@ flutter:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_receipt_scanner_platform_interface: ^0.3.0
+  flutter_receipt_scanner_platform_interface: ^0.4.0
 
 dev_dependencies:
   flutter_test:
