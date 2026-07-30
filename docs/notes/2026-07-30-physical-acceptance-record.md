@@ -49,7 +49,7 @@ Target was home-printed. Example app built with `flutter build ios --release` an
 Findings for follow-up:
 
 1. iOS silently drops pages beyond `maxPages` — a long-receipt footgun. Candidate 0.4.0 work: surface a truncation diagnostic (or at minimum document it); until then, set `maxPages` to the ceiling (10) when merging.
-2. Auto shutter fires before framing, causing gap/tail risk. iOS exposes no programmatic control (VisionKit UI toggle only); Android supports `CAPTURE_MODE_MANUAL` via `GmsDocumentScannerOptions`, so an opt-in capture-mode option is implementable on Android only.
+2. Auto shutter fires before framing, causing gap/tail risk. iOS exposes no programmatic control (VisionKit UI toggle only). Android's `GmsDocumentScannerOptions` defines `CAPTURE_MODE_AUTO`/`CAPTURE_MODE_MANUAL` constants but its public `Builder` has no capture-mode setter (googlesamples/mlkit#846 open, unanswered), so no programmatic control exists on either platform — tracked in Spec `0002-capture-ergonomics`.
 
 ## Public dataset calibration
 
