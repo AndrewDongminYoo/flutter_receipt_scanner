@@ -19,6 +19,10 @@ runtimes:
 lint:
   disabled:
     - dart
+  ignore:
+    - linters: [oxipng]
+      paths:
+        - flutter_receipt_scanner/test/fixtures/long_receipt/*.png
   enabled:
     - grype@0.110.0
     - osv-scanner@2.2.4
