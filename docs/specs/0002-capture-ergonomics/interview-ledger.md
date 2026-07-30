@@ -56,4 +56,4 @@ Answer: In a new Spec with its own Work Items ("새로운 Work Item으로 만들
 Decision: Spec 0001 explicitly lists Pigeon transport and generated-file changes as out of scope, so the truncation diagnostic (which adds a wire field) requires this separate Spec.
 Any wire change ships as a coordinated 0.4.0 minor release because 0.3.0 is already published.
 
-Source: User approval 2026-07-30; Spec 0001 Out of Scope items 6 and 10.
+Source: User approval 2026-07-30; Spec 0001 Out of Scope item 6 and Public API requirement 10.

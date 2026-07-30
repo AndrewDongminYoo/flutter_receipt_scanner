@@ -26,7 +26,7 @@ Bump all four package manifests, internal constraints, and changelogs to 0.4.0.
 - [ ] Android populates the count defensively (expected zero).
 - [ ] `ScanReceiptResult.discardedPageCount` defaults to `0` and is mapped from the wire in both platform packages.
 - [ ] With `mergeOcrPages` enabled and a positive discarded count, the merged result reports `isComplete == false` even when every returned boundary is proven; seam matching, boundary indexes, and rejected-page reporting are otherwise unchanged.
-- [ ] Fake-platform tests cover the mapping and the completeness override; platform-interface model tests cover the default and both mapping directions.
+- [ ] Android and iOS platform-package routing tests cover the wire-to-model conversion of the new field; a platform-interface test covers the model's `0` default; app-facing fake-platform tests cover the completeness override and preserve the count through the OCR-floor path, including when merging is disabled.
 - [ ] The example diagnostics card shows the discarded count when positive and hides it at zero, with widget coverage.
 - [ ] All four packages are bumped to 0.4.0 with changelog entries.
 - [ ] iOS physical re-verification: capturing more pages than `maxPages` reports the discarded count and an incomplete merge; the run is appended to the acceptance record.

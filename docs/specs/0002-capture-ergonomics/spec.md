@@ -34,7 +34,8 @@ No capture-mode API is added until upstream platform support exists. [L1] [L2]
 2. Both native implementations compute it defensively as `max(0, nativelyCapturedPages - effectiveMaxPages)`; on Android the GMS scanner enforces `setPageLimit` in-UI so the expected value is zero. [L2]
 3. iOS continues to process the first `maxPages` pages in native order; this Spec surfaces the truncation, it does not change which pages are kept. [L2]
 4. `ScanReceiptResult` gains `int discardedPageCount` defaulting to `0`, mapped from the wire in both platform packages.
-5. When `mergeOcrPages` is enabled and `discardedPageCount > 0`, the returned `MergedOcrResult` must have `isComplete == false` even when every returned adjacent boundary is proven. [L2]
+5. When `mergeOcrPages` is enabled and `discardedPageCount > 0`, the returned `MergedOcrResult` must have `isComplete == false` even when every returned adjacent boundary is proven.
+   This explicitly supersedes Spec 0001 Result Model requirement 7 (the unconditional one-page completeness rule) for the discarded-pages case, which is reachable on iOS because failed page processing (`compactMap`) can reduce a truncated scan to a single returned page. [L2]
 6. Merge seam matching, boundary indexes, and rejected-page reporting are otherwise unchanged from Spec 0001.
 7. The example app's merge diagnostics card displays the discarded page count when it is greater than zero.
 
@@ -54,7 +55,7 @@ No capture-mode API is added until upstream platform support exists. [L1] [L2]
 ## Technical Decisions
 
 - The diagnostic is acquisition metadata (a page count), not receipt-domain logic, so natively populating it does not violate the image-primitives boundary; the completeness policy that consumes it stays in the app-facing Dart package. [L2]
-- The wire field is optional (`Int64?`) so older platform packages that never set it decode as zero through the existing nullable-mapping conventions.
+- The wire field is optional (`Int64?`) and absent maps to zero, but the generated `ScanResultWire.decode` indexes list positions directly, so mixed-version wire payloads (new Dart against an old native host, or the reverse) are not supported; compatibility relies entirely on the coordinated 0.4.0 version constraints across the four packages. [L3]
 - The completeness override happens in the app package's merge orchestration (`receipt_scanner.dart`), not inside the pure merger, which remains a function of page texts only.
 
 ## Testing Strategy
