@@ -18,15 +18,15 @@ An enabled one-page capture is a complete merge, cancellation has no merged resu
 
 ## Acceptance criteria
 
-- [ ] `mergeOcrPages` defaults to false and preserves existing scan behavior.
-- [ ] Invalid OCR, gallery-source, and maximum-page combinations throw `ArgumentError` before calling the platform.
-- [ ] Native page order is snapshotted before OCR-floor partitioning.
-- [ ] Annotated accepted and rejected pages are restored to original order using unique cache URIs.
-- [ ] Duplicate page URIs fail explicitly rather than silently reordering pages.
-- [ ] A requested merge attaches `MergedOcrResult` to success and rejected scan results.
-- [ ] Cancellation retains `ScanStatus.cancelled` and `mergedOcr == null`.
-- [ ] Native `ScanReceiptOptions`, Pigeon, generated files, Kotlin, and Swift remain unchanged.
-- [ ] Focused scan and OCR-floor tests, workspace analysis, and the full workspace test suite pass.
+- [x] `mergeOcrPages` defaults to false and preserves existing scan behavior.
+- [x] Invalid OCR, gallery-source, and maximum-page combinations throw `ArgumentError` before calling the platform.
+- [x] Native page order is snapshotted before OCR-floor partitioning.
+- [x] Annotated accepted and rejected pages are restored to original order using unique cache URIs.
+- [x] Duplicate page URIs fail explicitly rather than silently reordering pages.
+- [x] A requested merge attaches `MergedOcrResult` to success and rejected scan results.
+- [x] Cancellation retains `ScanStatus.cancelled` and `mergedOcr == null`.
+- [x] Native `ScanReceiptOptions`, Pigeon, generated files, Kotlin, and Swift remain unchanged.
+- [x] Focused scan and OCR-floor tests, workspace analysis, and the full workspace test suite pass.
 
 ## Covers
 
