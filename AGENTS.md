@@ -55,3 +55,9 @@
 - Commit messages follow Conventional Commits with gitmoji: `type: emoji subject` (e.g., `feat: ✨ add ...`, `docs: 📝 ...`, `chore: 🔨 ...`).
 - Commit messages and code identifiers are in English; Korean comments and user-facing strings are intentional — do not translate them.
 - PRs should include a concise description and link related issues when applicable.
+
+## ACT Workflow
+
+ACT workflow storage for new Specs is configured in `.act/config.yaml`.
+
+ACT workflow semantics, Workflow Storage selection, artifact vocabulary, and domain-doc guidance are defined in `.act/workflow.md`.
