@@ -41,6 +41,48 @@ switch (result.status) {
 
 The output `file://` JPEG URIs are stable until the next `scan()` call and do not survive app restarts (the OS clears the cache directory).
 
+## Long receipts (multi-page OCR merge)
+
+Very long receipts should be captured as multiple overlapping camera pages, not one tall photo.
+Enable the opt-in merge to get one ordered OCR string with proven page-seam duplicates removed:
+
+```dart
+final result = await scan(
+  options: const ScanReceiptOptions(maxPages: 6),
+  mergeOcrPages: true,
+);
+
+final merged = result.mergedOcr;
+if (merged != null) {
+  if (merged.isComplete) {
+    print(merged.text); // One ordered OCR string, seam duplicates removed.
+  } else {
+    // Diagnostics: merged.unmatchedBoundaryIndexes, merged.rejectedPageIndexes.
+  }
+}
+```
+
+`mergeOcrPages: true` requires `ocr: true` (the default), `source: ScanSource.camera`, and `maxPages >= 2`; any other combination throws `ArgumentError` before the native scanner opens.
+
+### Support contract
+
+- The supported logical receipt content aspect ratio is `contentHeight / contentWidth <= 11.0`.
+- The physical interpretation is a receipt up to 600 mm long on paper at least 57.0 mm wide (`600 / 57.0 = 10.53`).
+- The reference capture layout is six portrait pages with approximately 20% vertical overlap between adjacent pages.
+- The 11.0 limit is a tested capability claim, not a runtime physical-length measurement — a scan is never rejected because a physical size cannot be inferred from pixels.
+
+### Capture guidance
+
+Capture consecutive sections top-to-bottom in one camera session, overlapping each page with the previous one by roughly 20%.
+The overlap is what lets the merger prove each adjacent seam and remove the duplicated lines exactly once.
+
+### What the merge does and does not do
+
+- The merge assembles **OCR text only**. No stitched bitmap, PDF, or tall composite image is returned; each page keeps its own JPEG in `result.images`.
+- Gallery-selected images are not merged in version 1 — `mergeOcrPages` works with `ScanSource.camera` only.
+- An unproven seam or an OCR-rejected page never throws after a completed scan.
+  The result comes back with `isComplete == false`, the seam recorded in `unmatchedBoundaryIndexes` (index `i` is the seam between pages `i` and `i + 1`), the page recorded in `rejectedPageIndexes`, and all text preserved — the merger never deletes uncertain content to make a result look complete.
+
 ## Host app permissions
 
 - iOS `Info.plist`: `NSCameraUsageDescription` (camera scan). No photo-library key is needed — the gallery flow uses the permissionless `PHPickerViewController`.

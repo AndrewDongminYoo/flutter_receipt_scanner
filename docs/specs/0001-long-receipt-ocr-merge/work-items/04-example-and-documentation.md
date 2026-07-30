@@ -12,15 +12,15 @@ Document the 11.0 support contract, six-page reference layout, approximately 20%
 
 ## Acceptance criteria
 
-- [ ] The example app exposes an opt-in merge control.
-- [ ] Enabling the control drives camera, OCR, and multi-page-compatible options.
-- [ ] The result surface distinguishes complete and incomplete merges.
-- [ ] The result surface displays unmatched boundaries, rejected page indexes, and merged OCR text.
-- [ ] README documentation states the logical 11.0 ratio and 600 mm at 57.0 mm physical interpretation.
-- [ ] README documentation explains the six-page layout and approximately 20% adjacent overlap.
-- [ ] README documentation states that no stitched bitmap is returned and gallery merging is not supported in version 1.
-- [ ] Widget or app-facing tests cover the observable merge diagnostics.
-- [ ] Formatting, workspace analysis, the full workspace test suite, and non-Dart trunk checks pass.
+- [x] The example app exposes an opt-in merge control.
+- [x] Enabling the control drives camera, OCR, and multi-page-compatible options.
+- [x] The result surface distinguishes complete and incomplete merges.
+- [x] The result surface displays unmatched boundaries, rejected page indexes, and merged OCR text.
+- [x] README documentation states the logical 11.0 ratio and 600 mm at 57.0 mm physical interpretation.
+- [x] README documentation explains the six-page layout and approximately 20% adjacent overlap.
+- [x] README documentation states that no stitched bitmap is returned and gallery merging is not supported in version 1.
+- [x] Widget or app-facing tests cover the observable merge diagnostics.
+- [x] Formatting, workspace analysis, the full workspace test suite, and non-Dart trunk checks pass.
 
 ## Covers
 
