@@ -266,6 +266,56 @@ void main() {
       expect(result.status, ScanStatus.cancelled);
       expect(result.images, isEmpty);
       expect(result.rejectedImages, isEmpty);
+      expect(result.mergedOcr, isNull);
     },
   );
+
+  test('MergedOcrResult holds immutable merge diagnostics', () {
+    final pageUris = ['file:///tmp/first.jpg', 'file:///tmp/second.jpg'];
+    final unmatchedBoundaryIndexes = [0];
+    final rejectedPageIndexes = [1];
+    final merged = MergedOcrResult(
+      text: '첫 줄\nsecond line',
+      isComplete: false,
+      pageUris: pageUris,
+      unmatchedBoundaryIndexes: unmatchedBoundaryIndexes,
+      rejectedPageIndexes: rejectedPageIndexes,
+    );
+
+    pageUris.add('file:///tmp/third.jpg');
+    unmatchedBoundaryIndexes.add(1);
+    rejectedPageIndexes.add(0);
+
+    expect(merged.text, '첫 줄\nsecond line');
+    expect(merged.isComplete, isFalse);
+    expect(merged.pageUris, [
+      'file:///tmp/first.jpg',
+      'file:///tmp/second.jpg',
+    ]);
+    expect(merged.unmatchedBoundaryIndexes, [0]);
+    expect(merged.rejectedPageIndexes, [1]);
+    expect(
+      () => merged.pageUris.add('file:///tmp/fourth.jpg'),
+      throwsUnsupportedError,
+    );
+    expect(
+      () => merged.unmatchedBoundaryIndexes.add(1),
+      throwsUnsupportedError,
+    );
+    expect(() => merged.rejectedPageIndexes.add(0), throwsUnsupportedError);
+  });
+
+  test('ScanReceiptResult holds an optional merged OCR result', () {
+    final merged = MergedOcrResult(
+      text: 'merged',
+      isComplete: true,
+      pageUris: const ['file:///tmp/receipt.jpg'],
+    );
+    final result = ScanReceiptResult(
+      status: ScanStatus.success,
+      mergedOcr: merged,
+    );
+
+    expect(result.mergedOcr, same(merged));
+  });
 }

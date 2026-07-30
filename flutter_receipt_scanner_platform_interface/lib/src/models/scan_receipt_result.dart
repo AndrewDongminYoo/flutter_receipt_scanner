@@ -1,3 +1,4 @@
+import 'package:flutter_receipt_scanner_platform_interface/src/models/merged_ocr_result.dart';
 import 'package:flutter_receipt_scanner_platform_interface/src/models/receipt_image.dart';
 import 'package:flutter_receipt_scanner_platform_interface/src/models/scan_enums.dart';
 
@@ -9,6 +10,7 @@ final class ScanReceiptResult {
     required this.status,
     this.images = const [],
     this.rejectedImages = const [],
+    this.mergedOcr,
   });
 
   /// Outcome of the scan.
@@ -19,4 +21,7 @@ final class ScanReceiptResult {
 
   /// Images captured but below the OCR floor. Always a list (possibly empty).
   final List<ReceiptImage> rejectedImages;
+
+  /// Ordered OCR text assembled by the app-facing package when requested.
+  final MergedOcrResult? mergedOcr;
 }

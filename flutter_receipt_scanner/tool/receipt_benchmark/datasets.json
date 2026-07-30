@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "accessedAt": "2026-07-30",
+  "ciPolicy": {
+    "networkRequired": false,
+    "authenticationRequired": false,
+    "thirdPartyImagesCommitted": false,
+    "calibrationMode": "manual-local-only"
+  },
+  "datasets": [
+    {
+      "id": "appen-korean-documents-v1",
+      "name": "OCR image data of Korean documents",
+      "sourceUrl": "https://www.kaggle.com/datasets/appenlimited/ocr-image-data-of-korean-documents",
+      "revision": "1",
+      "license": {
+        "spdx": "CC-BY-SA-4.0",
+        "url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      },
+      "expectedPublicFiles": {
+        "archiveEntryCount": 111,
+        "receiptImageCount": 5,
+        "receiptAnnotationCount": 5,
+        "receiptImageGlob": "IMG_OCR_KOR_CN/BILLS/KOREAN_RECEIPT_OTS_*.jpg",
+        "receiptAnnotationGlob": "IMG_OCR_KOR_CN/BILLS/KOREAN_RECEIPT_OTS_*.json"
+      },
+      "annotations": {
+        "kind": "text-polygons-and-transcripts",
+        "groundTruthAvailable": true
+      },
+      "scripts": [],
+      "checksums": [
+        {
+          "algorithm": "sha256",
+          "scope": "Kaggle dataset version 1 ZIP archive",
+          "value": "f090e913170b15f93f778f0feb5dab3701febd53d31578b819a9162a4d85786d"
+        }
+      ],
+      "advertisedReceiptCount": 1500,
+      "verifiedPublicReceiptCount": 5,
+      "intendedRole": "manual-korean-latin-annotated-calibration",
+      "cerGroundTruth": true,
+      "enabledInCi": false
+    },
+    {
+      "id": "humyn-korean-receipts-656cef5",
+      "name": "Korean Receipts Dataset",
+      "sourceUrl": "https://huggingface.co/datasets/HumynLabs/Korean_Receipts_Dataset/tree/656cef561f4b8ff22e46d6785bc2807e78af99a1",
+      "revision": "656cef561f4b8ff22e46d6785bc2807e78af99a1",
+      "license": {
+        "spdx": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "expectedPublicFiles": {
+        "imageCount": 20,
+        "imageWidth": 1536,
+        "imageHeight": 2048,
+        "files": [
+          {
+            "path": "Kgen_Korean Receipts_1005_1.JPEG",
+            "size": 1201880,
+            "gitSha1": "80850070d276648249d2f7f54223e7c3fe513d6d"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_2.JPEG",
+            "size": 1172259,
+            "gitSha1": "b374c76d679a42892b3eb55c635ae5e2fb58bd52"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_3.JPEG",
+            "size": 1199872,
+            "gitSha1": "8b8f094c84e34c53f275a1cf2ef078e52c777c21"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_4.JPEG",
+            "size": 1219944,
+            "gitSha1": "206ce4888725398dbbc5eeae108c142c29f4ed0a"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_5.JPEG",
+            "size": 1141153,
+            "gitSha1": "e387db82d4c4bc1bb753725e3d0b90a2a06e2214"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_6.JPEG",
+            "size": 1146934,
+            "gitSha1": "b9cc65761e6897b81b463c5509bdaff0069db3b0"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_7.JPEG",
+            "size": 1287423,
+            "gitSha1": "3deed1b04c8938e4a37c8a0c7b00f8117c89afe3"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_8.JPEG",
+            "size": 1229961,
+            "gitSha1": "a464e6dc928ee52d337a2d74287d2eb156f3d4fe"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_9.JPEG",
+            "size": 1166993,
+            "gitSha1": "f3f4249f9648df3b20ec0370b3b4d01b303dd87f"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_10.JPEG",
+            "size": 1150094,
+            "gitSha1": "d4c69a23d5967b0e933361265b0403500c3d3638"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_11.JPEG",
+            "size": 1242032,
+            "gitSha1": "3b5281b38cb1f573a8da0572b88e86fe6ea1caa8"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_12.JPEG",
+            "size": 1043481,
+            "gitSha1": "09d69471b2ced14a19c5ddea6e04a8e90c4cc789"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_13.JPEG",
+            "size": 1318479,
+            "gitSha1": "0225a690dc82b24feabe58bde1f6ca4efc96e89d"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_14.JPEG",
+            "size": 1230601,
+            "gitSha1": "7436d14e729c5be18818c56a8280830618f9b18f"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_15.JPEG",
+            "size": 1207466,
+            "gitSha1": "66a8932b25af2d4076ed79a4ddb7a49c5df4ab40"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_16.JPEG",
+            "size": 1246491,
+            "gitSha1": "f45258da1945e34321436c4e61ece7cfc653273b"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_17.JPEG",
+            "size": 1207328,
+            "gitSha1": "3f72a649f8b5fef95e26edae0b1720637b9cfd45"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_18.JPEG",
+            "size": 1144456,
+            "gitSha1": "11031926bd423826880ab8b802d08003ba642e1f"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_19.JPEG",
+            "size": 1197143,
+            "gitSha1": "e60a0e5466a5989e7b520b3be297806e21105cd7"
+          },
+          {
+            "path": "Kgen_Korean Receipts_1005_20.JPEG",
+            "size": 1239138,
+            "gitSha1": "11218c7b8534515c43b69b6014b2e38ed6be0a1b"
+          }
+        ]
+      },
+      "annotations": {
+        "kind": "none",
+        "groundTruthAvailable": false
+      },
+      "scripts": [],
+      "checksums": [
+        {
+          "algorithm": "git-sha1",
+          "scope": "Each expected image at the pinned Hugging Face revision",
+          "field": "expectedPublicFiles.files[].gitSha1"
+        }
+      ],
+      "intendedRole": "manual-korean-latin-visual-smoke",
+      "cerGroundTruth": false,
+      "enabledInCi": false
+    },
+    {
+      "id": "cord-v2-7f0115a",
+      "name": "CORD v2",
+      "sourceUrl": "https://huggingface.co/datasets/naver-clova-ix/cord-v2/tree/7f0115a4b758a71d6473b8d085751692da2fef98",
+      "revision": "7f0115a4b758a71d6473b8d085751692da2fef98",
+      "license": {
+        "spdx": "CC-BY-4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "expectedPublicFiles": {
+        "rowCount": 1000,
+        "splits": {
+          "train": 800,
+          "validation": 100,
+          "test": 100
+        },
+        "files": [
+          {
+            "path": "data/train-00000-of-00004-b4aaeceff1d90ecb.parquet",
+            "size": 490224630,
+            "gitSha1": "6388701a7274587219ca7ff2dd313eb1257fd1c3"
+          },
+          {
+            "path": "data/train-00001-of-00004-7dbbe248962764c5.parquet",
+            "size": 441418432,
+            "gitSha1": "78bd10454ee33f3640b1c61717de75051c1cc359"
+          },
+          {
+            "path": "data/train-00002-of-00004-688fe1305a55e5cc.parquet",
+            "size": 443802181,
+            "gitSha1": "b42763d31932309c8811db8b2f3935f452a3beed"
+          },
+          {
+            "path": "data/train-00003-of-00004-2d0cd200555ed7fd.parquet",
+            "size": 455555434,
+            "gitSha1": "469363bd9de1310012e20b74ebadaeed2602b3bd"
+          },
+          {
+            "path": "data/validation-00000-of-00001-cc3c5779fe22e8ca.parquet",
+            "size": 242080800,
+            "gitSha1": "dcc838661ffafc4c647b8c7c751f934f971a4944"
+          },
+          {
+            "path": "data/test-00000-of-00001-9c204eb3f4e11791.parquet",
+            "size": 234202795,
+            "gitSha1": "a674a6aef479b0c87cbfe428baa603cfc2901391"
+          }
+        ]
+      },
+      "annotations": {
+        "kind": "ocr-lines-and-structured-receipt-ground-truth",
+        "groundTruthAvailable": true
+      },
+      "scripts": [],
+      "checksums": [
+        {
+          "algorithm": "git-sha1",
+          "scope": "Each expected Parquet shard at the pinned Hugging Face revision",
+          "field": "expectedPublicFiles.files[].gitSha1"
+        }
+      ],
+      "intendedRole": "manual-latin-annotated-calibration",
+      "cerGroundTruth": true,
+      "enabledInCi": false
+    }
+  ]
+}
