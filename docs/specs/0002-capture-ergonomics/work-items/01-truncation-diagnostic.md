@@ -21,16 +21,16 @@ Bump all four package manifests, internal constraints, and changelogs to 0.4.0.
 
 ## Acceptance criteria
 
-- [ ] `ScanResultWire.discardedPageCount` is optional in the Pigeon schema; absent decodes as zero and all generated files are regenerated, not hand-edited.
-- [ ] iOS populates the count defensively while keeping the first `maxPages` pages in native order.
-- [ ] Android populates the count defensively (expected zero).
-- [ ] `ScanReceiptResult.discardedPageCount` defaults to `0` and is mapped from the wire in both platform packages.
-- [ ] With `mergeOcrPages` enabled and a positive discarded count, the merged result reports `isComplete == false` even when every returned boundary is proven; seam matching, boundary indexes, and rejected-page reporting are otherwise unchanged.
-- [ ] Android and iOS platform-package routing tests cover the wire-to-model conversion of the new field; a platform-interface test covers the model's `0` default; app-facing fake-platform tests cover the completeness override and preserve the count through the OCR-floor path, including when merging is disabled.
-- [ ] The example diagnostics card shows the discarded count when positive and hides it at zero, with widget coverage.
-- [ ] All four packages are bumped to 0.4.0 with changelog entries.
-- [ ] iOS physical re-verification: capturing more pages than `maxPages` reports the discarded count and an incomplete merge; the run is appended to the acceptance record.
-- [ ] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, and `trunk check` pass.
+- [x] `ScanResultWire.discardedPageCount` is optional in the Pigeon schema; absent decodes as zero and all generated files are regenerated, not hand-edited.
+- [x] iOS populates the count defensively while keeping the first `maxPages` pages in native order.
+- [x] Android populates the count defensively (expected zero).
+- [x] `ScanReceiptResult.discardedPageCount` defaults to `0` and is mapped from the wire in both platform packages.
+- [x] With `mergeOcrPages` enabled and a positive discarded count, the merged result reports `isComplete == false` even when every returned boundary is proven; seam matching, boundary indexes, and rejected-page reporting are otherwise unchanged.
+- [x] Android and iOS platform-package routing tests cover the wire-to-model conversion of the new field; a platform-interface test covers the model's `0` default; app-facing fake-platform tests cover the completeness override and preserve the count through the OCR-floor path, including when merging is disabled.
+- [x] The example diagnostics card shows the discarded count when positive and hides it at zero, with widget coverage.
+- [x] All four packages are bumped to 0.4.0 with changelog entries.
+- [x] iOS physical re-verification: capturing more pages than `maxPages` reports the discarded count and an incomplete merge; the run is appended to the acceptance record.
+- [x] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, and `trunk check` pass.
 
 ## Covers
 

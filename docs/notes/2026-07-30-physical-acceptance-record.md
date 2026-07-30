@@ -45,6 +45,7 @@ Target was home-printed. Example app built with `flutter build ios --release` an
 
 - **Run 1 (rejected)** — auto shutter, `maxPages: 6`, one more capture than `maxPages`. CER passed (aggregate 0.0380, Hangul 0.0780, Latin 0.0422) but the final three receipt lines were missing from the merged text while the merge itself reported no unmatched boundaries: the iOS implementation silently truncates scanner pages beyond `maxPages` (`ReceiptScannerApiImpl.swift`, `pageCount = min(scan.pageCount, maxPages)`), because VisionKit's UI cannot enforce a page limit. Confirmed by operator reproduction. GMS on Android enforces the limit in-UI, so the failure mode is iOS-only.
 - **Run 2 (accepted)** — manual shutter (VisionKit's built-in Auto/Manual toggle), `maxPages: 10`. All gates above pass; merged text covers the full receipt through the final line.
+- **Run 3 (truncation diagnostic, 2026-07-31)** — 0.4.0 build implementing Spec `0002-capture-ergonomics` Work Item 01. Three pages captured with `maxPages: 2`; the result card surfaced `폐기된 페이지: 1장 (maxPages 초과로 미처리)` and the merge reported incomplete. Operator-confirmed on-device, closing the silent-truncation gap demonstrated by Run 1.
 
 Findings for follow-up:
 
