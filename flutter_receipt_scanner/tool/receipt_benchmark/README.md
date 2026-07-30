@@ -9,7 +9,7 @@ Flutter's platform renderer can produce different PNG bytes on another runtime, 
 Regenerate the checked-in fixture from the package directory:
 
 ```bash
-flutter test tool/receipt_benchmark/generate_fixtures_test.dart
+flutter test tool/receipt_benchmark/generate_fixtures.dart
 ```
 
 Run the offline fixture and merge checks:
