@@ -169,7 +169,7 @@ final class _Overlap {
       return comparedCharacters > other.comparedCharacters;
     }
     if (similarity != other.similarity) return similarity > other.similarity;
-    if (rightLineCount != other.rightLineCount) return rightLineCount > other.rightLineCount;
-    return leftLineCount > other.leftLineCount;
+    if (rightLineCount != other.rightLineCount) return rightLineCount < other.rightLineCount;
+    return leftLineCount < other.leftLineCount;
   }
 }

@@ -140,6 +140,58 @@ void main() {
     expect(result.pageUris, isEmpty);
   });
 
+  test('out-of-range rejected page index fails before merging', () {
+    expect(
+      () => mergeReceiptOcrPages(
+        [_page(0, '영수증 RECEIPT')],
+        rejectedPageIndexes: const {1},
+      ),
+      throwsRangeError,
+    );
+  });
+
+  test('long overlap compares the bounded suffix and prefix', () {
+    final shared = 'A' * 600;
+
+    final result = mergeReceiptOcrPages([
+      _page(0, '첫 페이지\nLEFT-$shared'),
+      _page(1, '$shared-RIGHT\n마지막 페이지'),
+    ]);
+
+    expect(result.isComplete, isTrue);
+    expect(result.unmatchedBoundaryIndexes, isEmpty);
+  });
+
+  test('larger exact repeated overlap wins over the shorter candidate', () {
+    const repeated = 'REPEATED OVERLAP LINE 1234567890';
+
+    final result = mergeReceiptOcrPages([
+      _page(0, '$repeated\n$repeated'),
+      _page(1, '$repeated\n$repeated\nTOTAL 1,000'),
+    ]);
+
+    expect(result.text, '$repeated\n$repeated\nTOTAL 1,000');
+    expect(result.isComplete, isTrue);
+  });
+
+  test(
+    'equal bounded overlaps preserve lines outside the smallest proven window',
+    () {
+      final shared = 'A' * 600;
+
+      final result = mergeReceiptOcrPages([
+        _page(0, '이전 문장 PREVIOUS LINE\n$shared'),
+        _page(1, '$shared\n이어지는 문장 FOLLOWING LINE\nTOTAL 1,000'),
+      ]);
+
+      expect(
+        result.text,
+        '이전 문장 PREVIOUS LINE\n$shared\n이어지는 문장 FOLLOWING LINE\nTOTAL 1,000',
+      );
+      expect(result.isComplete, isTrue);
+    },
+  );
+
   test('does not mutate inputs', () {
     final pages = [
       _page(0, '서울 마트\n상품 A 1,000\n중간 합계 1,000'),
