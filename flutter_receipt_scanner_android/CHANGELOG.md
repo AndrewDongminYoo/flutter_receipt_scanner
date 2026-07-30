@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+### Changed
+
+- Require `flutter_receipt_scanner_platform_interface` 0.3.0 for coordinated federated package compatibility.
+
 ## 0.2.0
 
 ### Added

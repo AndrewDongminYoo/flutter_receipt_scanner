@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+### Added
+
+- Opt-in multi-page OCR text merging through `scan(mergeOcrPages: true)`.
+- Example controls and result diagnostics for trying multi-page OCR merging.
+- `ScanReceiptResult.mergedOcr` diagnostics for merged text, page completeness, and unmatched page boundaries.
+- Deterministic 11:1 long-receipt fixtures and a pinned public receipt dataset manifest for offline benchmarking.
+
 ## 0.2.0
 
 ### Added

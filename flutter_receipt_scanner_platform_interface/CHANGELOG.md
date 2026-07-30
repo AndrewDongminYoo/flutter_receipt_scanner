@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+### Added
+
+- `MergedOcrResult` and optional `ScanReceiptResult.mergedOcr` diagnostics.
+
 ## 0.2.0
 
 ### Added
