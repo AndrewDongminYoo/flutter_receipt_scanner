@@ -93,7 +93,9 @@ _Overlap? _findOverlap(List<String> leftLines, List<String> rightLines) {
       final shorterLength = math.min(left.length, right.length);
       if (shorterLength < minimumCharacters) continue;
       final longerLength = math.max(left.length, right.length);
-      if ((longerLength - shorterLength) / longerLength > 1 - minimumSimilarity) continue;
+      if ((longerLength - shorterLength) / longerLength > 1 - minimumSimilarity) {
+        continue;
+      }
 
       final exactMatch = left == right;
       if (!exactMatch && longerLength > _maxComparisonCharacters) continue;
@@ -156,9 +158,10 @@ final class _Overlap {
 
   bool isBetterThan(_Overlap? other) {
     if (other == null) return true;
+    if (similarity != other.similarity) return similarity > other.similarity;
     if (comparedCharacters != other.comparedCharacters) {
       return comparedCharacters > other.comparedCharacters;
     }
-    return similarity > other.similarity;
+    return false;
   }
 }

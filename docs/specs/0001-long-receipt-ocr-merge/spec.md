@@ -125,7 +125,7 @@ final class MergedOcrResult {
 7. Candidate similarity is `1 - levenshteinDistance / max(leftLength, rightLength)` on the normalized joined window.
 8. A normal candidate is accepted only when both normalized windows contain at least 12 characters and similarity is at least 0.85.
 9. If either candidate window contains only one line, both normalized windows must contain at least 24 characters and similarity must be at least 0.92.
-10. The selected candidate maximizes the shorter normalized character count, then similarity, then the number of prefix lines removed.
+10. The selected candidate maximizes similarity, then the shorter normalized character count, then minimizes the number of prefix lines removed, then minimizes the number of suffix lines consumed.
     This tie-breaking order must be deterministic.
 11. An accepted boundary keeps the prior page suffix and removes only the matched prefix lines from the next page.
 12. An unmatched boundary appends every non-empty line from the next page, records the boundary index, and makes the result incomplete. [L5]

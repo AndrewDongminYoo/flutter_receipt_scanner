@@ -191,6 +191,21 @@ void main() {
     expect(result.isComplete, isTrue);
   });
 
+  test('contained exact overlap wins over a longer fuzzy candidate', () {
+    const first = 'ITEM 001 ORIGINAL RECEIPT ROW';
+    const second = 'ITEM 002 SHARED RECEIPT ROW';
+    const third = 'ITEM 003 SHARED RECEIPT ROW';
+    const fourth = 'ITEM 004 NEW RECEIPT ROW';
+
+    final result = mergeReceiptOcrPages([
+      _page(0, '$first\n$second\n$third'),
+      _page(1, '$second\n$third\n$fourth'),
+    ]);
+
+    expect(result.text, '$first\n$second\n$third\n$fourth');
+    expect(result.isComplete, isTrue);
+  });
+
   test(
     'equal bounded overlaps preserve lines outside the smallest proven window',
     () {
