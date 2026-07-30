@@ -90,32 +90,45 @@ void main() {
     expect(font['license'], 'OFL-1.1');
   });
 
-  test('regeneration reproduces the checked-in image checksums', () async {
-    final outputDirectory = await Directory.systemTemp.createTemp(
-      'flutter_receipt_scanner_fixture_',
-    );
-    try {
-      final regenerated = await generateLongReceiptFixtures(
-        packageDirectory: packageDirectory,
-        outputDirectory: outputDirectory,
+  test(
+    'two regenerations in the same runtime produce identical image checksums',
+    () async {
+      final firstOutput = await Directory.systemTemp.createTemp(
+        'flutter_receipt_scanner_fixture_first_',
       );
-      final expectedImages = [
-        _map(fixtureManifest['logicalImage']),
-        ..._list(fixtureManifest['pages']).map(_map),
-      ];
-      final regeneratedImages = [
-        _map(regenerated['logicalImage']),
-        ..._list(regenerated['pages']).map(_map),
-      ];
+      final secondOutput = await Directory.systemTemp.createTemp(
+        'flutter_receipt_scanner_fixture_second_',
+      );
+      try {
+        final first = await generateLongReceiptFixtures(
+          packageDirectory: packageDirectory,
+          outputDirectory: firstOutput,
+        );
+        final second = await generateLongReceiptFixtures(
+          packageDirectory: packageDirectory,
+          outputDirectory: secondOutput,
+        );
+        final firstImages = [
+          _map(first['logicalImage']),
+          ..._list(first['pages']).map(_map),
+        ];
+        final secondImages = [
+          _map(second['logicalImage']),
+          ..._list(second['pages']).map(_map),
+        ];
 
-      expect(
-        regeneratedImages.map((image) => image['sha256']),
-        expectedImages.map((image) => image['sha256']),
-      );
-    } finally {
-      await outputDirectory.delete(recursive: true);
-    }
-  });
+        expect(
+          firstImages.map((image) => image['sha256']),
+          secondImages.map((image) => image['sha256']),
+        );
+        expect(first['canonicalText'], fixtureManifest['canonicalText']);
+        expect(second['canonicalText'], fixtureManifest['canonicalText']);
+      } finally {
+        await firstOutput.delete(recursive: true);
+        await secondOutput.delete(recursive: true);
+      }
+    },
+  );
 
   test('canonical OCR pages merge byte-for-byte to the canonical text', () {
     final pages = _list(fixtureManifest['pages'])

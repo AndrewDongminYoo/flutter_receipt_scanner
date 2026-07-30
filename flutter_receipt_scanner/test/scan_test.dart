@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter_receipt_scanner/flutter_receipt_scanner.dart';
 import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scanner_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +43,29 @@ class _RecordingPlatform extends FlutterReceiptScannerPlatform {
     received = options;
     return result;
   }
+}
+
+final class _ChangingIterationList extends ListBase<ReceiptImage> {
+  _ChangingIterationList(this._firstIteration, this._laterIterations);
+
+  final List<ReceiptImage> _firstIteration;
+  final List<ReceiptImage> _laterIterations;
+  var _iterationCount = 0;
+
+  @override
+  Iterator<ReceiptImage> get iterator => (_iterationCount++ == 0 ? _firstIteration : _laterIterations).iterator;
+
+  @override
+  int get length => (_iterationCount == 0 ? _firstIteration : _laterIterations).length;
+
+  @override
+  set length(int value) => throw UnsupportedError('Immutable test list');
+
+  @override
+  ReceiptImage operator [](int index) => (_iterationCount == 0 ? _firstIteration : _laterIterations)[index];
+
+  @override
+  void operator []=(int index, ReceiptImage value) => throw UnsupportedError('Immutable test list');
 }
 
 void main() {
@@ -259,5 +284,37 @@ void main() {
     );
 
     expect(platform.callCount, 1);
+  });
+
+  test('missing OCR-floor page URI fails explicitly', () async {
+    final first = _image(
+      'file:///tmp/first.jpg',
+      'first accepted line\nsecond accepted line',
+    );
+    final missing = _image(
+      'file:///tmp/missing.jpg',
+      'third accepted line\nfourth accepted line',
+    );
+    final platform = _RecordingPlatform(
+      result: ScanReceiptResult(
+        status: ScanStatus.success,
+        images: _ChangingIterationList([first, missing], [first]),
+      ),
+    );
+    FlutterReceiptScannerPlatform.instance = platform;
+
+    await expectLater(
+      scan(
+        options: const ScanReceiptOptions(maxPages: 2),
+        mergeOcrPages: true,
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'OCR floor result is missing receipt page URI: file:///tmp/missing.jpg',
+        ),
+      ),
+    );
   });
 }

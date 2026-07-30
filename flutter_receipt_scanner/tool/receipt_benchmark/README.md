@@ -3,6 +3,8 @@
 `fixture_source.json` and `fixture_generator.dart` are the source of truth for the project-authored Korean-plus-Latin 11:1 fixture.
 The checked-in PNG files under `test/fixtures/long_receipt/` are derived artifacts.
 The generator uses the pinned NanumGothic font in `fonts/`, verifies the font and OFL license checksums before rendering, and writes image checksums into `fixture_manifest.json`.
+PNG bytes are deterministic for repeated generation with the same Flutter engine, operating system, and architecture.
+Flutter's platform renderer can produce different PNG bytes on another runtime, so CI verifies repeated generation within its runtime while separately checking the committed PNG files against their manifest.
 
 Regenerate the checked-in fixture from the package directory:
 
