@@ -13,22 +13,21 @@ void main() {
     expect(find.text('갤러리'), findsOneWidget);
 
     // The scan button lives below the fold in the scrollable form.
-    final scanButton = find.text('카메라로 스캔');
-    await tester.scrollUntilVisible(scanButton, 300);
+    final scanButton = find.byKey(const Key('scan_button'));
+    await tester.dragUntilVisible(scanButton, find.byType(ListView), const Offset(0, -100));
     expect(scanButton, findsOneWidget);
   });
 
   testWidgets('multi-page OCR option becomes available for a multi-page camera scan', (tester) async {
     await tester.pumpWidget(const ReceiptScannerExampleApp());
 
-    final maxPagesLabel = find.text('최대 페이지 수 (maxPages)');
-    await tester.scrollUntilVisible(maxPagesLabel, 200);
-    final maxPagesRow = find.ancestor(of: maxPagesLabel, matching: find.byType(Row)).first;
-    await tester.tap(find.descendant(of: maxPagesRow, matching: find.byIcon(Icons.add)));
+    final maxPagesStepper = find.byKey(const Key('max_pages_stepper'));
+    await tester.dragUntilVisible(maxPagesStepper, find.byType(ListView), const Offset(0, -100));
+    await tester.tap(find.descendant(of: maxPagesStepper, matching: find.byIcon(Icons.add)));
     await tester.pump();
 
     final mergeOption = find.widgetWithText(SwitchListTile, '여러 페이지 OCR 이어붙이기 (mergeOcrPages)');
-    await tester.scrollUntilVisible(mergeOption, 200);
+    await tester.dragUntilVisible(mergeOption, find.byType(ListView), const Offset(0, -100));
     expect(tester.widget<SwitchListTile>(mergeOption).onChanged, isNotNull);
     await tester.tap(mergeOption);
     await tester.pump();
