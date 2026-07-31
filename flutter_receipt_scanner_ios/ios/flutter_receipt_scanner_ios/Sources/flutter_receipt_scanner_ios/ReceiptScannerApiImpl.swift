@@ -39,11 +39,46 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
             )))
             return
         }
-        switch options.source ?? .camera {
+        // Language capability is a configuration failure — reject before any UI
+        // appears. Skipped entirely when OCR is off, since the option is moot.
+        var resolved = options
+        if options.ocr ?? true {
+            do {
+                resolved.ocrLanguages = try OcrProcessor.resolveLanguages(options.ocrLanguages ?? [])
+            } catch let error as OcrProcessor.LanguageError {
+                completion(.failure(Self.pigeonError(for: error)))
+                return
+            } catch {
+                completion(.failure(PigeonError(
+                    code: "INVALID_OCR_LANGUAGE",
+                    message: error.localizedDescription,
+                    details: nil
+                )))
+                return
+            }
+        }
+        switch resolved.source ?? .camera {
         case .camera:
-            startCamera(options: options, completion: completion)
+            startCamera(options: resolved, completion: completion)
         case .gallery:
-            startGallery(options: options, completion: completion)
+            startGallery(options: resolved, completion: completion)
+        }
+    }
+
+    private static func pigeonError(for error: OcrProcessor.LanguageError) -> PigeonError {
+        switch error {
+        case let .invalid(tag):
+            return PigeonError(
+                code: "INVALID_OCR_LANGUAGE",
+                message: "Not a usable BCP 47 language tag: \"\(tag)\".",
+                details: nil
+            )
+        case let .notSupported(tag):
+            return PigeonError(
+                code: "OCR_LANGUAGE_NOT_SUPPORTED",
+                message: "On-device text recognition does not support \"\(tag)\" on this device.",
+                details: nil
+            )
         }
     }
 
@@ -204,7 +239,10 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
         var ocrLines: [OcrLineWire]?
         if runOcr {
             let minHeight = Float(options.minimumTextHeight ?? 0)
-            let outcome = OcrProcessor.recognize(cg, minimumTextHeight: minHeight, autoRotate: autoRotate)
+            let outcome = OcrProcessor.recognize(
+                cg, minimumTextHeight: minHeight, autoRotate: autoRotate,
+                languages: options.ocrLanguages ?? []
+            )
             ocrText = outcome.text
             confidence = outcome.confidence
             if autoRotate, outcome.rotationDegrees != 0 {

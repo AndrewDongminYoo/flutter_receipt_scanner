@@ -194,7 +194,8 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
         var ocrOutcome: OcrOutcome?
         if runOcr {
             let outcome = OcrProcessor.recognize(
-                cropped, minimumTextHeight: minimumTextHeight, autoRotate: autoRotate
+                cropped, minimumTextHeight: minimumTextHeight, autoRotate: autoRotate,
+                languages: options.ocrLanguages ?? []
             )
             ocrText = outcome.text
             confidence = outcome.confidence

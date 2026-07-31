@@ -34,6 +34,9 @@ class FlutterReceiptScannerPlugin :
     private var pendingCallback: ((Result<ScanResultWire>) -> Unit)? = null
     private var pendingOptions: ScanOptionsWire? = null
 
+    /** Script family resolved for the in-flight scan; Korean when OCR is off. */
+    private var pendingFamily: OcrScriptFamily = OcrScriptFamily.KOREAN
+
     private companion object {
         const val SCAN_REQUEST_CODE = 0x5EC0
         const val GALLERY_REQUEST_CODE = 0x5EC1
@@ -88,10 +91,37 @@ class FlutterReceiptScannerPlugin :
 
         pendingCallback = callback
         pendingOptions = options
+        pendingFamily = OcrScriptFamily.KOREAN
         executor.execute { appContext?.let { ImageProcessor.deletePreviousSessionFiles(it) } }
 
         val maxPages = (options.maxPages ?: 1).toInt().coerceIn(1, MAX_PAGES)
 
+        // With OCR off the language option is moot — never resolve a script or
+        // prepare a model. Otherwise the model must be ready before any UI
+        // appears; `pendingCallback` is already set, so the scan-in-progress
+        // guard covers model preparation too.
+        if (options.ocr != false) {
+            executor.execute {
+                try {
+                    val family = OcrScriptResolver.resolve(options.ocrLanguages ?: emptyList())
+                    appContext?.let { OcrModelProvider.ensureInstalled(it, family) }
+                    pendingFamily = family
+                } catch (e: OcrLanguageException) {
+                    reject(e.code, e.message)
+                    return@execute
+                }
+                mainHandler.post { launchScanUi(activity, options, maxPages) }
+            }
+            return
+        }
+        launchScanUi(activity, options, maxPages)
+    }
+
+    private fun launchScanUi(
+        activity: Activity,
+        options: ScanOptionsWire,
+        maxPages: Int,
+    ) {
         // Gallery path: the system photo picker + custom quad-crop editor live in
         // CropEditorActivity, which returns cached file:// URIs + per-image corners.
         // Android always shows the editor — cropAutoConfirm is ignored (port map §2.4).
@@ -187,7 +217,7 @@ class FlutterReceiptScannerPlugin :
                 reject("NO_CONTEXT", "Application context unavailable.")
                 return@execute
             }
-            val ocr = OcrProcessor()
+            val ocr = OcrProcessor(pendingFamily)
             try {
                 val images =
                     pages.mapNotNull { page ->
@@ -249,7 +279,7 @@ class FlutterReceiptScannerPlugin :
                 reject("NO_CONTEXT", "Application context unavailable.")
                 return@execute
             }
-            val ocr = OcrProcessor()
+            val ocr = OcrProcessor(pendingFamily)
             try {
                 val images =
                     uris.mapIndexedNotNull { i, uriStr ->

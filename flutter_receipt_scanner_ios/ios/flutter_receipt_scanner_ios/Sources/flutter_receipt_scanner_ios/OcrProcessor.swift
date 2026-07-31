@@ -43,14 +43,21 @@ enum OcrProcessor {
     private static let rotateCommitRatio = 1.3
 
     /// Recognizes text and, when `autoRotate` is on, detects the upright rotation.
+    ///
+    /// `languages` is applied to every pass — the accurate read and each fast
+    /// orientation probe. Probing with a different language set would make the
+    /// line-count comparison meaningless.
     static func recognize(
         _ cg: CGImage,
         minimumTextHeight: Float,
-        autoRotate: Bool
+        autoRotate: Bool,
+        languages: [String]
     ) -> OcrOutcome {
         let effectiveHeight = minimumTextHeight > 0 ? minimumTextHeight : defaultMinTextHeight
         let size0 = CGSize(width: cg.width, height: cg.height)
-        let pass0 = recognizeText(cg, orientation: 0, level: .accurate, minHeight: effectiveHeight, pixelSize: size0)
+        let pass0 = recognizeText(
+            cg, orientation: 0, level: .accurate, minHeight: effectiveHeight, pixelSize: size0, languages: languages
+        )
 
         // Skeleton: "0° accepted". Every early return ships pass0's upright boxes.
         let upright = OcrOutcome(
@@ -75,7 +82,7 @@ enum OcrProcessor {
                 // complementary CCW amount and re-recognize on that frame.
                 return measureRotated(
                     cg, ccwDegrees: (360 - correction) % 360, minHeight: effectiveHeight,
-                    fallback: pass0, fallbackSize: size0
+                    fallback: pass0, fallbackSize: size0, languages: languages
                 )
             }
         }
@@ -92,7 +99,8 @@ enum OcrProcessor {
         var bestCount = pass0.count
         for degrees in probes {
             let probe = recognizeText(
-                cg, orientation: degrees, level: .fast, minHeight: effectiveHeight, pixelSize: size0
+                cg, orientation: degrees, level: .fast, minHeight: effectiveHeight, pixelSize: size0,
+                languages: languages
             )
             if probe.count > bestCount {
                 bestCount = probe.count
@@ -104,7 +112,8 @@ enum OcrProcessor {
             return upright
         }
         return measureRotated(
-            cg, ccwDegrees: bestDegrees, minHeight: effectiveHeight, fallback: pass0, fallbackSize: size0
+            cg, ccwDegrees: bestDegrees, minHeight: effectiveHeight, fallback: pass0, fallbackSize: size0,
+            languages: languages
         )
     }
 
@@ -116,11 +125,14 @@ enum OcrProcessor {
     /// text ships and its boxes are remapped into the rotated frame — the same
     /// fallback Android's `runOcrAndAutoRotate` uses.
     private static func measureRotated(
-        _ cg: CGImage, ccwDegrees: Int, minHeight: Float, fallback: Pass, fallbackSize: CGSize
+        _ cg: CGImage, ccwDegrees: Int, minHeight: Float, fallback: Pass, fallbackSize: CGSize,
+        languages: [String]
     ) -> OcrOutcome {
         let rotated = ImageProcessor.rotated(cg, byDegreesCCW: ccwDegrees)
         let size = CGSize(width: rotated.width, height: rotated.height)
-        let pass = recognizeText(rotated, orientation: 0, level: .accurate, minHeight: minHeight, pixelSize: size)
+        let pass = recognizeText(
+            rotated, orientation: 0, level: .accurate, minHeight: minHeight, pixelSize: size, languages: languages
+        )
         if pass.text != nil {
             return OcrOutcome(
                 text: pass.text, confidence: pass.confidence, rotationDegrees: ccwDegrees,
@@ -158,16 +170,61 @@ enum OcrProcessor {
         return (try? request.supportedRecognitionLanguages()) ?? []
     }
 
+    /// Why a requested language list cannot be served.
+    enum LanguageError: Error {
+        /// A tag is empty or the locale API produced no language identifier.
+        case invalid(String)
+        /// A valid tag that the active Vision request does not support.
+        case notSupported(String)
+    }
+
+    /// Canonicalizes `tags` and checks them against the active request's
+    /// supported set, preserving caller priority and dropping duplicates.
+    ///
+    /// Matching is case-insensitive and falls back to the language subtag, so
+    /// `en-GB` is served by a Vision `en-US`-style identifier.
+    static func resolveLanguages(_ tags: [String]) throws -> [String] {
+        let supported = supportedRecognitionLanguages()
+        var resolved: [String] = []
+        for tag in tags {
+            let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+            let canonical = Locale.canonicalLanguageIdentifier(from: trimmed)
+            guard !trimmed.isEmpty, !canonical.isEmpty else {
+                throw LanguageError.invalid(tag)
+            }
+            // A private-use tag canonicalizes non-empty but carries no language,
+            // so it falls through to the capability check below by design.
+            guard supported.contains(where: { matches($0, canonical) }) else {
+                throw LanguageError.notSupported(tag)
+            }
+            if !resolved.contains(canonical) { resolved.append(canonical) }
+        }
+        guard !resolved.isEmpty else { throw LanguageError.invalid("") }
+        return resolved
+    }
+
+    private static func matches(_ supported: String, _ canonical: String) -> Bool {
+        if supported.caseInsensitiveCompare(canonical) == .orderedSame { return true }
+        let supportedLanguage = supported.split(separator: "-").first.map(String.init) ?? supported
+        let canonicalLanguage = canonical.split(separator: "-").first.map(String.init) ?? canonical
+        return !canonicalLanguage.isEmpty
+            && supportedLanguage.caseInsensitiveCompare(canonicalLanguage) == .orderedSame
+    }
+
     private static func recognizeText(
         _ cg: CGImage,
         orientation degrees: Int,
         level: VNRequestTextRecognitionLevel,
         minHeight: Float,
-        pixelSize: CGSize
+        pixelSize: CGSize,
+        languages: [String]
     ) -> Pass {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = level
-        request.recognitionLanguages = ["ko-KR", "en-US"]
+        request.recognitionLanguages = languages
+        // The caller supplied explicit hints and probe passes must stay
+        // comparable, so never let Vision pick a language of its own.
+        request.automaticallyDetectsLanguage = false
         request.usesLanguageCorrection = false
         request.minimumTextHeight = minHeight
 

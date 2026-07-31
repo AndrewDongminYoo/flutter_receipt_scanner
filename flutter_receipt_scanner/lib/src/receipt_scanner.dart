@@ -19,7 +19,9 @@ Future<ScanReceiptResult> scan({
   bool mergeOcrPages = false,
 }) async {
   if (mergeOcrPages) _validateMergeOptions(options);
-  final resolved = _resolveOcrLanguages(options);
+  // The language option is moot without OCR — never let it gate a scan that
+  // will not run recognition (native code skips it for the same reason).
+  final resolved = options.ocr ? _resolveOcrLanguages(options) : options;
 
   final native = await FlutterReceiptScannerPlatform.instance.scan(resolved);
   final nativePageUris = mergeOcrPages && native.status == ScanStatus.success

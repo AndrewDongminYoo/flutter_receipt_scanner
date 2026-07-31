@@ -150,6 +150,21 @@ void main() {
         expect(platform.callCount, 0);
       });
     }
+
+    for (final (name, languages) in invalidLanguages) {
+      test('$name is ignored when OCR is disabled', () async {
+        final platform = _RecordingPlatform();
+        FlutterReceiptScannerPlatform.instance = platform;
+
+        // The option is moot without OCR, so it must never gate the scan.
+        final result = await scan(
+          options: ScanReceiptOptions(ocr: false, ocrLanguages: languages),
+        );
+
+        expect(result.status, ScanStatus.success);
+        expect(platform.callCount, 1);
+      });
+    }
   });
 
   group('getOcrCapabilities', () {
