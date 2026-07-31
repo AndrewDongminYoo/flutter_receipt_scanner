@@ -29,6 +29,7 @@ xcuserdata/
 local.properties
 keystore.properties
 .gradle/
+.kotlin/
 gradlew
 gradlew.bat
 gradle-wrapper.jar

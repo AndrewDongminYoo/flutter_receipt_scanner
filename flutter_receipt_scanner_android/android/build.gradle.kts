@@ -54,7 +54,17 @@ dependencies {
     // validated on 16.0.0 — see the native port map §6.4). A different version
     // can silently break the single-pass autoRotate heuristic.
     implementation("com.google.mlkit:text-recognition-korean:16.0.1")
+    // Non-default scripts use the Play services dynamically delivered
+    // recognizers (~260 KB per script architecture) instead of bundled models
+    // (~4 MB each), so expanding capability does not bloat the host APK.
+    // Readiness is checked with ModuleInstallClient before a scan runs.
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition-chinese:16.0.1")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition-devanagari:16.0.1")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition-japanese:16.0.1")
     implementation("androidx.exifinterface:exifinterface:1.4.2")
     implementation("androidx.activity:activity-ktx:1.10.1")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("io.mockk:mockk:1.13.12")
 }

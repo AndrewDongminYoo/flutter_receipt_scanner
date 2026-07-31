@@ -30,12 +30,27 @@ abstract class FlutterReceiptScannerPlatform extends PlatformInterface {
   Future<ScanReceiptResult> scan(ScanReceiptOptions options) {
     throw UnimplementedError('scan() has not been implemented.');
   }
+
+  /// Reports current on-device OCR capability.
+  ///
+  /// Must not request a model download or open UI, and reports capability
+  /// regardless of the `ocr` value used in a later [scan] call.
+  Future<OcrCapabilities> getOcrCapabilities() {
+    throw UnimplementedError('getOcrCapabilities() has not been implemented.');
+  }
 }
 
 /// Fallback used on platforms with no registered implementation.
 final class _UnimplementedReceiptScanner extends FlutterReceiptScannerPlatform {
   @override
   Future<ScanReceiptResult> scan(ScanReceiptOptions options) {
+    throw UnsupportedError(
+      'flutter_receipt_scanner has no implementation on this platform.',
+    );
+  }
+
+  @override
+  Future<OcrCapabilities> getOcrCapabilities() {
     throw UnsupportedError(
       'flutter_receipt_scanner has no implementation on this platform.',
     );

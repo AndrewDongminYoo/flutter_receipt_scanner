@@ -3,9 +3,7 @@ package com.example.flutter_receipt_scanner_android
 import android.graphics.Bitmap
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
-import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 
 /** Result of an OCR pass, including the detected upright rotation and per-line geometry. */
 data class OcrOutcome(
@@ -39,13 +37,17 @@ data class OcrOutcome(
  * 90 from 270 and detects a plain 180 flip. The older image-vs-line aspect
  * mismatch stays as a fallback for samples too small or too split to judge.
  *
- * The Korean recognizer covers Latin too (pinned `text-recognition-korean`
- * 16.0.1). `close()` the shared client once per scan. Every method blocks on
+ * The recognizer is chosen per scan from the caller's language hints; every
+ * non-Latin recognizer also reads the Latin characters mixed into receipts
+ * (the Korean model is the pinned bundled `text-recognition-korean` 16.0.1).
+ * `close()` the shared client once per scan. Every method blocks on
  * [Tasks.await] and must be called from a background thread.
  */
-class OcrProcessor {
-    private val recognizer: TextRecognizer =
-        TextRecognition.getClient(KoreanTextRecognizerOptions.Builder().build())
+class OcrProcessor(
+    /** Script family selected from the caller's language hints. */
+    family: OcrScriptFamily = OcrScriptFamily.KOREAN,
+) {
+    private val recognizer: TextRecognizer = family.newRecognizer()
 
     private companion object {
         const val MISMATCH_MIN_LINES = 5

@@ -82,6 +82,24 @@ enum class ScanStatusWire(
     }
 }
 
+/**
+ * Whether an OCR script model can run now or needs a download.
+ *
+ * Declared after the shipped wire classes on purpose — Pigeon assigns codec
+ * bytes in declaration order.
+ */
+enum class OcrModelStatusWire(
+    val raw: Int,
+) {
+    READY(0),
+    DOWNLOAD_REQUIRED(1),
+    ;
+
+    companion object {
+        fun ofRaw(raw: Int): OcrModelStatusWire? = values().firstOrNull { it.raw == raw }
+    }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class ScanOptionsWire(
     val source: ScanSourceWire? = null,
@@ -95,6 +113,11 @@ data class ScanOptionsWire(
     val includeRawExif: Boolean? = null,
     val minimumTextHeight: Double? = null,
     val ocrGeometry: Boolean? = null,
+    /**
+     * Ordered BCP 47 language hints for on-device OCR. The app-facing package
+     * always forwards a resolved list, so the native boundary is deterministic.
+     */
+    val ocrLanguages: List<String>? = null,
 ) {
     companion object {
         fun fromList(pigeonVar_list: List<Any?>): ScanOptionsWire {
@@ -109,6 +132,7 @@ data class ScanOptionsWire(
             val includeRawExif = pigeonVar_list[8] as Boolean?
             val minimumTextHeight = pigeonVar_list[9] as Double?
             val ocrGeometry = pigeonVar_list[10] as Boolean?
+            val ocrLanguages = pigeonVar_list[11] as List<String>?
             return ScanOptionsWire(
                 source,
                 maxPages,
@@ -121,6 +145,7 @@ data class ScanOptionsWire(
                 includeRawExif,
                 minimumTextHeight,
                 ocrGeometry,
+                ocrLanguages,
             )
         }
     }
@@ -138,6 +163,7 @@ data class ScanOptionsWire(
             includeRawExif,
             minimumTextHeight,
             ocrGeometry,
+            ocrLanguages,
         )
 }
 
@@ -413,6 +439,59 @@ data class OcrLineWire(
         )
 }
 
+/**
+ * One script family's readiness, reported by Android.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class OcrModelStateWire(
+    /**
+     * Unicode script identifier such as `Latn`, `Kore`, `Jpan`, `Hans`, `Hant`,
+     * or `Deva`.
+     */
+    val script: String,
+    val status: OcrModelStatusWire,
+) {
+    companion object {
+        fun fromList(pigeonVar_list: List<Any?>): OcrModelStateWire {
+            val script = pigeonVar_list[0] as String
+            val status = pigeonVar_list[1] as OcrModelStatusWire
+            return OcrModelStateWire(script, status)
+        }
+    }
+
+    fun toList(): List<Any?> =
+        listOf(
+            script,
+            status,
+        )
+}
+
+/**
+ * Native OCR capability. `supportedLanguages` is iOS-only (Vision reports
+ * exact identifiers); `models` is Android-only (ML Kit script families).
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class OcrCapabilitiesWire(
+    val supportedLanguages: List<String>? = null,
+    val models: List<OcrModelStateWire>? = null,
+) {
+    companion object {
+        fun fromList(pigeonVar_list: List<Any?>): OcrCapabilitiesWire {
+            val supportedLanguages = pigeonVar_list[0] as List<String>?
+            val models = pigeonVar_list[1] as List<OcrModelStateWire>?
+            return OcrCapabilitiesWire(supportedLanguages, models)
+        }
+    }
+
+    fun toList(): List<Any?> =
+        listOf(
+            supportedLanguages,
+            models,
+        )
+}
+
 private open class MessagesPigeonCodec : StandardMessageCodec() {
     override fun readValueOfType(
         type: Byte,
@@ -438,44 +517,62 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
             }
 
             132.toByte() -> {
-                return (readValue(buffer) as? List<Any?>)?.let {
-                    ScanOptionsWire.fromList(it)
+                return (readValue(buffer) as Long?)?.let {
+                    OcrModelStatusWire.ofRaw(it.toInt())
                 }
             }
 
             133.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
-                    GpsDataWire.fromList(it)
+                    ScanOptionsWire.fromList(it)
                 }
             }
 
             134.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
-                    ReceiptExifWire.fromList(it)
+                    GpsDataWire.fromList(it)
                 }
             }
 
             135.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
-                    OcrQualityWire.fromList(it)
+                    ReceiptExifWire.fromList(it)
                 }
             }
 
             136.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
-                    ReceiptImageWire.fromList(it)
+                    OcrQualityWire.fromList(it)
                 }
             }
 
             137.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
-                    ScanResultWire.fromList(it)
+                    ReceiptImageWire.fromList(it)
                 }
             }
 
             138.toByte() -> {
                 return (readValue(buffer) as? List<Any?>)?.let {
+                    ScanResultWire.fromList(it)
+                }
+            }
+
+            139.toByte() -> {
+                return (readValue(buffer) as? List<Any?>)?.let {
                     OcrLineWire.fromList(it)
+                }
+            }
+
+            140.toByte() -> {
+                return (readValue(buffer) as? List<Any?>)?.let {
+                    OcrModelStateWire.fromList(it)
+                }
+            }
+
+            141.toByte() -> {
+                return (readValue(buffer) as? List<Any?>)?.let {
+                    OcrCapabilitiesWire.fromList(it)
                 }
             }
 
@@ -505,38 +602,53 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
                 writeValue(stream, value.raw)
             }
 
-            is ScanOptionsWire -> {
+            is OcrModelStatusWire -> {
                 stream.write(132)
-                writeValue(stream, value.toList())
+                writeValue(stream, value.raw)
             }
 
-            is GpsDataWire -> {
+            is ScanOptionsWire -> {
                 stream.write(133)
                 writeValue(stream, value.toList())
             }
 
-            is ReceiptExifWire -> {
+            is GpsDataWire -> {
                 stream.write(134)
                 writeValue(stream, value.toList())
             }
 
-            is OcrQualityWire -> {
+            is ReceiptExifWire -> {
                 stream.write(135)
                 writeValue(stream, value.toList())
             }
 
-            is ReceiptImageWire -> {
+            is OcrQualityWire -> {
                 stream.write(136)
                 writeValue(stream, value.toList())
             }
 
-            is ScanResultWire -> {
+            is ReceiptImageWire -> {
                 stream.write(137)
                 writeValue(stream, value.toList())
             }
 
-            is OcrLineWire -> {
+            is ScanResultWire -> {
                 stream.write(138)
+                writeValue(stream, value.toList())
+            }
+
+            is OcrLineWire -> {
+                stream.write(139)
+                writeValue(stream, value.toList())
+            }
+
+            is OcrModelStateWire -> {
+                stream.write(140)
+                writeValue(stream, value.toList())
+            }
+
+            is OcrCapabilitiesWire -> {
+                stream.write(141)
                 writeValue(stream, value.toList())
             }
 
@@ -553,6 +665,9 @@ interface ReceiptScannerApi {
         options: ScanOptionsWire,
         callback: (Result<ScanResultWire>) -> Unit,
     )
+
+    /** Reports current OCR capability. Must not download a model or open UI. */
+    fun getOcrCapabilities(callback: (Result<OcrCapabilitiesWire>) -> Unit)
 
     companion object {
         /** The codec used by ReceiptScannerApi. */
@@ -580,6 +695,29 @@ interface ReceiptScannerApi {
                         val args = message as List<Any?>
                         val optionsArg = args[0] as ScanOptionsWire
                         api.scan(optionsArg) { result: Result<ScanResultWire> ->
+                            val error = result.exceptionOrNull()
+                            if (error != null) {
+                                reply.reply(wrapError(error))
+                            } else {
+                                val data = result.getOrNull()
+                                reply.reply(wrapResult(data))
+                            }
+                        }
+                    }
+                } else {
+                    channel.setMessageHandler(null)
+                }
+            }
+            run {
+                val channel =
+                    BasicMessageChannel<Any?>(
+                        binaryMessenger,
+                        "dev.flutter.pigeon.flutter_receipt_scanner.ReceiptScannerApi.getOcrCapabilities$separatedMessageChannelSuffix",
+                        codec,
+                    )
+                if (api != null) {
+                    channel.setMessageHandler { _, reply ->
+                        api.getOcrCapabilities { result: Result<OcrCapabilitiesWire> ->
                             val error = result.exceptionOrNull()
                             if (error != null) {
                                 reply.reply(wrapError(error))

@@ -118,6 +118,7 @@ class _ScanScreenState extends State<ScanScreen> {
   // Scan options — each mirrors a ScanReceiptOptions field.
   ScanSource _source = ScanSource.camera;
   bool _ocr = true;
+  final TextEditingController _ocrLanguagesController = TextEditingController(text: 'ko-KR, en-US');
   bool _includeExif = true;
   int _maxPages = 1;
   double _quality = 0.82;
@@ -163,6 +164,9 @@ class _ScanScreenState extends State<ScanScreen> {
           cropAutoConfirm: _cropAutoConfirm,
           minimumTextHeight: _minimumTextHeight,
           ocrGeometry: _ocrGeometry,
+          ocrLanguages: _ocr
+              ? _ocrLanguagesController.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList()
+              : const [],
         ),
         ocrFloor: _floorEnabled
             ? OcrFloorOrDisabled.floor(
@@ -207,6 +211,7 @@ class _ScanScreenState extends State<ScanScreen> {
           _exifSection(),
           const SizedBox(height: 8),
           FilledButton.icon(
+            key: const Key('scan_button'),
             onPressed: _scanning ? null : _runScan,
             icon: _scanning
                 ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
@@ -269,12 +274,59 @@ class _ScanScreenState extends State<ScanScreen> {
               if (!_ocr) _mergeOcrPages = false;
             }),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _ocrLanguagesController,
+              enabled: _ocr,
+              decoration: const InputDecoration(
+                labelText: 'OCR Languages (BCP 47)',
+                hintText: 'e.g., ko-KR, en-US',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                try {
+                  final capabilities = await getOcrCapabilities();
+                  if (!mounted) return;
+                  showDialog<void>(
+                    context: context,
+                    builder: (context) {
+                      final content = capabilities is IosOcrCapabilities
+                          ? 'iOS Supported Languages:\n${capabilities.supportedLanguages.join(', ')}'
+                          : (capabilities as AndroidOcrCapabilities).models
+                                .map((m) => '${m.script}: ${m.status.name}')
+                                .join('\n');
+                      return AlertDialog(
+                        title: const Text('OCR Capabilities'),
+                        content: Text(content),
+                        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))],
+                      );
+                    },
+                  );
+                } on PlatformException catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: ${e.code} - ${e.message}')));
+                }
+              },
+              icon: const Icon(Icons.language),
+              label: const Text('Check Capabilities'),
+            ),
+          ),
           SwitchListTile(
             title: const Text('EXIF 메타데이터 포함'),
             value: _includeExif,
             onChanged: (v) => setState(() => _includeExif = v),
           ),
           _Stepper(
+            key: const Key('max_pages_stepper'),
             label: '최대 페이지 수 (maxPages)',
             value: _maxPages,
             min: 1,
@@ -676,6 +728,7 @@ class _InfoBanner extends StatelessWidget {
 
 class _Stepper extends StatelessWidget {
   const _Stepper({
+    super.key,
     required this.label,
     required this.value,
     required this.min,

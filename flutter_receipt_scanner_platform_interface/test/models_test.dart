@@ -271,6 +271,46 @@ void main() {
     },
   );
 
+  test('ScanReceiptOptions defaults ocrLanguages to Korean and English', () {
+    const options = ScanReceiptOptions();
+
+    expect(options.ocrLanguages, ['ko-KR', 'en-US']);
+    expect(options.ocrLanguages, same(kDefaultOcrLanguages));
+  });
+
+  test('ScanReceiptOptions copyWith replaces only ocrLanguages', () {
+    const options = ScanReceiptOptions(maxPages: 4, ocr: false, quality: 0.5);
+
+    final copy = options.copyWith(ocrLanguages: const ['ja-JP']);
+
+    expect(copy.ocrLanguages, ['ja-JP']);
+    expect(copy.maxPages, 4);
+    expect(copy.ocr, isFalse);
+    expect(copy.quality, 0.5);
+    expect(options.copyWith().ocrLanguages, kDefaultOcrLanguages);
+  });
+
+  test('OcrCapabilities variants expose the default language list', () {
+    final ios = IosOcrCapabilities(supportedLanguages: ['ko-KR', 'ja-JP']);
+    final android = AndroidOcrCapabilities(
+      models: const [
+        OcrModelState(script: 'Kore', status: OcrModelStatus.ready),
+        OcrModelState(script: 'Deva', status: OcrModelStatus.downloadRequired),
+      ],
+    );
+
+    expect(ios.defaultLanguages, ['ko-KR', 'en-US']);
+    expect(android.defaultLanguages, ['ko-KR', 'en-US']);
+    expect(ios.supportedLanguages, ['ko-KR', 'ja-JP']);
+    expect(android.models.map((m) => m.script), ['Kore', 'Deva']);
+    expect(android.models.last.status, OcrModelStatus.downloadRequired);
+    expect(() => ios.supportedLanguages.add('en-US'), throwsUnsupportedError);
+    expect(
+      () => android.models.add(const OcrModelState(script: 'Latn', status: OcrModelStatus.ready)),
+      throwsUnsupportedError,
+    );
+  });
+
   test('ScanReceiptResult holds an explicit discarded page count', () {
     const result = ScanReceiptResult(
       status: ScanStatus.success,

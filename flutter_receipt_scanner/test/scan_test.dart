@@ -31,17 +31,26 @@ const _defaultResult = ScanReceiptResult(
 );
 
 class _RecordingPlatform extends FlutterReceiptScannerPlatform {
-  _RecordingPlatform({this.result = _defaultResult});
+  _RecordingPlatform({this.result = _defaultResult, OcrCapabilities? capabilities})
+    : _capabilities = capabilities ?? IosOcrCapabilities(supportedLanguages: const []);
 
   final ScanReceiptResult result;
+  final OcrCapabilities _capabilities;
   ScanReceiptOptions? received;
   int callCount = 0;
+  int capabilityCallCount = 0;
 
   @override
   Future<ScanReceiptResult> scan(ScanReceiptOptions options) async {
     callCount++;
     received = options;
     return result;
+  }
+
+  @override
+  Future<OcrCapabilities> getOcrCapabilities() async {
+    capabilityCallCount++;
+    return _capabilities;
   }
 }
 
@@ -86,6 +95,92 @@ void main() {
       expect(result.mergedOcr, isNull);
     },
   );
+
+  group('ocrLanguages', () {
+    test('forwards the package default when the caller sets none', () async {
+      final platform = _RecordingPlatform();
+      FlutterReceiptScannerPlatform.instance = platform;
+
+      await scan();
+
+      expect(platform.received?.ocrLanguages, ['ko-KR', 'en-US']);
+    });
+
+    test('trims tags and drops duplicates preserving priority', () async {
+      final platform = _RecordingPlatform();
+      FlutterReceiptScannerPlatform.instance = platform;
+
+      await scan(
+        options: const ScanReceiptOptions(
+          ocrLanguages: [' ja-JP ', 'en-US', 'ja-JP', '  en-US'],
+        ),
+      );
+
+      expect(platform.received?.ocrLanguages, ['ja-JP', 'en-US']);
+    });
+
+    test('preserves every other option while normalizing', () async {
+      final platform = _RecordingPlatform();
+      FlutterReceiptScannerPlatform.instance = platform;
+
+      await scan(
+        options: const ScanReceiptOptions(maxPages: 5, quality: 0.4, ocrLanguages: [' hi-IN ']),
+      );
+
+      expect(platform.received?.ocrLanguages, ['hi-IN']);
+      expect(platform.received?.maxPages, 5);
+      expect(platform.received?.quality, 0.4);
+    });
+
+    final invalidLanguages = <(String, List<String>)>[
+      ('an empty list', <String>[]),
+      ('an empty tag', <String>['ko-KR', '']),
+      ('a whitespace-only tag', <String>['   ']),
+    ];
+
+    for (final (name, languages) in invalidLanguages) {
+      test('$name fails before calling the platform', () async {
+        final platform = _RecordingPlatform();
+        FlutterReceiptScannerPlatform.instance = platform;
+
+        await expectLater(
+          scan(options: ScanReceiptOptions(ocrLanguages: languages)),
+          throwsArgumentError,
+        );
+
+        expect(platform.callCount, 0);
+      });
+    }
+
+    for (final (name, languages) in invalidLanguages) {
+      test('$name is ignored when OCR is disabled', () async {
+        final platform = _RecordingPlatform();
+        FlutterReceiptScannerPlatform.instance = platform;
+
+        // The option is moot without OCR, so it must never gate the scan.
+        final result = await scan(
+          options: ScanReceiptOptions(ocr: false, ocrLanguages: languages),
+        );
+
+        expect(result.status, ScanStatus.success);
+        expect(platform.callCount, 1);
+      });
+    }
+  });
+
+  group('getOcrCapabilities', () {
+    test('delegates to the registered platform', () async {
+      final capabilities = IosOcrCapabilities(supportedLanguages: ['ko-KR', 'ja-JP']);
+      final platform = _RecordingPlatform(capabilities: capabilities);
+      FlutterReceiptScannerPlatform.instance = platform;
+
+      final result = await getOcrCapabilities();
+
+      expect(result, same(capabilities));
+      expect(platform.capabilityCallCount, 1);
+      expect(platform.callCount, 0);
+    });
+  });
 
   group('merge option validation', () {
     final invalidOptions = <(String, ScanReceiptOptions)>[
@@ -241,6 +336,28 @@ void main() {
       expect(result.mergedOcr?.pageUris, ['file:///tmp/a.jpg']);
     },
   );
+
+  test('merging is accepted with a non-default language list', () async {
+    final platform = _RecordingPlatform(
+      result: ScanReceiptResult(
+        status: ScanStatus.success,
+        images: [
+          _image('file:///tmp/first.jpg', '東京ストア\n商品 A 1,000\n小計 1,000'),
+          _image('file:///tmp/second.jpg', '商品 A 1,000\n小計 1,000\n合計 1,100'),
+        ],
+      ),
+    );
+    FlutterReceiptScannerPlatform.instance = platform;
+
+    final result = await scan(
+      options: const ScanReceiptOptions(maxPages: 2, ocrLanguages: ['ja-JP', 'en-US']),
+      mergeOcrPages: true,
+    );
+
+    expect(platform.received?.ocrLanguages, ['ja-JP', 'en-US']);
+    expect(result.mergedOcr?.text, '東京ストア\n商品 A 1,000\n小計 1,000\n合計 1,100');
+    expect(result.mergedOcr?.isComplete, isTrue);
+  });
 
   test('discarded native pages force an incomplete merge', () async {
     final platform = _RecordingPlatform(

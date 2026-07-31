@@ -19,8 +19,11 @@ Future<ScanReceiptResult> scan({
   bool mergeOcrPages = false,
 }) async {
   if (mergeOcrPages) _validateMergeOptions(options);
+  // The language option is moot without OCR — never let it gate a scan that
+  // will not run recognition (native code skips it for the same reason).
+  final resolved = options.ocr ? _resolveOcrLanguages(options) : options;
 
-  final native = await FlutterReceiptScannerPlatform.instance.scan(options);
+  final native = await FlutterReceiptScannerPlatform.instance.scan(resolved);
   final nativePageUris = mergeOcrPages && native.status == ScanStatus.success
       ? _snapshotNativePageUris(native.images)
       : const <String>[];
@@ -57,6 +60,37 @@ Future<ScanReceiptResult> scan({
     mergedOcr: mergedOcr,
     discardedPageCount: gated.discardedPageCount,
   );
+}
+
+/// Reports current on-device OCR capability without downloading a model or
+/// opening UI.
+Future<OcrCapabilities> getOcrCapabilities() => FlutterReceiptScannerPlatform.instance.getOcrCapabilities();
+
+/// Trims tags and drops exact duplicates, keeping the first occurrence.
+///
+/// Native code owns canonicalization and provider capability validation; this
+/// only rejects input that is structurally unusable.
+ScanReceiptOptions _resolveOcrLanguages(ScanReceiptOptions options) {
+  final normalized = <String>[];
+  for (final tag in options.ocrLanguages) {
+    final trimmed = tag.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError.value(
+        options.ocrLanguages,
+        'options.ocrLanguages',
+        'must not contain an empty language tag',
+      );
+    }
+    if (!normalized.contains(trimmed)) normalized.add(trimmed);
+  }
+  if (normalized.isEmpty) {
+    throw ArgumentError.value(
+      options.ocrLanguages,
+      'options.ocrLanguages',
+      'must not be empty',
+    );
+  }
+  return options.copyWith(ocrLanguages: normalized);
 }
 
 void _validateMergeOptions(ScanReceiptOptions options) {

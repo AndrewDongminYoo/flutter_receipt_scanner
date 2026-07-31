@@ -10,6 +10,9 @@ class _FakePlatform extends FlutterReceiptScannerPlatform {
 class _BadImpl implements FlutterReceiptScannerPlatform {
   @override
   Future<ScanReceiptResult> scan(ScanReceiptOptions options) => throw UnimplementedError();
+
+  @override
+  Future<OcrCapabilities> getOcrCapabilities() => throw UnimplementedError();
 }
 
 void main() {

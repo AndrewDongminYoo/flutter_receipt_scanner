@@ -81,6 +81,42 @@ Android's in-scanner capture behavior is pending physical-device verification.
 - An unproven seam or an OCR-rejected page never throws after a completed scan.
   The result comes back with `isComplete == false`, the seam recorded in `unmatchedBoundaryIndexes` (index `i` is the seam between pages `i` and `i + 1`), the page recorded in `rejectedPageIndexes`, and all text preserved — the merger never deletes uncertain content to make a result look complete.
 
+## Multilingual OCR
+
+The scanner extracts text using the languages requested in `ScanReceiptOptions.ocrLanguages`.
+By default, this is `['ko-KR', 'en-US']` (Korean and Latin text).
+
+```dart
+final result = await scan(
+  options: const ScanReceiptOptions(
+    ocrLanguages: ['ko-KR', 'en-US'], // BCP 47 language tags
+  ),
+);
+```
+
+### Checking Capabilities
+
+You can query current OCR support without opening the scanner or downloading models:
+
+```dart
+final capabilities = await getOcrCapabilities();
+
+if (capabilities is IosOcrCapabilities) {
+  // Vision OCR exact supported languages
+  print(capabilities.supportedLanguages);
+} else if (capabilities is AndroidOcrCapabilities) {
+  // ML Kit OCR script families and download states
+  for (final model in capabilities.models) {
+    print('${model.script} is ${model.status.name}');
+  }
+}
+```
+
+- **iOS:** The system language bundle handles OCR. If a requested language is not supported by the active Vision framework revision, it throws `PlatformException('OCR_LANGUAGE_NOT_SUPPORTED')`.
+- **Android:** The Korean module (`com.google.mlkit:text-recognition-korean`, which also reads Latin) is bundled with the plugin, so the default language list works offline. Latin, Japanese, Chinese, and Devanagari use the `play-services-mlkit-text-recognition*` modules delivered dynamically by Google Play services. If a script family is not installed, the first `scan()` will trigger a download and may throw `PlatformException('OCR_MODEL_INSTALL_FAILED')` if offline. At most one non-Latin script can be requested at a time, or it throws `PlatformException('OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED')`.
+
+_Note: The `11.0` aspect ratio and seam-matching metrics were calibrated exclusively on Korean+Latin text. Other scripts are natively supported but uncalibrated._
+
 ## Host app permissions
 
 - iOS `Info.plist`: `NSCameraUsageDescription` (camera scan). No photo-library key is needed — the gallery flow uses the permissionless `PHPickerViewController`.

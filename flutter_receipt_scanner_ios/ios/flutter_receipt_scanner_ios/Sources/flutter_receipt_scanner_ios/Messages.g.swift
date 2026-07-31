@@ -82,6 +82,15 @@ enum ScanStatusWire: Int {
     case rejected = 2
 }
 
+/// Whether an OCR script model can run now or needs a download.
+///
+/// Declared after the shipped wire classes on purpose — Pigeon assigns codec
+/// bytes in declaration order.
+enum OcrModelStatusWire: Int {
+    case ready = 0
+    case downloadRequired = 1
+}
+
 /// Generated class from Pigeon that represents data sent in messages.
 struct ScanOptionsWire {
     var source: ScanSourceWire? = nil
@@ -95,6 +104,9 @@ struct ScanOptionsWire {
     var includeRawExif: Bool? = nil
     var minimumTextHeight: Double? = nil
     var ocrGeometry: Bool? = nil
+    /// Ordered BCP 47 language hints for on-device OCR. The app-facing package
+    /// always forwards a resolved list, so the native boundary is deterministic.
+    var ocrLanguages: [String]? = nil
 
     // swift-format-ignore: AlwaysUseLowerCamelCase
     static func fromList(_ pigeonVar_list: [Any?]) -> ScanOptionsWire? {
@@ -109,6 +121,7 @@ struct ScanOptionsWire {
         let includeRawExif: Bool? = nilOrValue(pigeonVar_list[8])
         let minimumTextHeight: Double? = nilOrValue(pigeonVar_list[9])
         let ocrGeometry: Bool? = nilOrValue(pigeonVar_list[10])
+        let ocrLanguages: [String]? = nilOrValue(pigeonVar_list[11])
 
         return ScanOptionsWire(
             source: source,
@@ -121,7 +134,8 @@ struct ScanOptionsWire {
             autoRotate: autoRotate,
             includeRawExif: includeRawExif,
             minimumTextHeight: minimumTextHeight,
-            ocrGeometry: ocrGeometry
+            ocrGeometry: ocrGeometry,
+            ocrLanguages: ocrLanguages
         )
     }
 
@@ -138,6 +152,7 @@ struct ScanOptionsWire {
             includeRawExif,
             minimumTextHeight,
             ocrGeometry,
+            ocrLanguages,
         ]
     }
 }
@@ -451,6 +466,61 @@ struct OcrLineWire {
     }
 }
 
+/// One script family's readiness, reported by Android.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct OcrModelStateWire {
+    /// Unicode script identifier such as `Latn`, `Kore`, `Jpan`, `Hans`, `Hant`,
+    /// or `Deva`.
+    var script: String
+    var status: OcrModelStatusWire
+
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> OcrModelStateWire? {
+        let script = pigeonVar_list[0] as! String
+        let status = pigeonVar_list[1] as! OcrModelStatusWire
+
+        return OcrModelStateWire(
+            script: script,
+            status: status
+        )
+    }
+
+    func toList() -> [Any?] {
+        return [
+            script,
+            status,
+        ]
+    }
+}
+
+/// Native OCR capability. `supportedLanguages` is iOS-only (Vision reports
+/// exact identifiers); `models` is Android-only (ML Kit script families).
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct OcrCapabilitiesWire {
+    var supportedLanguages: [String]? = nil
+    var models: [OcrModelStateWire]? = nil
+
+    // swift-format-ignore: AlwaysUseLowerCamelCase
+    static func fromList(_ pigeonVar_list: [Any?]) -> OcrCapabilitiesWire? {
+        let supportedLanguages: [String]? = nilOrValue(pigeonVar_list[0])
+        let models: [OcrModelStateWire]? = nilOrValue(pigeonVar_list[1])
+
+        return OcrCapabilitiesWire(
+            supportedLanguages: supportedLanguages,
+            models: models
+        )
+    }
+
+    func toList() -> [Any?] {
+        return [
+            supportedLanguages,
+            models,
+        ]
+    }
+}
+
 private class MessagesPigeonCodecReader: FlutterStandardReader {
     override func readValue(ofType type: UInt8) -> Any? {
         switch type {
@@ -473,19 +543,29 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
             }
             return nil
         case 132:
-            return ScanOptionsWire.fromList(readValue() as! [Any?])
+            let enumResultAsInt: Int? = nilOrValue(readValue() as! Int?)
+            if let enumResultAsInt = enumResultAsInt {
+                return OcrModelStatusWire(rawValue: enumResultAsInt)
+            }
+            return nil
         case 133:
-            return GpsDataWire.fromList(readValue() as! [Any?])
+            return ScanOptionsWire.fromList(readValue() as! [Any?])
         case 134:
-            return ReceiptExifWire.fromList(readValue() as! [Any?])
+            return GpsDataWire.fromList(readValue() as! [Any?])
         case 135:
-            return OcrQualityWire.fromList(readValue() as! [Any?])
+            return ReceiptExifWire.fromList(readValue() as! [Any?])
         case 136:
-            return ReceiptImageWire.fromList(readValue() as! [Any?])
+            return OcrQualityWire.fromList(readValue() as! [Any?])
         case 137:
-            return ScanResultWire.fromList(readValue() as! [Any?])
+            return ReceiptImageWire.fromList(readValue() as! [Any?])
         case 138:
+            return ScanResultWire.fromList(readValue() as! [Any?])
+        case 139:
             return OcrLineWire.fromList(readValue() as! [Any?])
+        case 140:
+            return OcrModelStateWire.fromList(readValue() as! [Any?])
+        case 141:
+            return OcrCapabilitiesWire.fromList(readValue() as! [Any?])
         default:
             return super.readValue(ofType: type)
         }
@@ -503,26 +583,35 @@ private class MessagesPigeonCodecWriter: FlutterStandardWriter {
         } else if let value = value as? ScanStatusWire {
             super.writeByte(131)
             super.writeValue(value.rawValue)
-        } else if let value = value as? ScanOptionsWire {
+        } else if let value = value as? OcrModelStatusWire {
             super.writeByte(132)
-            super.writeValue(value.toList())
-        } else if let value = value as? GpsDataWire {
+            super.writeValue(value.rawValue)
+        } else if let value = value as? ScanOptionsWire {
             super.writeByte(133)
             super.writeValue(value.toList())
-        } else if let value = value as? ReceiptExifWire {
+        } else if let value = value as? GpsDataWire {
             super.writeByte(134)
             super.writeValue(value.toList())
-        } else if let value = value as? OcrQualityWire {
+        } else if let value = value as? ReceiptExifWire {
             super.writeByte(135)
             super.writeValue(value.toList())
-        } else if let value = value as? ReceiptImageWire {
+        } else if let value = value as? OcrQualityWire {
             super.writeByte(136)
             super.writeValue(value.toList())
-        } else if let value = value as? ScanResultWire {
+        } else if let value = value as? ReceiptImageWire {
             super.writeByte(137)
             super.writeValue(value.toList())
-        } else if let value = value as? OcrLineWire {
+        } else if let value = value as? ScanResultWire {
             super.writeByte(138)
+            super.writeValue(value.toList())
+        } else if let value = value as? OcrLineWire {
+            super.writeByte(139)
+            super.writeValue(value.toList())
+        } else if let value = value as? OcrModelStateWire {
+            super.writeByte(140)
+            super.writeValue(value.toList())
+        } else if let value = value as? OcrCapabilitiesWire {
+            super.writeByte(141)
             super.writeValue(value.toList())
         } else {
             super.writeValue(value)
@@ -547,6 +636,8 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol ReceiptScannerApi {
     func scan(options: ScanOptionsWire, completion: @escaping (Result<ScanResultWire, Error>) -> Void)
+    /// Reports current OCR capability. Must not download a model or open UI.
+    func getOcrCapabilities(completion: @escaping (Result<OcrCapabilitiesWire, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -574,6 +665,22 @@ class ReceiptScannerApiSetup {
             }
         } else {
             scanChannel.setMessageHandler(nil)
+        }
+        // Reports current OCR capability. Must not download a model or open UI.
+        let getOcrCapabilitiesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_receipt_scanner.ReceiptScannerApi.getOcrCapabilities\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+        if let api = api {
+            getOcrCapabilitiesChannel.setMessageHandler { _, reply in
+                api.getOcrCapabilities { result in
+                    switch result {
+                    case let .success(res):
+                        reply(wrapResult(res))
+                    case let .failure(error):
+                        reply(wrapError(error))
+                    }
+                }
+            }
+        } else {
+            getOcrCapabilitiesChannel.setMessageHandler(nil)
         }
     }
 }

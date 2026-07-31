@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 /// Captures the wire options it receives and returns a canned wire result,
 /// so the test exercises the pure wire<->model conversion in the registrant.
 class _FakeReceiptScannerApi extends ReceiptScannerApi {
-  _FakeReceiptScannerApi(this._result);
+  _FakeReceiptScannerApi(this._result, {OcrCapabilitiesWire? capabilities})
+    : _capabilities = capabilities ?? OcrCapabilitiesWire();
 
   final ScanResultWire _result;
+  final OcrCapabilitiesWire _capabilities;
   ScanOptionsWire? captured;
 
   @override
@@ -15,6 +17,9 @@ class _FakeReceiptScannerApi extends ReceiptScannerApi {
     captured = options;
     return _result;
   }
+
+  @override
+  Future<OcrCapabilitiesWire> getOcrCapabilities() async => _capabilities;
 }
 
 ScanResultWire _emptySuccess() => ScanResultWire(
@@ -52,6 +57,37 @@ void main() {
     expect(wire.autoRotate, false);
     expect(wire.includeRawExif, true);
     expect(wire.minimumTextHeight, 0.25);
+    expect(wire.ocrLanguages, ['ko-KR', 'en-US']);
+  });
+
+  test('scan forwards a custom ocrLanguages list on the wire', () async {
+    final fake = _FakeReceiptScannerApi(_emptySuccess());
+    await FlutterReceiptScannerIos(api: fake).scan(
+      const ScanReceiptOptions(ocrLanguages: ['ja-JP', 'en-US']),
+    );
+
+    expect(fake.captured!.ocrLanguages, ['ja-JP', 'en-US']);
+  });
+
+  test('getOcrCapabilities maps supported languages to the public model', () async {
+    final fake = _FakeReceiptScannerApi(
+      _emptySuccess(),
+      capabilities: OcrCapabilitiesWire(supportedLanguages: <String>['ko-KR', 'en-US', 'ja-JP']),
+    );
+
+    final capabilities = await FlutterReceiptScannerIos(api: fake).getOcrCapabilities();
+
+    expect(capabilities, isA<IosOcrCapabilities>());
+    expect((capabilities as IosOcrCapabilities).supportedLanguages, ['ko-KR', 'en-US', 'ja-JP']);
+    expect(capabilities.defaultLanguages, ['ko-KR', 'en-US']);
+  });
+
+  test('getOcrCapabilities defaults an absent language list to empty', () async {
+    final fake = _FakeReceiptScannerApi(_emptySuccess(), capabilities: OcrCapabilitiesWire());
+
+    final capabilities = await FlutterReceiptScannerIos(api: fake).getOcrCapabilities();
+
+    expect((capabilities as IosOcrCapabilities).supportedLanguages, isEmpty);
   });
 
   test(

@@ -22,7 +22,23 @@ class FlutterReceiptScannerAndroid extends FlutterReceiptScannerPlatform {
     final wire = await _api.scan(_optionsToWire(options));
     return _resultFromWire(wire);
   }
+
+  @override
+  Future<OcrCapabilities> getOcrCapabilities() async {
+    final wire = await _api.getOcrCapabilities();
+    return AndroidOcrCapabilities(
+      models: (wire.models ?? const <OcrModelStateWire>[]).map(_modelStateFromWire).toList(growable: false),
+    );
+  }
 }
+
+OcrModelState _modelStateFromWire(OcrModelStateWire w) =>
+    OcrModelState(script: w.script, status: _modelStatusFromWire(w.status));
+
+OcrModelStatus _modelStatusFromWire(OcrModelStatusWire s) => switch (s) {
+  OcrModelStatusWire.ready => OcrModelStatus.ready,
+  OcrModelStatusWire.downloadRequired => OcrModelStatus.downloadRequired,
+};
 
 ScanOptionsWire _optionsToWire(ScanReceiptOptions o) => ScanOptionsWire(
   source: _sourceToWire(o.source),
@@ -36,6 +52,7 @@ ScanOptionsWire _optionsToWire(ScanReceiptOptions o) => ScanOptionsWire(
   includeRawExif: o.includeRawExif,
   minimumTextHeight: o.minimumTextHeight,
   ocrGeometry: o.ocrGeometry,
+  ocrLanguages: o.ocrLanguages,
 );
 
 ScanSourceWire _sourceToWire(ScanSource s) => switch (s) {
