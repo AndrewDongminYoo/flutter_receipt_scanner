@@ -30,17 +30,17 @@ Surface the four failure conditions as `PlatformException` codes that reject bef
 
 ## Acceptance criteria
 
-- [ ] iOS applies the resolved list, in caller priority order, to every accurate and fast probe request with `automaticallyDetectsLanguage` disabled, and the default list produces the same request configuration as before.
-- [ ] iOS canonicalizes tags, validates them against the active revision at the `.accurate` level, and rejects unsupported tags before UI presentation.
-- [ ] Android resolves scripts with `ULocale.addLikelySubtags` per the Spec table and selects exactly one recognizer, permitting accompanying Latin.
-- [ ] Android rejects more than one non-Latin script family with `OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED`, and a valid tag resolving to no language with `OCR_LANGUAGE_NOT_SUPPORTED`.
-- [ ] Android never starts OCR before a required dynamic model is installed: availability check, immediate install, terminal-state wait, listener unregistered on success, failure, and cancellation, with `OCR_MODEL_INSTALL_FAILED` on failure or unknown module.
-- [ ] The scan-in-progress guard covers model preparation; a concurrent call cannot start a second installation.
-- [ ] `ocr == false` bypasses all language validation, script resolution, and model work on both platforms.
-- [ ] All four failure conditions reject before camera or gallery UI and are never converted into `ScanStatus.cancelled`, `ScanStatus.rejected`, an omitted `ocrText`, or an empty `ocrText`; post-capture recognition failures keep existing best-effort behavior.
-- [ ] Kotlin JVM tests cover the resolver: Korean plus Latin resolves to Korean, Japanese plus Latin to Japanese, Latin-only to Latin, two non-Latin families reject with the combination code, and a private-use tag rejects with the not-supported code.
-- [ ] Existing Korean and English behavior retains its baseline text, quality, rotation, and geometry.
-- [ ] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, `trunk check`, `:flutter_receipt_scanner_android:compileDebugKotlin`, `:flutter_receipt_scanner_android:testDebugUnitTest`, and an iOS example build pass.
+- [x] iOS applies the resolved list, in caller priority order, to every accurate and fast probe request with `automaticallyDetectsLanguage` disabled, and the default list produces the same request configuration as before.
+- [x] iOS canonicalizes tags, validates them against the active revision at the `.accurate` level, and rejects unsupported tags before UI presentation.
+- [x] Android resolves scripts with `ULocale.addLikelySubtags` per the Spec table and selects exactly one recognizer, permitting accompanying Latin.
+- [x] Android rejects more than one non-Latin script family with `OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED`, and a valid tag resolving to no language with `OCR_LANGUAGE_NOT_SUPPORTED`.
+- [x] Android never starts OCR before a required dynamic model is installed: availability check, immediate install, terminal-state wait, listener unregistered on success, failure, and cancellation, with `OCR_MODEL_INSTALL_FAILED` on failure or unknown module.
+- [x] The scan-in-progress guard covers model preparation; a concurrent call cannot start a second installation.
+- [x] `ocr == false` bypasses all language validation, script resolution, and model work on both platforms.
+- [x] All four failure conditions reject before camera or gallery UI and are never converted into `ScanStatus.cancelled`, `ScanStatus.rejected`, an omitted `ocrText`, or an empty `ocrText`; post-capture recognition failures keep existing best-effort behavior.
+- [x] Kotlin JVM tests cover the resolver: Korean plus Latin resolves to Korean, Japanese plus Latin to Japanese, Latin-only to Latin, two non-Latin families reject with the combination code, and a private-use tag rejects with the not-supported code.
+- [x] Existing Korean and English behavior retains its baseline text, quality, rotation, and geometry.
+- [x] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, `trunk check`, `:flutter_receipt_scanner_android:compileDebugKotlin`, `:flutter_receipt_scanner_android:testDebugUnitTest`, and an iOS example build pass.
 
 ## Covers
 

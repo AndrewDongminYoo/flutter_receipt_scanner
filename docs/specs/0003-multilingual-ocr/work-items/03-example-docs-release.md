@@ -29,15 +29,15 @@ Android physical QA (dynamic model download, install-wait flow, offline `OCR_MOD
 
 ## Acceptance criteria
 
-- [ ] The example exposes a comma-separated BCP 47 language control seeded with the default and disabled when `ocr` is off.
-- [ ] The example renders a `getOcrCapabilities()` result per platform variant without triggering downloads, and shows the new error codes in the existing error path.
-- [ ] Example widget tests cover the language control (default seed and disabled state) and rendering of a canned capabilities result, with no live platform calls.
-- [ ] Both READMEs document the option, default-preserving behavior, capability query, four error codes, and the Android bundled-versus-dynamic model distinction.
-- [ ] Both READMEs label the 11.0 claim and seam thresholds as Korean-plus-Latin calibrated, with other scripts marked provider-supported and uncalibrated.
-- [ ] All four packages are bumped to 0.5.0 with changelog entries that make no accuracy claims for uncalibrated languages, and the lockfile is regenerated in the same commit.
-- [ ] iOS physical QA covers the default regression scan, one non-default supported language, and one unsupported tag rejected before UI; results are appended to the acceptance record.
-- [ ] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, and `trunk check` pass, and `dart pub publish --dry-run` reports zero warnings in all four packages.
-- [ ] Publication happens only after operator approval, in RELEASING.md dependency order, with each publish workflow verified before the next tag is pushed.
+- [x] The example exposes a comma-separated BCP 47 language control seeded with the default and disabled when `ocr` is off.
+- [x] The example renders a `getOcrCapabilities()` result per platform variant without triggering downloads, and shows the new error codes in the existing error path.
+- [x] Example widget tests cover the language control (default seed and disabled state) and rendering of a canned capabilities result, with no live platform calls.
+- [x] Both READMEs document the option, default-preserving behavior, capability query, four error codes, and the Android bundled-versus-dynamic model distinction.
+- [x] Both READMEs label the 11.0 claim and seam thresholds as Korean-plus-Latin calibrated, with other scripts marked provider-supported and uncalibrated.
+- [x] All four packages are bumped to 0.5.0 with changelog entries that make no accuracy claims for uncalibrated languages, and the lockfile is regenerated in the same commit.
+- [x] iOS physical QA covers the default regression scan, one non-default supported language, and one unsupported tag rejected before UI; results are appended to the acceptance record.
+- [x] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, and `trunk check` pass, and `dart pub publish --dry-run` reports zero warnings in all four packages.
+- [x] Publication happens only after operator approval, in RELEASING.md dependency order, with each publish workflow verified before the next tag is pushed.
 
 ## Covers
 
