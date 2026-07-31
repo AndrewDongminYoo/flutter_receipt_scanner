@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+
+- **Multilingual OCR Support:** Added `ocrLanguages` to `ScanReceiptOptions` (default: `['ko-KR', 'en-US']`).
+- Added `FlutterReceiptScanner.getOcrCapabilities()` to query script family installation status (Android) or active Vision framework support (iOS).
+- Added `OcrLanguageException` (and native error codes `INVALID_OCR_LANGUAGE`, `OCR_LANGUAGE_NOT_SUPPORTED`, `OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED`, `OCR_MODEL_INSTALL_FAILED`) for capability rejection without charging a capture.
+- Android: The scanner now dynamically downloads and manages ML Kit non-Latin language modules via Google Play Services.
+- Added capabilities inspection UI and BCP 47 language input to the example app.
+
 ## 0.4.0
 
 ### Added
