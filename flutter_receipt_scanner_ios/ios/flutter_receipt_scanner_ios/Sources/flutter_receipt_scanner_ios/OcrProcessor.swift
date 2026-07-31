@@ -195,7 +195,12 @@ enum OcrProcessor {
             }
             // A private-use tag canonicalizes non-empty but carries no language,
             // so it falls through to the capability check below by design.
-            guard let match = supported.first(where: { matches($0, canonical) }) else {
+            //
+            // Exact identifiers win over a same-language fallback: with both
+            // `zh-Hans` and `zh-Hant` supported, requesting `zh-Hant` must not
+            // settle for whichever `zh-*` Vision happens to list first.
+            let exact = supported.first { $0.caseInsensitiveCompare(canonical) == .orderedSame }
+            guard let match = exact ?? supported.first(where: { sharesLanguage($0, canonical) }) else {
                 throw LanguageError.notSupported(tag)
             }
             // Forward the identifier Vision actually reported, not the caller's:
@@ -207,8 +212,8 @@ enum OcrProcessor {
         return resolved
     }
 
-    private static func matches(_ supported: String, _ canonical: String) -> Bool {
-        if supported.caseInsensitiveCompare(canonical) == .orderedSame { return true }
+    /// Whether both identifiers carry the same primary language subtag.
+    private static func sharesLanguage(_ supported: String, _ canonical: String) -> Bool {
         let supportedLanguage = supported.split(separator: "-").first.map(String.init) ?? supported
         let canonicalLanguage = canonical.split(separator: "-").first.map(String.init) ?? canonical
         return !canonicalLanguage.isEmpty

@@ -113,7 +113,7 @@ if (capabilities is IosOcrCapabilities) {
 ```
 
 - **iOS:** The system language bundle handles OCR. If a requested language is not supported by the active Vision framework revision, it throws `PlatformException('OCR_LANGUAGE_NOT_SUPPORTED')`.
-- **Android:** The Latin module (`text-recognition`) is bundled with the plugin, but non-Latin modules (`-korean`, `-japanese`, `-chinese`, `-devanagari`) are downloaded dynamically from Google Play Services. If a script family is not installed, the first `scan()` will trigger a download and may throw `PlatformException('OCR_MODEL_INSTALL_FAILED')` if offline. At most one non-Latin script can be requested at a time, or it throws `PlatformException('OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED')`.
+- **Android:** The Korean module (`com.google.mlkit:text-recognition-korean`, which also reads Latin) is bundled with the plugin, so the default language list works offline. Latin, Japanese, Chinese, and Devanagari use the `play-services-mlkit-text-recognition*` modules delivered dynamically by Google Play services. If a script family is not installed, the first `scan()` will trigger a download and may throw `PlatformException('OCR_MODEL_INSTALL_FAILED')` if offline. At most one non-Latin script can be requested at a time, or it throws `PlatformException('OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED')`.
 
 _Note: The `11.0` aspect ratio and seam-matching metrics were calibrated exclusively on Korean+Latin text. Other scripts are natively supported but uncalibrated._
 

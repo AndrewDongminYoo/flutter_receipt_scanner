@@ -110,7 +110,17 @@ class FlutterReceiptScannerPlugin :
                     reject(e.code, e.message)
                     return@execute
                 }
-                mainHandler.post { launchScanUi(activity, options, maxPages) }
+                mainHandler.post {
+                    // Re-read the binding: a configuration change during the
+                    // install would have swapped in a new Activity, and the old
+                    // one no longer owns the result listener.
+                    val current = activityBinding?.activity
+                    if (current == null) {
+                        reject("no_activity", "Plugin is not attached to an Activity.")
+                    } else {
+                        launchScanUi(current, options, maxPages)
+                    }
+                }
             }
             return
         }
