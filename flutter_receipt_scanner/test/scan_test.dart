@@ -31,10 +31,11 @@ const _defaultResult = ScanReceiptResult(
 );
 
 class _RecordingPlatform extends FlutterReceiptScannerPlatform {
-  _RecordingPlatform({this.result = _defaultResult, this._capabilities});
+  _RecordingPlatform({this.result = _defaultResult, OcrCapabilities? capabilities})
+    : _capabilities = capabilities ?? IosOcrCapabilities(supportedLanguages: const []);
 
   final ScanReceiptResult result;
-  final OcrCapabilities? _capabilities;
+  final OcrCapabilities _capabilities;
   ScanReceiptOptions? received;
   int callCount = 0;
   int capabilityCallCount = 0;
@@ -49,7 +50,7 @@ class _RecordingPlatform extends FlutterReceiptScannerPlatform {
   @override
   Future<OcrCapabilities> getOcrCapabilities() async {
     capabilityCallCount++;
-    return _capabilities!;
+    return _capabilities;
   }
 }
 

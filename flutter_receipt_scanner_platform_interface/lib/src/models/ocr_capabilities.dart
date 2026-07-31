@@ -1,4 +1,4 @@
-/// The language list used when a caller does not supply [ScanReceiptOptions.ocrLanguages].
+/// The language list used when a caller supplies no OCR language hints.
 const List<String> kDefaultOcrLanguages = ['ko-KR', 'en-US'];
 
 /// Whether a script model can recognize text now or needs a download first.

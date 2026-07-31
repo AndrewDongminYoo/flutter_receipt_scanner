@@ -5,10 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 /// Captures the wire options it receives and returns a canned wire result,
 /// so the test exercises the pure wire<->model conversion in the registrant.
 class _FakeReceiptScannerApi extends ReceiptScannerApi {
-  _FakeReceiptScannerApi(this._result, {this._capabilities});
+  _FakeReceiptScannerApi(this._result, {OcrCapabilitiesWire? capabilities})
+    : _capabilities = capabilities ?? OcrCapabilitiesWire();
 
   final ScanResultWire _result;
-  final OcrCapabilitiesWire? _capabilities;
+  final OcrCapabilitiesWire _capabilities;
   ScanOptionsWire? captured;
 
   @override
@@ -18,7 +19,7 @@ class _FakeReceiptScannerApi extends ReceiptScannerApi {
   }
 
   @override
-  Future<OcrCapabilitiesWire> getOcrCapabilities() async => _capabilities!;
+  Future<OcrCapabilitiesWire> getOcrCapabilities() async => _capabilities;
 }
 
 ScanResultWire _emptySuccess() => ScanResultWire(
