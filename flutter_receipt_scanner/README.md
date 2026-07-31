@@ -66,6 +66,14 @@ The overlap is what lets the merger prove each adjacent seam and remove the dupl
 Exact page division is not required — a seam is proven when the next capture re-shows the last few lines of the previous one (two or three receipt lines are usually enough); the ~20% figure is the tested reference layout with margin.
 A gap between adjacent captures surfaces as an unmatched boundary, but a missed receipt top or bottom cannot be detected — start at the very first printed line and finish past the last one.
 
+Set `maxPages` to the ceiling (10) when merging.
+iOS cannot enforce a page limit in the VisionKit scanner UI, so pages captured beyond `maxPages` are discarded before processing without native recourse; `ScanReceiptResult.discardedPageCount` reports how many were dropped, and a positive count always makes the merged result incomplete.
+
+Prefer the scanner's manual shutter while sectioning a long receipt — the automatic shutter can fire before a section is framed.
+On iOS, use the Auto/Manual toggle inside the scanner UI; the package cannot switch it programmatically.
+There is no capture-mode scan option on either platform: Android's `GmsDocumentScannerOptions` declares `CaptureMode` constants but its public builder has no capture-mode setter ([googlesamples/mlkit#846](https://github.com/googlesamples/mlkit/issues/846)), and those constants must never be passed to `setScannerMode`, whose integer namespace is unrelated.
+Android's in-scanner capture behavior is pending physical-device verification.
+
 ### What the merge does and does not do
 
 - The merge assembles **OCR text only**. No stitched bitmap, PDF, or tall composite image is returned; each page keeps its own JPEG in `result.images`.

@@ -17,11 +17,11 @@ Record the upstream constraint: no `captureMode` option exists because Android's
 
 ## Acceptance criteria
 
-- [ ] Both READMEs document the iOS truncation behavior, the `maxPages: 10` recommendation for merging, and the `discardedPageCount` diagnostic.
-- [ ] Both READMEs document the iOS in-scanner Auto/Manual toggle and that programmatic capture-mode control does not exist on either platform.
-- [ ] The upstream Android constraint is recorded with the issue reference, including the `setScannerMode` misuse warning.
-- [ ] Android in-scanner guidance wording ships only after on-device verification; until then the READMEs document only the verified iOS toggle and state that Android in-scanner behavior is pending device verification.
-- [ ] `trunk fmt` and `trunk check` pass on the touched files.
+- [x] Both READMEs document the iOS truncation behavior, the `maxPages: 10` recommendation for merging, and the `discardedPageCount` diagnostic.
+- [x] Both READMEs document the iOS in-scanner Auto/Manual toggle and that programmatic capture-mode control does not exist on either platform.
+- [x] The upstream Android constraint is recorded with the issue reference, including the `setScannerMode` misuse warning.
+- [x] Android in-scanner guidance wording ships only after on-device verification; until then the READMEs document only the verified iOS toggle and state that Android in-scanner behavior is pending device verification.
+- [x] `trunk fmt` and `trunk check` pass on the touched files.
 
 ## Covers
 
