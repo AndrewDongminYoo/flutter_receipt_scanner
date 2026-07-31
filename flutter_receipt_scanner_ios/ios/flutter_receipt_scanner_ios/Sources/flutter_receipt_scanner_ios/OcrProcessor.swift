@@ -178,11 +178,12 @@ enum OcrProcessor {
         case notSupported(String)
     }
 
-    /// Canonicalizes `tags` and checks them against the active request's
-    /// supported set, preserving caller priority and dropping duplicates.
+    /// Resolves `tags` to the identifiers the active request supports,
+    /// preserving caller priority and dropping duplicates.
     ///
     /// Matching is case-insensitive and falls back to the language subtag, so
-    /// `en-GB` is served by a Vision `en-US`-style identifier.
+    /// `en-GB` resolves to Vision's own `en-US`; the returned list always holds
+    /// identifiers Vision reported, never the caller's spelling.
     static func resolveLanguages(_ tags: [String]) throws -> [String] {
         let supported = supportedRecognitionLanguages()
         var resolved: [String] = []
@@ -194,10 +195,13 @@ enum OcrProcessor {
             }
             // A private-use tag canonicalizes non-empty but carries no language,
             // so it falls through to the capability check below by design.
-            guard supported.contains(where: { matches($0, canonical) }) else {
+            guard let match = supported.first(where: { matches($0, canonical) }) else {
                 throw LanguageError.notSupported(tag)
             }
-            if !resolved.contains(canonical) { resolved.append(canonical) }
+            // Forward the identifier Vision actually reported, not the caller's:
+            // a subtag-only match (`en-GB` against `en-US`) would otherwise set a
+            // language Vision rejects, and `perform` swallows that into empty OCR.
+            if !resolved.contains(match) { resolved.append(match) }
         }
         guard !resolved.isEmpty else { throw LanguageError.invalid("") }
         return resolved
