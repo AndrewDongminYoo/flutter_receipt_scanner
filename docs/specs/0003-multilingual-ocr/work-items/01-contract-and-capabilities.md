@@ -28,16 +28,16 @@ Scan behavior stays unchanged in this Work Item: natives keep their current reco
 
 ## Acceptance criteria
 
-- [ ] The Pigeon schema adds `ScanOptionsWire.ocrLanguages` as a trailing field and declares all new wire types and the `getOcrCapabilities()` host method after existing classes; every generated file is regenerated, not hand-edited.
-- [ ] `ScanReceiptOptions.ocrLanguages` defaults to `['ko-KR', 'en-US']` and the resolved list is always forwarded on the wire.
-- [ ] The app-facing `scan()` trims tags and removes exact duplicates preserving first occurrence, and throws `ArgumentError` before the platform call for an empty list or a tag empty after trimming.
-- [ ] The sealed `OcrCapabilities` model exposes `defaultLanguages` of `['ko-KR', 'en-US']`, iOS `supportedLanguages`, and Android `models` of `OcrModelState` with `ready` / `downloadRequired` status.
-- [ ] `FlutterReceiptScannerPlatform.getOcrCapabilities()` has a default `UnimplementedError` body, both platform packages override it, and the app-facing package exports a top-level `getOcrCapabilities()`.
-- [ ] iOS reports languages from the active Vision request revision at the `.accurate` level; Android reports the five script families via Play services module availability without triggering a download or opening UI.
-- [ ] Android adds only the dynamically delivered recognizer dependencies for Latin, Japanese, Chinese, and Devanagari, with pinned coordinates, alongside the bundled Korean artifact.
-- [ ] Default-language scans behave exactly as before this Work Item; no result field is renamed or removed.
-- [ ] Tests: platform-interface tests cover the options default and the sealed capability model; both platform routing tests cover `ocrLanguages` and capability wire↔model mapping in both directions; app-facing fake-platform tests cover normalization, `ArgumentError` pre-validation, explicit default forwarding, capability delegation, and acceptance of `mergeOcrPages` with a non-default language list.
-- [ ] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, and `trunk check` pass, plus `:flutter_receipt_scanner_android:compileDebugKotlin` and an iOS example build.
+- [x] The Pigeon schema adds `ScanOptionsWire.ocrLanguages` as a trailing field and declares all new wire types and the `getOcrCapabilities()` host method after existing classes; every generated file is regenerated, not hand-edited.
+- [x] `ScanReceiptOptions.ocrLanguages` defaults to `['ko-KR', 'en-US']` and the resolved list is always forwarded on the wire.
+- [x] The app-facing `scan()` trims tags and removes exact duplicates preserving first occurrence, and throws `ArgumentError` before the platform call for an empty list or a tag empty after trimming.
+- [x] The sealed `OcrCapabilities` model exposes `defaultLanguages` of `['ko-KR', 'en-US']`, iOS `supportedLanguages`, and Android `models` of `OcrModelState` with `ready` / `downloadRequired` status.
+- [x] `FlutterReceiptScannerPlatform.getOcrCapabilities()` has a default `UnimplementedError` body, both platform packages override it, and the app-facing package exports a top-level `getOcrCapabilities()`.
+- [x] iOS reports languages from the active Vision request revision at the `.accurate` level; Android reports the five script families via Play services module availability without triggering a download or opening UI.
+- [x] Android adds only the dynamically delivered recognizer dependencies for Latin, Japanese, Chinese, and Devanagari, with pinned coordinates, alongside the bundled Korean artifact.
+- [x] Default-language scans behave exactly as before this Work Item; no result field is renamed or removed.
+- [x] Tests: platform-interface tests cover the options default and the sealed capability model; both platform routing tests cover `ocrLanguages` and capability wire↔model mapping in both directions; app-facing fake-platform tests cover normalization, `ArgumentError` pre-validation, explicit default forwarding, capability delegation, and acceptance of `mergeOcrPages` with a non-default language list.
+- [x] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, and `trunk check` pass, plus `:flutter_receipt_scanner_android:compileDebugKotlin` and an iOS example build.
 
 ## Covers
 
