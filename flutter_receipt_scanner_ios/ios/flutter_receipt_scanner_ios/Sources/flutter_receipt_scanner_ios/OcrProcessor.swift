@@ -196,11 +196,12 @@ enum OcrProcessor {
             // A private-use tag canonicalizes non-empty but carries no language,
             // so it falls through to the capability check below by design.
             //
-            // Exact identifiers win over a same-language fallback: with both
-            // `zh-Hans` and `zh-Hant` supported, requesting `zh-Hant` must not
-            // settle for whichever `zh-*` Vision happens to list first.
+            // Exact identifiers win; otherwise both sides are expanded to their
+            // likely script and matched on language + script. Matching on the
+            // language subtag alone would let `zh-TW` (Traditional) settle for
+            // whichever `zh-*` Vision happens to list first — possibly `zh-Hans`.
             let exact = supported.first { $0.caseInsensitiveCompare(canonical) == .orderedSame }
-            guard let match = exact ?? supported.first(where: { sharesLanguage($0, canonical) }) else {
+            guard let match = exact ?? supported.first(where: { sharesLikelyScript($0, canonical) }) else {
                 throw LanguageError.notSupported(tag)
             }
             // Forward the identifier Vision actually reported, not the caller's:
@@ -212,12 +213,24 @@ enum OcrProcessor {
         return resolved
     }
 
-    /// Whether both identifiers carry the same primary language subtag.
-    private static func sharesLanguage(_ supported: String, _ canonical: String) -> Bool {
-        let supportedLanguage = supported.split(separator: "-").first.map(String.init) ?? supported
-        let canonicalLanguage = canonical.split(separator: "-").first.map(String.init) ?? canonical
-        return !canonicalLanguage.isEmpty
-            && supportedLanguage.caseInsensitiveCompare(canonicalLanguage) == .orderedSame
+    /// Whether both identifiers resolve to the same language *and* the same
+    /// likely script.
+    ///
+    /// Both sides are expanded with likely subtags first, so `zh-TW` matches
+    /// `zh-Hant` rather than `zh-Hans`, and `en-GB` still matches `en-US`.
+    private static func sharesLikelyScript(_ supported: String, _ canonical: String) -> Bool {
+        let lhs = maximized(supported)
+        let rhs = maximized(canonical)
+        guard let rhsLanguage = rhs.language, !rhsLanguage.isEmpty else { return false }
+        return lhs.language?.caseInsensitiveCompare(rhsLanguage) == .orderedSame
+            && lhs.script?.caseInsensitiveCompare(rhs.script ?? "") == .orderedSame
+    }
+
+    /// The identifier's language and likely script, e.g. `zh-TW` -> (`zh`, `Hant`).
+    private static func maximized(_ identifier: String) -> (language: String?, script: String?) {
+        let maximal = Locale.Language(identifier: identifier).maximalIdentifier
+        let language = Locale.Language(identifier: maximal)
+        return (language.languageCode?.identifier, language.script?.identifier)
     }
 
     private static func recognizeText(
