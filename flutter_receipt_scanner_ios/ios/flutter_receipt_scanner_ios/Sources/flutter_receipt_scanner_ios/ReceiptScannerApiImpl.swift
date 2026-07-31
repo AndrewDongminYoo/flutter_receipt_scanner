@@ -47,6 +47,19 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
         }
     }
 
+    func getOcrCapabilities(
+        completion: @escaping (Result<OcrCapabilitiesWire, Error>) -> Void
+    ) {
+        // Read-only: never downloads a model or presents UI. `models` is
+        // Android-only (ML Kit selects a recognizer by script).
+        workQueue.async {
+            let languages = OcrProcessor.supportedRecognitionLanguages()
+            DispatchQueue.main.async {
+                completion(.success(OcrCapabilitiesWire(supportedLanguages: languages, models: nil)))
+            }
+        }
+    }
+
     // MARK: - Camera path
 
     private func startCamera(

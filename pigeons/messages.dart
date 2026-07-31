@@ -38,6 +38,10 @@ class ScanOptionsWire {
   bool? includeRawExif;
   double? minimumTextHeight;
   bool? ocrGeometry;
+
+  /// Ordered BCP 47 language hints for on-device OCR. The app-facing package
+  /// always forwards a resolved list, so the native boundary is deterministic.
+  List<String>? ocrLanguages;
 }
 
 class GpsDataWire {
@@ -118,8 +122,33 @@ class OcrLineWire {
   double? confidence;
 }
 
+/// Whether an OCR script model can run now or needs a download.
+///
+/// Declared after the shipped wire classes on purpose — Pigeon assigns codec
+/// bytes in declaration order.
+enum OcrModelStatusWire { ready, downloadRequired }
+
+/// One script family's readiness, reported by Android.
+class OcrModelStateWire {
+  /// Unicode script identifier such as `Latn`, `Kore`, `Jpan`, `Hans`, `Hant`,
+  /// or `Deva`.
+  String script;
+  OcrModelStatusWire status;
+}
+
+/// Native OCR capability. `supportedLanguages` is iOS-only (Vision reports
+/// exact identifiers); `models` is Android-only (ML Kit script families).
+class OcrCapabilitiesWire {
+  List<String>? supportedLanguages;
+  List<OcrModelStateWire>? models;
+}
+
 @HostApi()
 abstract class ReceiptScannerApi {
   @async
   ScanResultWire scan(ScanOptionsWire options);
+
+  /// Reports current OCR capability. Must not download a model or open UI.
+  @async
+  OcrCapabilitiesWire getOcrCapabilities();
 }

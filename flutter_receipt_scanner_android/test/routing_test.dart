@@ -5,9 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// Captures the wire options it receives and returns a canned wire result,
 /// so the test exercises the pure wire<->model conversion in the registrant.
 class _FakeReceiptScannerApi extends ReceiptScannerApi {
-  _FakeReceiptScannerApi(this._result);
+  _FakeReceiptScannerApi(this._result, {this._capabilities});
 
   final ScanResultWire _result;
+  final OcrCapabilitiesWire? _capabilities;
   ScanOptionsWire? captured;
 
   @override
@@ -15,6 +16,9 @@ class _FakeReceiptScannerApi extends ReceiptScannerApi {
     captured = options;
     return _result;
   }
+
+  @override
+  Future<OcrCapabilitiesWire> getOcrCapabilities() async => _capabilities!;
 }
 
 ScanResultWire _emptySuccess() => ScanResultWire(
@@ -52,6 +56,47 @@ void main() {
     expect(wire.autoRotate, false);
     expect(wire.includeRawExif, true);
     expect(wire.minimumTextHeight, 0.25);
+    expect(wire.ocrLanguages, ['ko-KR', 'en-US']);
+  });
+
+  test('scan forwards a custom ocrLanguages list on the wire', () async {
+    final fake = _FakeReceiptScannerApi(_emptySuccess());
+    await FlutterReceiptScannerAndroid(api: fake).scan(
+      const ScanReceiptOptions(ocrLanguages: ['ja-JP', 'en-US']),
+    );
+
+    expect(fake.captured!.ocrLanguages, ['ja-JP', 'en-US']);
+  });
+
+  test('getOcrCapabilities maps script model states to the public model', () async {
+    final fake = _FakeReceiptScannerApi(
+      _emptySuccess(),
+      capabilities: OcrCapabilitiesWire(
+        models: <OcrModelStateWire>[
+          OcrModelStateWire(script: 'Kore', status: OcrModelStatusWire.ready),
+          OcrModelStateWire(script: 'Deva', status: OcrModelStatusWire.downloadRequired),
+        ],
+      ),
+    );
+
+    final capabilities = await FlutterReceiptScannerAndroid(api: fake).getOcrCapabilities();
+
+    expect(capabilities, isA<AndroidOcrCapabilities>());
+    final models = (capabilities as AndroidOcrCapabilities).models;
+    expect(models.map((m) => m.script), ['Kore', 'Deva']);
+    expect(models.map((m) => m.status), [
+      OcrModelStatus.ready,
+      OcrModelStatus.downloadRequired,
+    ]);
+    expect(capabilities.defaultLanguages, ['ko-KR', 'en-US']);
+  });
+
+  test('getOcrCapabilities defaults an absent model list to empty', () async {
+    final fake = _FakeReceiptScannerApi(_emptySuccess(), capabilities: OcrCapabilitiesWire());
+
+    final capabilities = await FlutterReceiptScannerAndroid(api: fake).getOcrCapabilities();
+
+    expect((capabilities as AndroidOcrCapabilities).models, isEmpty);
   });
 
   test(

@@ -148,6 +148,16 @@ enum OcrProcessor {
         let angles: [CGFloat]
     }
 
+    /// Languages the active request revision supports at `.accurate`.
+    ///
+    /// Queried at runtime because availability varies with request
+    /// configuration; an empty array means Vision reported none.
+    static func supportedRecognitionLanguages() -> [String] {
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        return (try? request.supportedRecognitionLanguages()) ?? []
+    }
+
     private static func recognizeText(
         _ cg: CGImage,
         orientation degrees: Int,

@@ -1,3 +1,4 @@
+import 'package:flutter_receipt_scanner_platform_interface/src/models/ocr_capabilities.dart';
 import 'package:flutter_receipt_scanner_platform_interface/src/models/scan_enums.dart';
 
 /// Native-facing scan options. This is the contract forwarded to a platform
@@ -17,6 +18,7 @@ final class ScanReceiptOptions {
     this.includeRawExif = false,
     this.minimumTextHeight = 0,
     this.ocrGeometry = false,
+    this.ocrLanguages = kDefaultOcrLanguages,
   });
 
   /// Acquisition path.
@@ -52,4 +54,29 @@ final class ScanReceiptOptions {
   /// Attach per-line OCR text-region boxes on `ReceiptImage.ocrLines`. Requires
   /// [ocr]; the boxes are expressed in the output image's pixel space.
   final bool ocrGeometry;
+
+  /// Ordered BCP 47 language hints for on-device OCR. Effective only when [ocr]
+  /// is `true`; the first entry has the highest priority on platforms that
+  /// support ordered languages.
+  ///
+  /// Android selects one recognizer per script rather than by language
+  /// priority, so the order is retained for API parity there.
+  final List<String> ocrLanguages;
+
+  /// Returns a copy with [ocrLanguages] replaced. Used by the app-facing
+  /// package to forward the normalized language list.
+  ScanReceiptOptions copyWith({List<String>? ocrLanguages}) => ScanReceiptOptions(
+    source: source,
+    maxPages: maxPages,
+    quality: quality,
+    includeExif: includeExif,
+    includeGpsExif: includeGpsExif,
+    ocr: ocr,
+    cropAutoConfirm: cropAutoConfirm,
+    autoRotate: autoRotate,
+    includeRawExif: includeRawExif,
+    minimumTextHeight: minimumTextHeight,
+    ocrGeometry: ocrGeometry,
+    ocrLanguages: ocrLanguages ?? this.ocrLanguages,
+  );
 }

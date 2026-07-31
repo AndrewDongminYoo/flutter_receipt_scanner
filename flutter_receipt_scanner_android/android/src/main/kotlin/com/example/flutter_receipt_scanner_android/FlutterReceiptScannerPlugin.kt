@@ -278,6 +278,22 @@ class FlutterReceiptScannerPlugin :
         }
     }
 
+    override fun getOcrCapabilities(callback: (Result<OcrCapabilitiesWire>) -> Unit) {
+        val context = appContext
+        if (context == null) {
+            callback(Result.failure(FlutterError("no_context", "Application context unavailable.", null)))
+            return
+        }
+        // Read-only: never downloads a module or opens UI. `supportedLanguages`
+        // is iOS-only (Vision reports exact language identifiers).
+        executor.execute {
+            val models = OcrModelProvider.capabilities(context)
+            mainHandler.post {
+                callback(Result.success(OcrCapabilitiesWire(supportedLanguages = null, models = models)))
+            }
+        }
+    }
+
     private fun resolve(result: ScanResultWire) {
         val callback = pendingCallback
         pendingCallback = null

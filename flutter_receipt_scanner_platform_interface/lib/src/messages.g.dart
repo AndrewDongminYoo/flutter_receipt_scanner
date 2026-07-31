@@ -33,6 +33,15 @@ enum ScanStatusWire {
   rejected,
 }
 
+/// Whether an OCR script model can run now or needs a download.
+///
+/// Declared after the shipped wire classes on purpose — Pigeon assigns codec
+/// bytes in declaration order.
+enum OcrModelStatusWire {
+  ready,
+  downloadRequired,
+}
+
 class ScanOptionsWire {
   ScanOptionsWire({
     this.source,
@@ -46,6 +55,7 @@ class ScanOptionsWire {
     this.includeRawExif,
     this.minimumTextHeight,
     this.ocrGeometry,
+    this.ocrLanguages,
   });
 
   ScanSourceWire? source;
@@ -70,6 +80,10 @@ class ScanOptionsWire {
 
   bool? ocrGeometry;
 
+  /// Ordered BCP 47 language hints for on-device OCR. The app-facing package
+  /// always forwards a resolved list, so the native boundary is deterministic.
+  List<String>? ocrLanguages;
+
   Object encode() {
     return <Object?>[
       source,
@@ -83,6 +97,7 @@ class ScanOptionsWire {
       includeRawExif,
       minimumTextHeight,
       ocrGeometry,
+      ocrLanguages,
     ];
   }
 
@@ -100,6 +115,7 @@ class ScanOptionsWire {
       includeRawExif: result[8] as bool?,
       minimumTextHeight: result[9] as double?,
       ocrGeometry: result[10] as bool?,
+      ocrLanguages: (result[11] as List<Object?>?)?.cast<String>(),
     );
   }
 }
@@ -463,6 +479,63 @@ class OcrLineWire {
   }
 }
 
+/// One script family's readiness, reported by Android.
+class OcrModelStateWire {
+  OcrModelStateWire({
+    required this.script,
+    required this.status,
+  });
+
+  /// Unicode script identifier such as `Latn`, `Kore`, `Jpan`, `Hans`, `Hant`,
+  /// or `Deva`.
+  String script;
+
+  OcrModelStatusWire status;
+
+  Object encode() {
+    return <Object?>[
+      script,
+      status,
+    ];
+  }
+
+  static OcrModelStateWire decode(Object result) {
+    result as List<Object?>;
+    return OcrModelStateWire(
+      script: result[0]! as String,
+      status: result[1]! as OcrModelStatusWire,
+    );
+  }
+}
+
+/// Native OCR capability. `supportedLanguages` is iOS-only (Vision reports
+/// exact identifiers); `models` is Android-only (ML Kit script families).
+class OcrCapabilitiesWire {
+  OcrCapabilitiesWire({
+    this.supportedLanguages,
+    this.models,
+  });
+
+  List<String>? supportedLanguages;
+
+  List<OcrModelStateWire>? models;
+
+  Object encode() {
+    return <Object?>[
+      supportedLanguages,
+      models,
+    ];
+  }
+
+  static OcrCapabilitiesWire decode(Object result) {
+    result as List<Object?>;
+    return OcrCapabilitiesWire(
+      supportedLanguages: (result[0] as List<Object?>?)?.cast<String>(),
+      models: (result[1] as List<Object?>?)?.cast<OcrModelStateWire>(),
+    );
+  }
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -479,26 +552,35 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is ScanStatusWire) {
       buffer.putUint8(131);
       writeValue(buffer, value.index);
-    } else if (value is ScanOptionsWire) {
+    } else if (value is OcrModelStatusWire) {
       buffer.putUint8(132);
-      writeValue(buffer, value.encode());
-    } else if (value is GpsDataWire) {
+      writeValue(buffer, value.index);
+    } else if (value is ScanOptionsWire) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
-    } else if (value is ReceiptExifWire) {
+    } else if (value is GpsDataWire) {
       buffer.putUint8(134);
       writeValue(buffer, value.encode());
-    } else if (value is OcrQualityWire) {
+    } else if (value is ReceiptExifWire) {
       buffer.putUint8(135);
       writeValue(buffer, value.encode());
-    } else if (value is ReceiptImageWire) {
+    } else if (value is OcrQualityWire) {
       buffer.putUint8(136);
       writeValue(buffer, value.encode());
-    } else if (value is ScanResultWire) {
+    } else if (value is ReceiptImageWire) {
       buffer.putUint8(137);
       writeValue(buffer, value.encode());
-    } else if (value is OcrLineWire) {
+    } else if (value is ScanResultWire) {
       buffer.putUint8(138);
+      writeValue(buffer, value.encode());
+    } else if (value is OcrLineWire) {
+      buffer.putUint8(139);
+      writeValue(buffer, value.encode());
+    } else if (value is OcrModelStateWire) {
+      buffer.putUint8(140);
+      writeValue(buffer, value.encode());
+    } else if (value is OcrCapabilitiesWire) {
+      buffer.putUint8(141);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -518,19 +600,26 @@ class _PigeonCodec extends StandardMessageCodec {
         final int? value = readValue(buffer) as int?;
         return value == null ? null : ScanStatusWire.values[value];
       case 132:
-        return ScanOptionsWire.decode(readValue(buffer)!);
+        final int? value = readValue(buffer) as int?;
+        return value == null ? null : OcrModelStatusWire.values[value];
       case 133:
-        return GpsDataWire.decode(readValue(buffer)!);
+        return ScanOptionsWire.decode(readValue(buffer)!);
       case 134:
-        return ReceiptExifWire.decode(readValue(buffer)!);
+        return GpsDataWire.decode(readValue(buffer)!);
       case 135:
-        return OcrQualityWire.decode(readValue(buffer)!);
+        return ReceiptExifWire.decode(readValue(buffer)!);
       case 136:
-        return ReceiptImageWire.decode(readValue(buffer)!);
+        return OcrQualityWire.decode(readValue(buffer)!);
       case 137:
-        return ScanResultWire.decode(readValue(buffer)!);
+        return ReceiptImageWire.decode(readValue(buffer)!);
       case 138:
+        return ScanResultWire.decode(readValue(buffer)!);
+      case 139:
         return OcrLineWire.decode(readValue(buffer)!);
+      case 140:
+        return OcrModelStateWire.decode(readValue(buffer)!);
+      case 141:
+        return OcrCapabilitiesWire.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -574,6 +663,34 @@ class ReceiptScannerApi {
       );
     } else {
       return (pigeonVar_replyList[0] as ScanResultWire?)!;
+    }
+  }
+
+  /// Reports current OCR capability. Must not download a model or open UI.
+  Future<OcrCapabilitiesWire> getOcrCapabilities() async {
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.flutter_receipt_scanner.ReceiptScannerApi.getOcrCapabilities$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList = await pigeonVar_channel.send(null) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as OcrCapabilitiesWire?)!;
     }
   }
 }
