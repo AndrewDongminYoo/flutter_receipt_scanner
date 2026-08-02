@@ -52,6 +52,20 @@ Findings for follow-up:
 1. iOS silently drops pages beyond `maxPages` — a long-receipt footgun. Candidate 0.4.0 work: surface a truncation diagnostic (or at minimum document it); until then, set `maxPages` to the ceiling (10) when merging.
 2. Auto shutter fires before framing, causing gap/tail risk. iOS exposes no programmatic control (VisionKit UI toggle only). Android's `GmsDocumentScannerOptions` defines `CAPTURE_MODE_AUTO`/`CAPTURE_MODE_MANUAL` constants but its public `Builder` has no capture-mode setter (googlesamples/mlkit#846 open, unanswered), so no programmatic control exists on either platform — tracked in Spec `0002-capture-ergonomics`.
 
+## Multilingual OCR — iOS device check (2026-08-02)
+
+Spec `0003-multilingual-ocr`, on the same iPhone 16 Pro / iOS 26.5.2, against the published 0.5.0 code (merged as `fff9b76`).
+
+Operator-confirmed on device: the language option and the capability query work as specified.
+No regression was observed in the default Korean-plus-Latin path.
+
+Two example-app defects surfaced during the check; neither is in the published library code:
+
+1. Repeated taps on **Check Capabilities** stacked one dialog per tap — the button had no in-flight guard. Fixed in `6d1771a`, covered by a widget test that fails when the guard is removed. The same fix disposes the previously leaked `TextEditingController`.
+2. The OCR-languages field felt slow to focus. Ruled out as a defect: the run was a **debug** build, where the form's eager `ListView(children:)` plus per-section build helpers rebuild on every keyboard-inset frame. Not reproduced or investigated in release/profile; revisit only if it appears in a release build.
+
+[PARTIAL] Per-language CER was not measured — the check confirmed function, not accuracy. Non-default scripts remain provider-supported and uncalibrated, as documented.
+
 ## Public dataset calibration
 
 | Dataset | Revision  | Expected files | Processed | Skipped   | Failures  | Aggregate CER | Hangul CER | Latin CER |
@@ -66,3 +80,6 @@ Humyn has no verified transcripts and is restricted to a no-crash, non-empty-OCR
 
 The Android acceptance run and the public dataset calibration have not been executed: no physical Android device was available on 2026-07-30, and the calibration requires Kaggle/Hugging Face downloads that are a separate decision.
 The 11.0 support claim's full release gate requires both platform runs; this record currently evidences iOS only.
+
+The same Android-device gap applies to Spec `0003-multilingual-ocr`: the dynamic model download, the install-wait flow, and the offline `OCR_MODEL_INSTALL_FAILED` path have never run on hardware.
+Android script resolution is covered by JVM unit tests only.

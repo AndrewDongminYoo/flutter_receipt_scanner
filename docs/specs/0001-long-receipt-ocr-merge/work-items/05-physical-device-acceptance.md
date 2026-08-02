@@ -16,6 +16,13 @@ This Work Item is the release gate for the 11.0 support claim.
 An emulator or simulator does not replace physical-device evidence.
 Android documentation inspected for the parent Spec did not state an explicit long-term page-order guarantee, so observed order is mandatory evidence.
 
+## Status
+
+Blocked on Android hardware, not on work.
+The **iOS half of every criterion below passed** on 2026-07-30 (iPhone 16 Pro / iOS 26.5.2: aggregate CER 0.0068, Hangul 0.0102, Latin 0.0120, 75/75 lines, zero duplicated seam lines) and is recorded in the [acceptance record](../../../notes/2026-07-30-physical-acceptance-record.md).
+The boxes stay unchecked because each one reads "on both devices" and no physical Android device has been available.
+Resume by running the same protocol on Android — nothing needs re-doing on iOS.
+
 ## Acceptance criteria
 
 - [ ] The actual Android and iOS device models, OS versions, and relevant scanner dependencies are recorded.

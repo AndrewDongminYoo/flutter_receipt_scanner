@@ -142,10 +142,16 @@ Ships as a coordinated 0.5.0 minor release of all four packages. [L4]
 7. Package or public type renaming; web platform support claims.
 8. Syncing long-receipt merge design with RN in either direction. [L3]
 
+## Status
+
+Implemented and published as 0.5.0 on 2026-08-02 (PR #5, merged as `fff9b76`).
+Work Items 01-03 are complete; iOS device confirmation is recorded in the [acceptance record](../../notes/2026-07-30-physical-acceptance-record.md).
+Android hardware QA remains outstanding — see Open Questions.
+
 ## Open Questions
 
-1. Exact Play services dynamic recognizer artifact coordinates and versions — pin at implementation from current ML Kit release documentation.
-2. Which Android physical device will run the deferred dynamic-download QA (same blocker as Spec 0001/0002 Android acceptance).
+1. ~~Exact Play services dynamic recognizer artifact coordinates and versions~~ — resolved at implementation: `play-services-mlkit-text-recognition:19.0.1` plus the `-chinese` / `-devanagari` / `-japanese` variants at `16.0.1`, alongside the bundled `com.google.mlkit:text-recognition-korean:16.0.1`.
+2. Which Android physical device will run the deferred dynamic-download QA (same blocker as Spec 0001/0002 Android acceptance). Until then the install-wait flow and the offline `OCR_MODEL_INSTALL_FAILED` path are unverified on hardware.
 
 ## Follow-Ups
 
