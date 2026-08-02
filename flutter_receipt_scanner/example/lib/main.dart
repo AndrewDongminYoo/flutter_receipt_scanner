@@ -137,11 +137,51 @@ class _ScanScreenState extends State<ScanScreen> {
   double _floorMinConfidence = 0;
 
   bool _scanning = false;
+  bool _loadingCapabilities = false;
   ({String code, String message})? _error;
+
+  @override
+  void dispose() {
+    _ocrLanguagesController.dispose();
+    super.dispose();
+  }
 
   bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
 
   bool get _canMergeOcrPages => _source == ScanSource.camera && _ocr && _maxPages >= 2;
+
+  Future<void> _showCapabilities() async {
+    // The flag guards the query only — the dialog is modal, so it blocks
+    // further taps on its own. Holding the flag across the dialog would leave
+    // the button spinning for as long as the dialog stays open.
+    setState(() => _loadingCapabilities = true);
+    OcrCapabilities? capabilities;
+    try {
+      capabilities = await getOcrCapabilities();
+    } on PlatformException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.code} - ${e.message}')));
+      }
+    } finally {
+      if (mounted) setState(() => _loadingCapabilities = false);
+    }
+
+    if (!mounted || capabilities == null) return;
+    final resolved = capabilities;
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        final content = resolved is IosOcrCapabilities
+            ? 'iOS Supported Languages:\n${resolved.supportedLanguages.join(', ')}'
+            : (resolved as AndroidOcrCapabilities).models.map((m) => '${m.script}: ${m.status.name}').join('\n');
+        return AlertDialog(
+          title: const Text('OCR Capabilities'),
+          content: Text(content),
+          actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))],
+        );
+      },
+    );
+  }
 
   Future<void> _runScan() async {
     setState(() {
@@ -290,33 +330,12 @@ class _ScanScreenState extends State<ScanScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: OutlinedButton.icon(
-              onPressed: () async {
-                try {
-                  final capabilities = await getOcrCapabilities();
-                  if (!mounted) return;
-                  showDialog<void>(
-                    context: context,
-                    builder: (context) {
-                      final content = capabilities is IosOcrCapabilities
-                          ? 'iOS Supported Languages:\n${capabilities.supportedLanguages.join(', ')}'
-                          : (capabilities as AndroidOcrCapabilities).models
-                                .map((m) => '${m.script}: ${m.status.name}')
-                                .join('\n');
-                      return AlertDialog(
-                        title: const Text('OCR Capabilities'),
-                        content: Text(content),
-                        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))],
-                      );
-                    },
-                  );
-                } on PlatformException catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: ${e.code} - ${e.message}')));
-                }
-              },
-              icon: const Icon(Icons.language),
+              // Disabled while a query is in flight — repeated taps would
+              // otherwise stack one dialog per tap.
+              onPressed: _loadingCapabilities ? null : _showCapabilities,
+              icon: _loadingCapabilities
+                  ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.language),
               label: const Text('Check Capabilities'),
             ),
           ),

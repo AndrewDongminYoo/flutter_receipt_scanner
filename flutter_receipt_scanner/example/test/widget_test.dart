@@ -1,7 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_receipt_scanner/flutter_receipt_scanner.dart';
 import 'package:flutter_receipt_scanner_example/main.dart';
+import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scanner_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// Holds the capability query open so the in-flight window is observable.
+class _SlowCapabilityPlatform extends FlutterReceiptScannerPlatform {
+  final Completer<OcrCapabilities> completer = Completer<OcrCapabilities>();
+  int callCount = 0;
+
+  @override
+  Future<OcrCapabilities> getOcrCapabilities() {
+    callCount++;
+    return completer.future;
+  }
+}
 
 void main() {
   testWidgets('renders the scan-option form and scan button', (tester) async {
@@ -32,6 +46,34 @@ void main() {
     await tester.tap(mergeOption);
     await tester.pump();
     expect(tester.widget<SwitchListTile>(mergeOption).value, isTrue);
+  });
+
+  testWidgets('repeated capability taps open only one dialog', (tester) async {
+    final platform = _SlowCapabilityPlatform();
+    FlutterReceiptScannerPlatform.instance = platform;
+
+    await tester.pumpWidget(const ReceiptScannerExampleApp());
+
+    final button = find.widgetWithText(OutlinedButton, 'Check Capabilities');
+    // The form's TextField owns a Scrollable too, so name the outer list.
+    await tester.scrollUntilVisible(button, 200, scrollable: find.byType(Scrollable).first);
+
+    await tester.tap(button);
+    await tester.pump();
+
+    // The query is still in flight: the control is disabled, so further taps
+    // cannot start a second query (which would stack a second dialog).
+    expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+    await tester.tap(button, warnIfMissed: false);
+    await tester.tap(button, warnIfMissed: false);
+    await tester.pump();
+    expect(platform.callCount, 1);
+
+    platform.completer.complete(IosOcrCapabilities(supportedLanguages: const ['ko-KR', 'en-US']));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('OCR Capabilities'), findsOneWidget);
   });
 
   testWidgets('result screen shows status, image card, and reveals the copy button', (tester) async {
