@@ -3,6 +3,8 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - pigeons/**
+    - build/**
+    - android/**
   errors:
     lines_longer_than_80_chars: ignore
     flutter_style_todos: ignore
