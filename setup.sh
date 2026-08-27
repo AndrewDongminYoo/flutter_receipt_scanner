@@ -24,6 +24,7 @@ need_cmd() {
 	command -v "$1" >/dev/null 2>&1 || die "'$1' command is required but not found."
 }
 
+# cspell:words tlsv
 download() {
 	curl --fail --location --silent --show-error \
 		--retry 3 --retry-delay 2 \
