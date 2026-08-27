@@ -2,7 +2,7 @@
 set -euo pipefail
 
 readonly PROJECT_BOOTSTRAP="melos"
-readonly EXTRA_DART_TOOL=""
+readonly EXTRA_DART_TOOL="flutterfire_cli"
 
 readonly FLUTTER_INSTALL_DIR="${HOME}/flutter"
 : "${PUB_CACHE:=${HOME}/.pub-cache}"
@@ -53,10 +53,15 @@ done
 
 case "${HOST_ARCH}" in
 x86_64 | amd64) FLUTTER_ARCH="x64" ;;
-aarch64 | arm64) FLUTTER_ARCH="arm64" ;;
+aarch64 | arm64) die "Cloud setup supports only Linux x64 hosts." ;;
 *) die "Unsupported Flutter host architecture: ${HOST_ARCH}" ;;
 esac
 export FLUTTER_ARCH FLUTTER_RELEASES_URL
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+readonly SCRIPT_DIR
+[[ -f ${SCRIPT_DIR}/pubspec.yaml ]] || die "pubspec.yaml not found at ${SCRIPT_DIR}."
+cd "${SCRIPT_DIR}"
 
 TMP_DIR="$(mktemp -d)"
 readonly TMP_DIR
