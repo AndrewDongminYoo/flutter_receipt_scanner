@@ -22,11 +22,8 @@ class _FakeReceiptScannerApi extends ReceiptScannerApi {
   Future<OcrCapabilitiesWire> getOcrCapabilities() async => _capabilities;
 }
 
-ScanResultWire _emptySuccess() => ScanResultWire(
-  status: ScanStatusWire.success,
-  images: <ReceiptImageWire>[],
-  rejectedImages: <ReceiptImageWire>[],
-);
+ScanResultWire _emptySuccess() =>
+    ScanResultWire(status: ScanStatusWire.success, images: <ReceiptImageWire>[], rejectedImages: <ReceiptImageWire>[]);
 
 void main() {
   test('scan maps ScanReceiptOptions to the wire options', () async {
@@ -62,9 +59,7 @@ void main() {
 
   test('scan forwards a custom ocrLanguages list on the wire', () async {
     final fake = _FakeReceiptScannerApi(_emptySuccess());
-    await FlutterReceiptScannerAndroid(api: fake).scan(
-      const ScanReceiptOptions(ocrLanguages: ['ja-JP', 'en-US']),
-    );
+    await FlutterReceiptScannerAndroid(api: fake).scan(const ScanReceiptOptions(ocrLanguages: ['ja-JP', 'en-US']));
 
     expect(fake.captured!.ocrLanguages, ['ja-JP', 'en-US']);
   });
@@ -85,10 +80,7 @@ void main() {
     expect(capabilities, isA<AndroidOcrCapabilities>());
     final models = (capabilities as AndroidOcrCapabilities).models;
     expect(models.map((m) => m.script), ['Kore', 'Deva']);
-    expect(models.map((m) => m.status), [
-      OcrModelStatus.ready,
-      OcrModelStatus.downloadRequired,
-    ]);
+    expect(models.map((m) => m.status), [OcrModelStatus.ready, OcrModelStatus.downloadRequired]);
     expect(capabilities.defaultLanguages, ['ko-KR', 'en-US']);
   });
 
@@ -100,104 +92,87 @@ void main() {
     expect((capabilities as AndroidOcrCapabilities).models, isEmpty);
   });
 
-  test(
-    'scan maps wire discardedPageCount and defaults an absent one to zero',
-    () async {
-      final withCount = ScanResultWire(
+  test('scan maps wire discardedPageCount and defaults an absent one to zero', () async {
+    final withCount = ScanResultWire(
+      status: ScanStatusWire.success,
+      images: <ReceiptImageWire>[],
+      rejectedImages: <ReceiptImageWire>[],
+      discardedPageCount: 2,
+    );
+    final mapped = await FlutterReceiptScannerAndroid(
+      api: _FakeReceiptScannerApi(withCount),
+    ).scan(const ScanReceiptOptions());
+    expect(mapped.discardedPageCount, 2);
+
+    final absent = await FlutterReceiptScannerAndroid(
+      api: _FakeReceiptScannerApi(_emptySuccess()),
+    ).scan(const ScanReceiptOptions());
+    expect(absent.discardedPageCount, 0);
+  });
+
+  test('scan maps the wire result (status, images, exif, gps) to models', () async {
+    final image = ReceiptImageWire(
+      uri: 'file:///tmp/receipt_1.jpg',
+      width: 800,
+      height: 1200,
+      fileName: 'receipt_1.jpg',
+      mimeType: 'image/jpeg',
+      fileSize: 4096,
+      imageOrigin: ImageOriginWire.screenshot,
+      ocrText: 'line one\nline two',
+      // Native sends confidence only; textLength/lineCount are null on the wire.
+      ocrQuality: OcrQualityWire(confidence: 0.9),
+      exif: ReceiptExifWire(
+        orientation: 1,
+        make: 'Google',
+        gps: GpsDataWire(latitude: 37.5, longitude: 127, altitude: 12.3),
+      ),
+      ocrLines: <OcrLineWire>[OcrLineWire(text: 'line one', x: 10, y: 20, width: 300, height: 40, confidence: 0.87)],
+    );
+    final rejected = ReceiptImageWire(
+      uri: 'file:///tmp/receipt_2.jpg',
+      width: 10,
+      height: 10,
+      fileName: 'receipt_2.jpg',
+      mimeType: 'image/jpeg',
+      fileSize: 128,
+      imageOrigin: ImageOriginWire.unknown,
+    );
+    final fake = _FakeReceiptScannerApi(
+      ScanResultWire(
         status: ScanStatusWire.success,
-        images: <ReceiptImageWire>[],
-        rejectedImages: <ReceiptImageWire>[],
-        discardedPageCount: 2,
-      );
-      final mapped = await FlutterReceiptScannerAndroid(
-        api: _FakeReceiptScannerApi(withCount),
-      ).scan(const ScanReceiptOptions());
-      expect(mapped.discardedPageCount, 2);
+        images: <ReceiptImageWire>[image],
+        rejectedImages: <ReceiptImageWire>[rejected],
+      ),
+    );
 
-      final absent = await FlutterReceiptScannerAndroid(
-        api: _FakeReceiptScannerApi(_emptySuccess()),
-      ).scan(const ScanReceiptOptions());
-      expect(absent.discardedPageCount, 0);
-    },
-  );
+    final result = await FlutterReceiptScannerAndroid(api: fake).scan(const ScanReceiptOptions());
 
-  test(
-    'scan maps the wire result (status, images, exif, gps) to models',
-    () async {
-      final image = ReceiptImageWire(
-        uri: 'file:///tmp/receipt_1.jpg',
-        width: 800,
-        height: 1200,
-        fileName: 'receipt_1.jpg',
-        mimeType: 'image/jpeg',
-        fileSize: 4096,
-        imageOrigin: ImageOriginWire.screenshot,
-        ocrText: 'line one\nline two',
-        // Native sends confidence only; textLength/lineCount are null on the wire.
-        ocrQuality: OcrQualityWire(confidence: 0.9),
-        exif: ReceiptExifWire(
-          orientation: 1,
-          make: 'Google',
-          gps: GpsDataWire(latitude: 37.5, longitude: 127, altitude: 12.3),
-        ),
-        ocrLines: <OcrLineWire>[
-          OcrLineWire(
-            text: 'line one',
-            x: 10,
-            y: 20,
-            width: 300,
-            height: 40,
-            confidence: 0.87,
-          ),
-        ],
-      );
-      final rejected = ReceiptImageWire(
-        uri: 'file:///tmp/receipt_2.jpg',
-        width: 10,
-        height: 10,
-        fileName: 'receipt_2.jpg',
-        mimeType: 'image/jpeg',
-        fileSize: 128,
-        imageOrigin: ImageOriginWire.unknown,
-      );
-      final fake = _FakeReceiptScannerApi(
-        ScanResultWire(
-          status: ScanStatusWire.success,
-          images: <ReceiptImageWire>[image],
-          rejectedImages: <ReceiptImageWire>[rejected],
-        ),
-      );
+    expect(result.status, ScanStatus.success);
+    expect(result.images, hasLength(1));
+    expect(result.rejectedImages, hasLength(1));
 
-      final result = await FlutterReceiptScannerAndroid(
-        api: fake,
-      ).scan(const ScanReceiptOptions());
-
-      expect(result.status, ScanStatus.success);
-      expect(result.images, hasLength(1));
-      expect(result.rejectedImages, hasLength(1));
-
-      final img = result.images.single;
-      expect(img.uri, 'file:///tmp/receipt_1.jpg');
-      expect(img.imageOrigin, ImageOrigin.screenshot);
-      expect(img.ocrText, 'line one\nline two');
-      // Null wire textLength/lineCount coerce to 0; confidence is preserved.
-      expect(img.ocrQuality!.textLength, 0);
-      expect(img.ocrQuality!.lineCount, 0);
-      expect(img.ocrQuality!.confidence, 0.9);
-      expect(img.exif!.make, 'Google');
-      expect(img.exif!.gps!.latitude, 37.5);
-      expect(img.exif!.gps!.longitude, 127.0);
-      final line = img.ocrLines!.single;
-      expect(line.text, 'line one');
-      expect(line.x, 10);
-      expect(line.y, 20);
-      expect(line.width, 300);
-      expect(line.height, 40);
-      expect(line.confidence, 0.87);
-      expect(result.rejectedImages.single.imageOrigin, ImageOrigin.unknown);
-      expect(result.rejectedImages.single.ocrLines, isNull);
-    },
-  );
+    final img = result.images.single;
+    expect(img.uri, 'file:///tmp/receipt_1.jpg');
+    expect(img.imageOrigin, ImageOrigin.screenshot);
+    expect(img.ocrText, 'line one\nline two');
+    // Null wire textLength/lineCount coerce to 0; confidence is preserved.
+    expect(img.ocrQuality!.textLength, 0);
+    expect(img.ocrQuality!.lineCount, 0);
+    expect(img.ocrQuality!.confidence, 0.9);
+    expect(img.exif!.make, 'Google');
+    expect(img.exif!.gps!.latitude, 37.5);
+    expect(img.exif!.gps!.longitude, 127.0);
+    final line = img.ocrLines!.single;
+    expect(line.text, 'line one');
+    expect(line.x, 10);
+    expect(line.y, 20);
+    expect(line.width, 300);
+    expect(line.height, 40);
+    expect(line.confidence, 0.87);
+    expect(result.rejectedImages.single.imageOrigin, ImageOrigin.unknown);
+    expect(result.rejectedImages.single.ocrLines, isNull);
+  });
 
   test('scan drops GPS when latitude or longitude is missing', () async {
     final fake = _FakeReceiptScannerApi(
@@ -222,9 +197,7 @@ void main() {
       ),
     );
 
-    final result = await FlutterReceiptScannerAndroid(
-      api: fake,
-    ).scan(const ScanReceiptOptions());
+    final result = await FlutterReceiptScannerAndroid(api: fake).scan(const ScanReceiptOptions());
 
     expect(result.images.single.exif!.gps, isNull);
   });
@@ -238,9 +211,7 @@ void main() {
       ),
     );
 
-    final result = await FlutterReceiptScannerAndroid(
-      api: fake,
-    ).scan(const ScanReceiptOptions());
+    final result = await FlutterReceiptScannerAndroid(api: fake).scan(const ScanReceiptOptions());
 
     expect(result.status, ScanStatus.cancelled);
   });
@@ -264,9 +235,7 @@ void main() {
       ),
     );
 
-    final result = await FlutterReceiptScannerAndroid(
-      api: fake,
-    ).scan(const ScanReceiptOptions());
+    final result = await FlutterReceiptScannerAndroid(api: fake).scan(const ScanReceiptOptions());
 
     expect(result.status, ScanStatus.rejected);
     expect(result.rejectedImages.single.imageOrigin, ImageOrigin.download);

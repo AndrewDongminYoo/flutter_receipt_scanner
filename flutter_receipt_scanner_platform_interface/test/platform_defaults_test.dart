@@ -13,27 +13,15 @@ void main() {
   final defaultInstance = FlutterReceiptScannerPlatform.instance;
 
   test('the base scan() default throws UnimplementedError', () {
-    expect(
-      () => _DefaultScanPlatform().scan(const ScanReceiptOptions()),
-      throwsA(isA<UnimplementedError>()),
-    );
+    expect(() => _DefaultScanPlatform().scan(const ScanReceiptOptions()), throwsA(isA<UnimplementedError>()));
   });
 
   test('the base getOcrCapabilities() default throws UnimplementedError', () {
-    expect(
-      () => _DefaultScanPlatform().getOcrCapabilities(),
-      throwsA(isA<UnimplementedError>()),
-    );
+    expect(() => _DefaultScanPlatform().getOcrCapabilities(), throwsA(isA<UnimplementedError>()));
   });
 
   test('the default instance has no implementation and throws UnsupportedError', () {
-    expect(
-      () => defaultInstance.scan(const ScanReceiptOptions()),
-      throwsA(isA<UnsupportedError>()),
-    );
-    expect(
-      defaultInstance.getOcrCapabilities,
-      throwsA(isA<UnsupportedError>()),
-    );
+    expect(() => defaultInstance.scan(const ScanReceiptOptions()), throwsA(isA<UnsupportedError>()));
+    expect(defaultInstance.getOcrCapabilities, throwsA(isA<UnsupportedError>()));
   });
 }

@@ -1,7 +1,4 @@
-Map<String, Object?> buildReceiptFixtureVariants(
-  List<String> pageTexts,
-  List<String> canonicalLines,
-) {
+Map<String, Object?> buildReceiptFixtureVariants(List<String> pageTexts, List<String> canonicalLines) {
   final canonicalText = canonicalLines.join('\n');
   final missingIndexes = [0, 1, 3, 4, 5];
   final unmatchedPages = [...pageTexts];
@@ -42,10 +39,7 @@ Map<String, Object?> buildReceiptFixtureVariants(
       'ocrTexts': unmatchedPages,
       'rejectedPageIndexes': <int>[],
       'expected': {
-        'text': _mergeExactPages(
-          unmatchedPages,
-          unmatchedBoundaryIndexes: const {2},
-        ),
+        'text': _mergeExactPages(unmatchedPages, unmatchedBoundaryIndexes: const {2}),
         'isComplete': false,
         'unmatchedBoundaryIndexes': [2],
         'rejectedPageIndexes': <int>[],
@@ -87,16 +81,11 @@ Map<String, Object?> buildReceiptFixtureVariants(
   };
 }
 
-String _mergeExactPages(
-  List<String> pages, {
-  Set<int> unmatchedBoundaryIndexes = const {},
-}) {
+String _mergeExactPages(List<String> pages, {Set<int> unmatchedBoundaryIndexes = const {}}) {
   final merged = pages.first.split('\n');
   for (var index = 1; index < pages.length; index++) {
     final lines = pages[index].split('\n');
-    merged.addAll(
-      unmatchedBoundaryIndexes.contains(index - 1) ? lines : lines.skip(3),
-    );
+    merged.addAll(unmatchedBoundaryIndexes.contains(index - 1) ? lines : lines.skip(3));
   }
   return merged.join('\n');
 }

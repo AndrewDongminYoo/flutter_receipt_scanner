@@ -4,11 +4,7 @@ import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scann
 /// floor, the corresponding image is moved from `images` into `rejectedImages`.
 class OcrFloor {
   /// Creates a floor. Missing arguments fall back to the package defaults.
-  const OcrFloor({
-    this.minTextLength = 12,
-    this.minLines = 2,
-    this.minConfidence = 0,
-  });
+  const OcrFloor({this.minTextLength = 12, this.minLines = 2, this.minConfidence = 0});
 
   /// Minimum trimmed text length, in characters.
   final int minTextLength;
@@ -49,11 +45,7 @@ OcrQuality deriveQuality(String text, {double? confidence}) {
   for (final line in text.split('\n')) {
     if (line.trim().isNotEmpty) lineCount++;
   }
-  return OcrQuality(
-    textLength: trimmedLength,
-    lineCount: lineCount,
-    confidence: confidence,
-  );
+  return OcrQuality(textLength: trimmedLength, lineCount: lineCount, confidence: confidence);
 }
 
 bool _meetsFloor(OcrQuality q, OcrFloor floor) {
@@ -72,11 +64,7 @@ bool _meetsFloor(OcrQuality q, OcrFloor floor) {
 /// OCR did not run, every image passes with an empty `rejectedImages`.
 /// Otherwise images are partitioned; if all fall below the floor the status
 /// becomes [ScanStatus.rejected].
-ScanReceiptResult applyOcrFloor(
-  ScanReceiptResult native, {
-  required bool ocr,
-  required OcrFloorOrDisabled floor,
-}) {
+ScanReceiptResult applyOcrFloor(ScanReceiptResult native, {required bool ocr, required OcrFloorOrDisabled floor}) {
   if (native.status != ScanStatus.success) {
     return native;
   }
@@ -84,9 +72,7 @@ ScanReceiptResult applyOcrFloor(
   final annotated = native.images.map((img) {
     final text = img.ocrText;
     if (text == null) return img;
-    return img.copyWith(
-      ocrQuality: deriveQuality(text, confidence: img.ocrQuality?.confidence),
-    );
+    return img.copyWith(ocrQuality: deriveQuality(text, confidence: img.ocrQuality?.confidence));
   }).toList();
 
   if (!ocr || floor.isDisabled) {

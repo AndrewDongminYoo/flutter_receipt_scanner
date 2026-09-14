@@ -11,18 +11,12 @@ import '../tool/receipt_benchmark/fixture_generator.dart';
 
 void main() {
   final packageDirectory = Directory.current;
-  final fixtureDirectory = Directory.fromUri(
-    packageDirectory.uri.resolve('test/fixtures/long_receipt/'),
-  );
-  final fixtureManifest = _readJson(
-    File.fromUri(fixtureDirectory.uri.resolve('fixture_manifest.json')),
-  );
+  final fixtureDirectory = Directory.fromUri(packageDirectory.uri.resolve('test/fixtures/long_receipt/'));
+  final fixtureManifest = _readJson(File.fromUri(fixtureDirectory.uri.resolve('fixture_manifest.json')));
 
   test('canonical fixture records the required 11:1 geometry', () {
     final logicalImage = _map(fixtureManifest['logicalImage']);
-    final pages = _list(
-      fixtureManifest['pages'],
-    ).map(_map).toList(growable: false);
+    final pages = _list(fixtureManifest['pages']).map(_map).toList(growable: false);
 
     expect(logicalImage['width'], 1200);
     expect(logicalImage['height'], 13200);
@@ -38,97 +32,56 @@ void main() {
     }
   });
 
-  test(
-    'checked-in PNG dimensions and checksums match the fixture manifest',
-    () {
-      final images = [
-        _map(fixtureManifest['logicalImage']),
-        ..._list(fixtureManifest['pages']).map(_map),
-      ];
+  test('checked-in PNG dimensions and checksums match the fixture manifest', () {
+    final images = [_map(fixtureManifest['logicalImage']), ..._list(fixtureManifest['pages']).map(_map)];
 
-      for (final image in images) {
-        final file = File.fromUri(
-          fixtureDirectory.uri.resolve(image['file']! as String),
-        );
-        final bytes = file.readAsBytesSync();
-        final size = _pngSize(bytes);
+    for (final image in images) {
+      final file = File.fromUri(fixtureDirectory.uri.resolve(image['file']! as String));
+      final bytes = file.readAsBytesSync();
+      final size = _pngSize(bytes);
 
-        expect(size.width, image['width'], reason: file.path);
-        expect(size.height, image['height'], reason: file.path);
-        expect(
-          sha256.convert(bytes).toString(),
-          image['sha256'],
-          reason: file.path,
-        );
-      }
-    },
-  );
+      expect(size.width, image['width'], reason: file.path);
+      expect(size.height, image['height'], reason: file.path);
+      expect(sha256.convert(bytes).toString(), image['sha256'], reason: file.path);
+    }
+  });
 
   test('pinned font and license checksums match the fixture source', () {
-    final source = _readJson(
-      File.fromUri(
-        packageDirectory.uri.resolve(
-          'tool/receipt_benchmark/fixture_source.json',
-        ),
-      ),
-    );
+    final source = _readJson(File.fromUri(packageDirectory.uri.resolve('tool/receipt_benchmark/fixture_source.json')));
     final font = _map(source['font']);
-    final benchmarkDirectory = packageDirectory.uri.resolve(
-      'tool/receipt_benchmark/',
-    );
+    final benchmarkDirectory = packageDirectory.uri.resolve('tool/receipt_benchmark/');
 
     for (final entry in {
       font['file']! as String: font['sha256']! as String,
       font['licenseFile']! as String: font['licenseSha256']! as String,
     }.entries) {
-      final bytes = File.fromUri(
-        benchmarkDirectory.resolve(entry.key),
-      ).readAsBytesSync();
+      final bytes = File.fromUri(benchmarkDirectory.resolve(entry.key)).readAsBytesSync();
       expect(sha256.convert(bytes).toString(), entry.value);
     }
     expect(font['revision'], '7ff85c87f93ea6cca5f41c69f2e4edcb90240f26');
     expect(font['license'], 'OFL-1.1');
   });
 
-  test(
-    'two regenerations in the same runtime produce identical image checksums',
-    () async {
-      final firstOutput = await Directory.systemTemp.createTemp(
-        'flutter_receipt_scanner_fixture_first_',
+  test('two regenerations in the same runtime produce identical image checksums', () async {
+    final firstOutput = await Directory.systemTemp.createTemp('flutter_receipt_scanner_fixture_first_');
+    final secondOutput = await Directory.systemTemp.createTemp('flutter_receipt_scanner_fixture_second_');
+    try {
+      final first = await generateLongReceiptFixtures(packageDirectory: packageDirectory, outputDirectory: firstOutput);
+      final second = await generateLongReceiptFixtures(
+        packageDirectory: packageDirectory,
+        outputDirectory: secondOutput,
       );
-      final secondOutput = await Directory.systemTemp.createTemp(
-        'flutter_receipt_scanner_fixture_second_',
-      );
-      try {
-        final first = await generateLongReceiptFixtures(
-          packageDirectory: packageDirectory,
-          outputDirectory: firstOutput,
-        );
-        final second = await generateLongReceiptFixtures(
-          packageDirectory: packageDirectory,
-          outputDirectory: secondOutput,
-        );
-        final firstImages = [
-          _map(first['logicalImage']),
-          ..._list(first['pages']).map(_map),
-        ];
-        final secondImages = [
-          _map(second['logicalImage']),
-          ..._list(second['pages']).map(_map),
-        ];
+      final firstImages = [_map(first['logicalImage']), ..._list(first['pages']).map(_map)];
+      final secondImages = [_map(second['logicalImage']), ..._list(second['pages']).map(_map)];
 
-        expect(
-          firstImages.map((image) => image['sha256']),
-          secondImages.map((image) => image['sha256']),
-        );
-        expect(first['canonicalText'], fixtureManifest['canonicalText']);
-        expect(second['canonicalText'], fixtureManifest['canonicalText']);
-      } finally {
-        await firstOutput.delete(recursive: true);
-        await secondOutput.delete(recursive: true);
-      }
-    },
-  );
+      expect(firstImages.map((image) => image['sha256']), secondImages.map((image) => image['sha256']));
+      expect(first['canonicalText'], fixtureManifest['canonicalText']);
+      expect(second['canonicalText'], fixtureManifest['canonicalText']);
+    } finally {
+      await firstOutput.delete(recursive: true);
+      await secondOutput.delete(recursive: true);
+    }
+  });
 
   test('canonical OCR pages merge byte-for-byte to the canonical text', () {
     final pages = _list(fixtureManifest['pages'])
@@ -168,39 +121,22 @@ void main() {
         ),
         growable: false,
       );
-      final rejectedIndexes = _list(
-        variant['rejectedPageIndexes'],
-      ).cast<int>().toSet();
+      final rejectedIndexes = _list(variant['rejectedPageIndexes']).cast<int>().toSet();
       final expected = _map(variant['expected']);
 
-      final result = mergeReceiptOcrPages(
-        pages,
-        rejectedPageIndexes: rejectedIndexes,
-      );
+      final result = mergeReceiptOcrPages(pages, rejectedPageIndexes: rejectedIndexes);
 
       expect(result.text, expected['text']);
       expect(result.isComplete, expected['isComplete']);
-      expect(
-        result.unmatchedBoundaryIndexes,
-        _list(expected['unmatchedBoundaryIndexes']),
-      );
-      expect(
-        result.rejectedPageIndexes,
-        _list(expected['rejectedPageIndexes']),
-      );
+      expect(result.unmatchedBoundaryIndexes, _list(expected['unmatchedBoundaryIndexes']));
+      expect(result.rejectedPageIndexes, _list(expected['rejectedPageIndexes']));
     });
   }
 
   test('public dataset manifest pins offline manual calibration inputs', () {
-    final manifest = _readJson(
-      File.fromUri(
-        packageDirectory.uri.resolve('tool/receipt_benchmark/datasets.json'),
-      ),
-    );
+    final manifest = _readJson(File.fromUri(packageDirectory.uri.resolve('tool/receipt_benchmark/datasets.json')));
     final policy = _map(manifest['ciPolicy']);
-    final datasets = _list(
-      manifest['datasets'],
-    ).map(_map).toList(growable: false);
+    final datasets = _list(manifest['datasets']).map(_map).toList(growable: false);
 
     expect(manifest['accessedAt'], '2026-07-30');
     expect(policy['networkRequired'], isFalse);
@@ -223,25 +159,16 @@ void main() {
       expect(dataset['enabledInCi'], isFalse);
     }
 
-    final humyn = datasets.singleWhere(
-      (dataset) => dataset['id'] == 'humyn-korean-receipts-656cef5',
-    );
+    final humyn = datasets.singleWhere((dataset) => dataset['id'] == 'humyn-korean-receipts-656cef5');
     expect(_map(humyn['expectedPublicFiles'])['imageCount'], 20);
     expect(_map(humyn['annotations'])['groundTruthAvailable'], isFalse);
     expect(humyn['cerGroundTruth'], isFalse);
 
-    final cord = datasets.singleWhere(
-      (dataset) => dataset['id'] == 'cord-v2-7f0115a',
-    );
+    final cord = datasets.singleWhere((dataset) => dataset['id'] == 'cord-v2-7f0115a');
     final splits = _map(_map(cord['expectedPublicFiles'])['splits']);
-    expect(
-      splits.values.cast<int>().reduce((left, right) => left + right),
-      1000,
-    );
+    expect(splits.values.cast<int>().reduce((left, right) => left + right), 1000);
 
-    final appen = datasets.singleWhere(
-      (dataset) => dataset['id'] == 'appen-korean-documents-v1',
-    );
+    final appen = datasets.singleWhere((dataset) => dataset['id'] == 'appen-korean-documents-v1');
     expect(_map(appen['expectedPublicFiles'])['receiptImageCount'], 5);
     expect(_map(appen['expectedPublicFiles'])['receiptAnnotationCount'], 5);
   });

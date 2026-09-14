@@ -12,10 +12,7 @@ const _maxComparisonCharacters = 512;
 final _whitespace = RegExp(r'\s+');
 
 /// Merges ordered page OCR while preserving text at unproven boundaries.
-MergedOcrResult mergeReceiptOcrPages(
-  List<ReceiptImage> pages, {
-  Set<int> rejectedPageIndexes = const {},
-}) {
+MergedOcrResult mergeReceiptOcrPages(List<ReceiptImage> pages, {Set<int> rejectedPageIndexes = const {}}) {
   _validateRejectedIndexes(rejectedPageIndexes, pages.length);
 
   final linesByPage = pages.map((page) => _nonEmptyLines(page.ocrText)).toList(growable: false);

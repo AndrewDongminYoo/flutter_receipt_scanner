@@ -23,9 +23,6 @@ void main() {
   });
 
   test('setting a plain-implements instance is rejected by the token guard', () {
-    expect(
-      () => FlutterReceiptScannerPlatform.instance = _BadImpl(),
-      throwsA(isA<AssertionError>()),
-    );
+    expect(() => FlutterReceiptScannerPlatform.instance = _BadImpl(), throwsA(isA<AssertionError>()));
   });
 }

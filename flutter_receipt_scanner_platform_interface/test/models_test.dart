@@ -102,47 +102,35 @@ void main() {
     expect(quality.confidence, isNull);
   });
 
-  test(
-    'ReceiptImage holds every field and defaults mimeType to image/jpeg',
-    () {
-      const image = ReceiptImage(
-        uri: 'file:///tmp/receipt.jpg',
-        width: 800,
-        height: 1200,
-        fileName: 'receipt.jpg',
-        fileSize: 4096,
-        imageOrigin: ImageOrigin.camera,
-        ocrText: 'line one\nline two',
-        ocrQuality: OcrQuality(textLength: 16, lineCount: 2, confidence: 0.8),
-        exif: ReceiptExif(make: 'Apple'),
-        ocrLines: [
-          OcrLine(
-            text: 'line one',
-            x: 10,
-            y: 20,
-            width: 100,
-            height: 18,
-            confidence: 0.9,
-          ),
-        ],
-      );
+  test('ReceiptImage holds every field and defaults mimeType to image/jpeg', () {
+    const image = ReceiptImage(
+      uri: 'file:///tmp/receipt.jpg',
+      width: 800,
+      height: 1200,
+      fileName: 'receipt.jpg',
+      fileSize: 4096,
+      imageOrigin: ImageOrigin.camera,
+      ocrText: 'line one\nline two',
+      ocrQuality: OcrQuality(textLength: 16, lineCount: 2, confidence: 0.8),
+      exif: ReceiptExif(make: 'Apple'),
+      ocrLines: [OcrLine(text: 'line one', x: 10, y: 20, width: 100, height: 18, confidence: 0.9)],
+    );
 
-      expect(image.uri, 'file:///tmp/receipt.jpg');
-      expect(image.width, 800);
-      expect(image.height, 1200);
-      expect(image.fileName, 'receipt.jpg');
-      expect(image.fileSize, 4096);
-      expect(image.imageOrigin, ImageOrigin.camera);
-      expect(image.mimeType, 'image/jpeg');
-      expect(image.ocrText, 'line one\nline two');
-      expect(image.ocrQuality!.textLength, 16);
-      expect(image.exif!.make, 'Apple');
-      expect(image.ocrLines!.single.text, 'line one');
-      expect(image.ocrLines!.single.x, 10);
-      expect(image.ocrLines!.single.height, 18);
-      expect(image.ocrLines!.single.confidence, 0.9);
-    },
-  );
+    expect(image.uri, 'file:///tmp/receipt.jpg');
+    expect(image.width, 800);
+    expect(image.height, 1200);
+    expect(image.fileName, 'receipt.jpg');
+    expect(image.fileSize, 4096);
+    expect(image.imageOrigin, ImageOrigin.camera);
+    expect(image.mimeType, 'image/jpeg');
+    expect(image.ocrText, 'line one\nline two');
+    expect(image.ocrQuality!.textLength, 16);
+    expect(image.exif!.make, 'Apple');
+    expect(image.ocrLines!.single.text, 'line one');
+    expect(image.ocrLines!.single.x, 10);
+    expect(image.ocrLines!.single.height, 18);
+    expect(image.ocrLines!.single.confidence, 0.9);
+  });
 
   test('ReceiptImage leaves optional OCR/EXIF fields null when omitted', () {
     const image = ReceiptImage(
@@ -172,13 +160,7 @@ void main() {
       exif: ReceiptExif(make: 'Google'),
     );
 
-    final replaced = original.copyWith(
-      ocrQuality: const OcrQuality(
-        textLength: 20,
-        lineCount: 4,
-        confidence: 0.95,
-      ),
-    );
+    final replaced = original.copyWith(ocrQuality: const OcrQuality(textLength: 20, lineCount: 4, confidence: 0.95));
 
     // Replaced field takes the new value.
     expect(replaced.ocrQuality!.textLength, 20);
@@ -195,24 +177,21 @@ void main() {
     expect(replaced.exif, same(original.exif));
   });
 
-  test(
-    'ReceiptImage.copyWith keeps the existing ocrQuality when none is given',
-    () {
-      const quality = OcrQuality(textLength: 3, lineCount: 1);
-      const original = ReceiptImage(
-        uri: 'file:///tmp/receipt.jpg',
-        width: 1,
-        height: 1,
-        fileName: 'receipt.jpg',
-        fileSize: 1,
-        imageOrigin: ImageOrigin.camera,
-        ocrQuality: quality,
-      );
+  test('ReceiptImage.copyWith keeps the existing ocrQuality when none is given', () {
+    const quality = OcrQuality(textLength: 3, lineCount: 1);
+    const original = ReceiptImage(
+      uri: 'file:///tmp/receipt.jpg',
+      width: 1,
+      height: 1,
+      fileName: 'receipt.jpg',
+      fileSize: 1,
+      imageOrigin: ImageOrigin.camera,
+      ocrQuality: quality,
+    );
 
-      // No ocrQuality passed => `?? this.ocrQuality` keeps the original.
-      expect(original.copyWith().ocrQuality, same(quality));
-    },
-  );
+    // No ocrQuality passed => `?? this.ocrQuality` keeps the original.
+    expect(original.copyWith().ocrQuality, same(quality));
+  });
 
   test('ScanReceiptOptions applies receipt-tuned defaults', () {
     const options = ScanReceiptOptions();
@@ -258,18 +237,15 @@ void main() {
     expect(options.ocrGeometry, isTrue);
   });
 
-  test(
-    'ScanReceiptResult defaults images and rejectedImages to empty lists',
-    () {
-      const result = ScanReceiptResult(status: ScanStatus.cancelled);
+  test('ScanReceiptResult defaults images and rejectedImages to empty lists', () {
+    const result = ScanReceiptResult(status: ScanStatus.cancelled);
 
-      expect(result.status, ScanStatus.cancelled);
-      expect(result.images, isEmpty);
-      expect(result.rejectedImages, isEmpty);
-      expect(result.mergedOcr, isNull);
-      expect(result.discardedPageCount, 0);
-    },
-  );
+    expect(result.status, ScanStatus.cancelled);
+    expect(result.images, isEmpty);
+    expect(result.rejectedImages, isEmpty);
+    expect(result.mergedOcr, isNull);
+    expect(result.discardedPageCount, 0);
+  });
 
   test('ScanReceiptOptions defaults ocrLanguages to Korean and English', () {
     const options = ScanReceiptOptions();
@@ -312,10 +288,7 @@ void main() {
   });
 
   test('ScanReceiptResult holds an explicit discarded page count', () {
-    const result = ScanReceiptResult(
-      status: ScanStatus.success,
-      discardedPageCount: 2,
-    );
+    const result = ScanReceiptResult(status: ScanStatus.success, discardedPageCount: 2);
 
     expect(result.discardedPageCount, 2);
   });
@@ -338,33 +311,17 @@ void main() {
 
     expect(merged.text, '첫 줄\nsecond line');
     expect(merged.isComplete, isFalse);
-    expect(merged.pageUris, [
-      'file:///tmp/first.jpg',
-      'file:///tmp/second.jpg',
-    ]);
+    expect(merged.pageUris, ['file:///tmp/first.jpg', 'file:///tmp/second.jpg']);
     expect(merged.unmatchedBoundaryIndexes, [0]);
     expect(merged.rejectedPageIndexes, [1]);
-    expect(
-      () => merged.pageUris.add('file:///tmp/fourth.jpg'),
-      throwsUnsupportedError,
-    );
-    expect(
-      () => merged.unmatchedBoundaryIndexes.add(1),
-      throwsUnsupportedError,
-    );
+    expect(() => merged.pageUris.add('file:///tmp/fourth.jpg'), throwsUnsupportedError);
+    expect(() => merged.unmatchedBoundaryIndexes.add(1), throwsUnsupportedError);
     expect(() => merged.rejectedPageIndexes.add(0), throwsUnsupportedError);
   });
 
   test('ScanReceiptResult holds an optional merged OCR result', () {
-    final merged = MergedOcrResult(
-      text: 'merged',
-      isComplete: true,
-      pageUris: const ['file:///tmp/receipt.jpg'],
-    );
-    final result = ScanReceiptResult(
-      status: ScanStatus.success,
-      mergedOcr: merged,
-    );
+    final merged = MergedOcrResult(text: 'merged', isComplete: true, pageUris: const ['file:///tmp/receipt.jpg']);
+    final result = ScanReceiptResult(status: ScanStatus.success, mergedOcr: merged);
 
     expect(result.mergedOcr, same(merged));
   });

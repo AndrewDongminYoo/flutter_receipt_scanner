@@ -13,9 +13,7 @@ import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scann
 /// `mergedOcr` contains requested page-merge diagnostics.
 Future<ScanReceiptResult> scan({
   ScanReceiptOptions options = const ScanReceiptOptions(),
-  OcrFloorOrDisabled ocrFloor = const OcrFloorOrDisabled.floor(
-    kDefaultOcrFloor,
-  ),
+  OcrFloorOrDisabled ocrFloor = const OcrFloorOrDisabled.floor(kDefaultOcrFloor),
   bool mergeOcrPages = false,
 }) async {
   if (mergeOcrPages) _validateMergeOptions(options);
@@ -36,10 +34,7 @@ Future<ScanReceiptResult> scan({
     for (var index = 0; index < orderedPages.length; index++)
       if (rejectedUris.contains(orderedPages[index].uri)) index,
   };
-  var mergedOcr = mergeReceiptOcrPages(
-    orderedPages,
-    rejectedPageIndexes: rejectedPageIndexes,
-  );
+  var mergedOcr = mergeReceiptOcrPages(orderedPages, rejectedPageIndexes: rejectedPageIndexes);
   if (native.discardedPageCount > 0 && mergedOcr.isComplete) {
     // A natively dropped page means the logical receipt is not fully covered,
     // even when every returned adjacent boundary is proven (supersedes the
@@ -75,31 +70,19 @@ ScanReceiptOptions _resolveOcrLanguages(ScanReceiptOptions options) {
   for (final tag in options.ocrLanguages) {
     final trimmed = tag.trim();
     if (trimmed.isEmpty) {
-      throw ArgumentError.value(
-        options.ocrLanguages,
-        'options.ocrLanguages',
-        'must not contain an empty language tag',
-      );
+      throw ArgumentError.value(options.ocrLanguages, 'options.ocrLanguages', 'must not contain an empty language tag');
     }
     if (!normalized.contains(trimmed)) normalized.add(trimmed);
   }
   if (normalized.isEmpty) {
-    throw ArgumentError.value(
-      options.ocrLanguages,
-      'options.ocrLanguages',
-      'must not be empty',
-    );
+    throw ArgumentError.value(options.ocrLanguages, 'options.ocrLanguages', 'must not be empty');
   }
   return options.copyWith(ocrLanguages: normalized);
 }
 
 void _validateMergeOptions(ScanReceiptOptions options) {
   if (!options.ocr) {
-    throw ArgumentError.value(
-      options.ocr,
-      'options.ocr',
-      'must be true when mergeOcrPages is enabled',
-    );
+    throw ArgumentError.value(options.ocr, 'options.ocr', 'must be true when mergeOcrPages is enabled');
   }
   if (options.source != ScanSource.camera) {
     throw ArgumentError.value(
@@ -109,11 +92,7 @@ void _validateMergeOptions(ScanReceiptOptions options) {
     );
   }
   if (options.maxPages < 2) {
-    throw ArgumentError.value(
-      options.maxPages,
-      'options.maxPages',
-      'must be at least 2 when mergeOcrPages is enabled',
-    );
+    throw ArgumentError.value(options.maxPages, 'options.maxPages', 'must be at least 2 when mergeOcrPages is enabled');
   }
 }
 
@@ -129,18 +108,12 @@ List<String> _snapshotNativePageUris(List<ReceiptImage> nativePages) {
   return List.unmodifiable(uris);
 }
 
-List<ReceiptImage> _restoreNativePageOrder(
-  List<String> nativePageUris,
-  ScanReceiptResult gated,
-) {
+List<ReceiptImage> _restoreNativePageOrder(List<String> nativePageUris, ScanReceiptResult gated) {
   final annotatedByUri = <String, ReceiptImage>{
     for (final page in [...gated.images, ...gated.rejectedImages]) page.uri: page,
   };
   return [
     for (final uri in nativePageUris)
-      annotatedByUri[uri] ??
-          (throw StateError(
-            'OCR floor result is missing receipt page URI: $uri',
-          )),
+      annotatedByUri[uri] ?? (throw StateError('OCR floor result is missing receipt page URI: $uri')),
   ];
 }

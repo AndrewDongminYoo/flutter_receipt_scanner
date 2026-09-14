@@ -7,9 +7,6 @@ void main() {
 
   test('registerWith installs the Android platform as the instance', () {
     FlutterReceiptScannerAndroid.registerWith();
-    expect(
-      FlutterReceiptScannerPlatform.instance,
-      isA<FlutterReceiptScannerAndroid>(),
-    );
+    expect(FlutterReceiptScannerPlatform.instance, isA<FlutterReceiptScannerAndroid>());
   });
 }

@@ -12,33 +12,19 @@ Future<Map<String, Object?>> generateLongReceiptFixtures({
   required Directory packageDirectory,
   required Directory outputDirectory,
 }) async {
-  final benchmarkDirectory = Directory.fromUri(
-    packageDirectory.uri.resolve('tool/receipt_benchmark/'),
-  );
-  final sourceFile = File.fromUri(
-    benchmarkDirectory.uri.resolve('fixture_source.json'),
-  );
+  final benchmarkDirectory = Directory.fromUri(packageDirectory.uri.resolve('tool/receipt_benchmark/'));
+  final sourceFile = File.fromUri(benchmarkDirectory.uri.resolve('fixture_source.json'));
   final source = jsonDecode(await sourceFile.readAsString()) as Map<String, Object?>;
   final geometry = source['geometry']! as Map<String, Object?>;
   final font = source['font']! as Map<String, Object?>;
   final lines = (source['lines']! as List<Object?>).cast<String>();
-  final fontFile = File.fromUri(
-    benchmarkDirectory.uri.resolve(font['file']! as String),
-  );
-  final licenseFile = File.fromUri(
-    benchmarkDirectory.uri.resolve(font['licenseFile']! as String),
-  );
+  final fontFile = File.fromUri(benchmarkDirectory.uri.resolve(font['file']! as String));
+  final licenseFile = File.fromUri(benchmarkDirectory.uri.resolve(font['licenseFile']! as String));
   final fontBytes = await fontFile.readAsBytes();
 
   _requireChecksum(fontBytes, font['sha256']! as String, fontFile.path);
-  _requireChecksum(
-    await licenseFile.readAsBytes(),
-    font['licenseSha256']! as String,
-    licenseFile.path,
-  );
-  await (FontLoader(
-    font['localFamily']! as String,
-  )..addFont(Future.value(ByteData.sublistView(fontBytes)))).load();
+  _requireChecksum(await licenseFile.readAsBytes(), font['licenseSha256']! as String, licenseFile.path);
+  await (FontLoader(font['localFamily']! as String)..addFont(Future.value(ByteData.sublistView(fontBytes)))).load();
 
   await outputDirectory.create(recursive: true);
   final width = geometry['width']! as int;
@@ -62,9 +48,7 @@ Future<Map<String, Object?>> generateLongReceiptFixtures({
     lineAdvance: lineAdvance,
     fontFamily: localFamily,
   );
-  final logicalFile = File.fromUri(
-    outputDirectory.uri.resolve('logical_receipt.png'),
-  );
+  final logicalFile = File.fromUri(outputDirectory.uri.resolve('logical_receipt.png'));
   await logicalFile.writeAsBytes(logicalBytes, flush: true);
 
   final pageEntries = <Map<String, Object?>>[];
@@ -90,9 +74,7 @@ Future<Map<String, Object?>> generateLongReceiptFixtures({
       fontFamily: localFamily,
     );
     final fileName = 'page_${(pageIndex + 1).toString().padLeft(2, '0')}.png';
-    await File.fromUri(
-      outputDirectory.uri.resolve(fileName),
-    ).writeAsBytes(pageBytes, flush: true);
+    await File.fromUri(outputDirectory.uri.resolve(fileName)).writeAsBytes(pageBytes, flush: true);
     final ocrText = pageLines.join('\n');
     pageOcrTexts.add(ocrText);
     pageEntries.add({
@@ -128,10 +110,7 @@ Future<Map<String, Object?>> generateLongReceiptFixtures({
   const encoder = JsonEncoder.withIndent('  ');
   await File.fromUri(
     outputDirectory.uri.resolve('fixture_manifest.json'),
-  ).writeAsString(
-    '${encoder.convert(manifest)}\n',
-    flush: true,
-  );
+  ).writeAsString('${encoder.convert(manifest)}\n', flush: true);
   return manifest;
 }
 
@@ -157,12 +136,7 @@ Future<Uint8List> _renderReceipt({
     final painter = TextPainter(
       text: TextSpan(
         text: lines[index],
-        style: TextStyle(
-          color: const ui.Color(0xFF111111),
-          fontFamily: fontFamily,
-          fontSize: 32,
-          height: 1,
-        ),
+        style: TextStyle(color: const ui.Color(0xFF111111), fontFamily: fontFamily, fontSize: 32, height: 1),
       ),
       textDirection: ui.TextDirection.ltr,
       maxLines: 1,
@@ -185,9 +159,7 @@ Future<Uint8List> _renderReceipt({
 void _requireChecksum(List<int> bytes, String expected, String path) {
   final actual = _checksum(bytes);
   if (actual != expected) {
-    throw StateError(
-      'Checksum mismatch for $path: expected $expected, got $actual.',
-    );
+    throw StateError('Checksum mismatch for $path: expected $expected, got $actual.');
   }
 }
 

@@ -7,9 +7,6 @@ void main() {
 
   test('registerWith installs the iOS platform as the instance', () {
     FlutterReceiptScannerIos.registerWith();
-    expect(
-      FlutterReceiptScannerPlatform.instance,
-      isA<FlutterReceiptScannerIos>(),
-    );
+    expect(FlutterReceiptScannerPlatform.instance, isA<FlutterReceiptScannerIos>());
   });
 }

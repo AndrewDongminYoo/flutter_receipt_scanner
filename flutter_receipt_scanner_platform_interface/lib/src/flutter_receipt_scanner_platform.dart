@@ -44,15 +44,11 @@ abstract class FlutterReceiptScannerPlatform extends PlatformInterface {
 final class _UnimplementedReceiptScanner extends FlutterReceiptScannerPlatform {
   @override
   Future<ScanReceiptResult> scan(ScanReceiptOptions options) {
-    throw UnsupportedError(
-      'flutter_receipt_scanner has no implementation on this platform.',
-    );
+    throw UnsupportedError('flutter_receipt_scanner has no implementation on this platform.');
   }
 
   @override
   Future<OcrCapabilities> getOcrCapabilities() {
-    throw UnsupportedError(
-      'flutter_receipt_scanner has no implementation on this platform.',
-    );
+    throw UnsupportedError('flutter_receipt_scanner has no implementation on this platform.');
   }
 }

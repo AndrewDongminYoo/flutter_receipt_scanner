@@ -15,32 +15,17 @@ PlatformException _createConnectionError(String channelName) {
   );
 }
 
-enum ScanSourceWire {
-  camera,
-  gallery,
-}
+enum ScanSourceWire { camera, gallery }
 
-enum ImageOriginWire {
-  camera,
-  screenshot,
-  download,
-  unknown,
-}
+enum ImageOriginWire { camera, screenshot, download, unknown }
 
-enum ScanStatusWire {
-  success,
-  cancelled,
-  rejected,
-}
+enum ScanStatusWire { success, cancelled, rejected }
 
 /// Whether an OCR script model can run now or needs a download.
 ///
 /// Declared after the shipped wire classes on purpose — Pigeon assigns codec
 /// bytes in declaration order.
-enum OcrModelStatusWire {
-  ready,
-  downloadRequired,
-}
+enum OcrModelStatusWire { ready, downloadRequired }
 
 class ScanOptionsWire {
   ScanOptionsWire({
@@ -121,14 +106,7 @@ class ScanOptionsWire {
 }
 
 class GpsDataWire {
-  GpsDataWire({
-    this.latitude,
-    this.longitude,
-    this.altitude,
-    this.timestamp,
-    this.speed,
-    this.heading,
-  });
+  GpsDataWire({this.latitude, this.longitude, this.altitude, this.timestamp, this.speed, this.heading});
 
   double? latitude;
 
@@ -143,14 +121,7 @@ class GpsDataWire {
   double? heading;
 
   Object encode() {
-    return <Object?>[
-      latitude,
-      longitude,
-      altitude,
-      timestamp,
-      speed,
-      heading,
-    ];
+    return <Object?>[latitude, longitude, altitude, timestamp, speed, heading];
   }
 
   static GpsDataWire decode(Object result) {
@@ -288,11 +259,7 @@ class ReceiptExifWire {
 }
 
 class OcrQualityWire {
-  OcrQualityWire({
-    this.textLength,
-    this.lineCount,
-    this.confidence,
-  });
+  OcrQualityWire({this.textLength, this.lineCount, this.confidence});
 
   int? textLength;
 
@@ -301,11 +268,7 @@ class OcrQualityWire {
   double? confidence;
 
   Object encode() {
-    return <Object?>[
-      textLength,
-      lineCount,
-      confidence,
-    ];
+    return <Object?>[textLength, lineCount, confidence];
   }
 
   static OcrQualityWire decode(Object result) {
@@ -390,12 +353,7 @@ class ReceiptImageWire {
 }
 
 class ScanResultWire {
-  ScanResultWire({
-    required this.status,
-    required this.images,
-    required this.rejectedImages,
-    this.discardedPageCount,
-  });
+  ScanResultWire({required this.status, required this.images, required this.rejectedImages, this.discardedPageCount});
 
   ScanStatusWire status;
 
@@ -409,12 +367,7 @@ class ScanResultWire {
   int? discardedPageCount;
 
   Object encode() {
-    return <Object?>[
-      status,
-      images,
-      rejectedImages,
-      discardedPageCount,
-    ];
+    return <Object?>[status, images, rejectedImages, discardedPageCount];
   }
 
   static ScanResultWire decode(Object result) {
@@ -456,14 +409,7 @@ class OcrLineWire {
   double? confidence;
 
   Object encode() {
-    return <Object?>[
-      text,
-      x,
-      y,
-      width,
-      height,
-      confidence,
-    ];
+    return <Object?>[text, x, y, width, height, confidence];
   }
 
   static OcrLineWire decode(Object result) {
@@ -481,10 +427,7 @@ class OcrLineWire {
 
 /// One script family's readiness, reported by Android.
 class OcrModelStateWire {
-  OcrModelStateWire({
-    required this.script,
-    required this.status,
-  });
+  OcrModelStateWire({required this.script, required this.status});
 
   /// Unicode script identifier such as `Latn`, `Kore`, `Jpan`, `Hans`, `Hant`,
   /// or `Deva`.
@@ -493,38 +436,26 @@ class OcrModelStateWire {
   OcrModelStatusWire status;
 
   Object encode() {
-    return <Object?>[
-      script,
-      status,
-    ];
+    return <Object?>[script, status];
   }
 
   static OcrModelStateWire decode(Object result) {
     result as List<Object?>;
-    return OcrModelStateWire(
-      script: result[0]! as String,
-      status: result[1]! as OcrModelStatusWire,
-    );
+    return OcrModelStateWire(script: result[0]! as String, status: result[1]! as OcrModelStatusWire);
   }
 }
 
 /// Native OCR capability. `supportedLanguages` is iOS-only (Vision reports
 /// exact identifiers); `models` is Android-only (ML Kit script families).
 class OcrCapabilitiesWire {
-  OcrCapabilitiesWire({
-    this.supportedLanguages,
-    this.models,
-  });
+  OcrCapabilitiesWire({this.supportedLanguages, this.models});
 
   List<String>? supportedLanguages;
 
   List<OcrModelStateWire>? models;
 
   Object encode() {
-    return <Object?>[
-      supportedLanguages,
-      models,
-    ];
+    return <Object?>[supportedLanguages, models];
   }
 
   static OcrCapabilitiesWire decode(Object result) {

@@ -94,22 +94,11 @@ ReceiptImage _imageFromWire(ReceiptImageWire w) => ReceiptImage(
   ocrLines: w.ocrLines?.map(_ocrLineFromWire).toList(growable: false),
 );
 
-OcrQuality? _ocrQualityFromWire(OcrQualityWire? w) => w == null
-    ? null
-    : OcrQuality(
-        textLength: w.textLength ?? 0,
-        lineCount: w.lineCount ?? 0,
-        confidence: w.confidence,
-      );
+OcrQuality? _ocrQualityFromWire(OcrQualityWire? w) =>
+    w == null ? null : OcrQuality(textLength: w.textLength ?? 0, lineCount: w.lineCount ?? 0, confidence: w.confidence);
 
-OcrLine _ocrLineFromWire(OcrLineWire w) => OcrLine(
-  text: w.text,
-  x: w.x,
-  y: w.y,
-  width: w.width,
-  height: w.height,
-  confidence: w.confidence,
-);
+OcrLine _ocrLineFromWire(OcrLineWire w) =>
+    OcrLine(text: w.text, x: w.x, y: w.y, width: w.width, height: w.height, confidence: w.confidence);
 
 GpsData? _gpsFromWire(GpsDataWire? w) => w == null || w.latitude == null || w.longitude == null
     ? null

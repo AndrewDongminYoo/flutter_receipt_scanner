@@ -14,9 +14,7 @@ ReceiptImage _page(int index, String? text) => ReceiptImage(
 
 void main() {
   test('one non-empty page is complete', () {
-    final result = mergeReceiptOcrPages([
-      _page(0, '  서울 마트  \n\n  TOTAL 1,000  '),
-    ]);
+    final result = mergeReceiptOcrPages([_page(0, '  서울 마트  \n\n  TOTAL 1,000  ')]);
 
     expect(result.text, '서울 마트\nTOTAL 1,000');
     expect(result.isComplete, isTrue);
@@ -31,10 +29,7 @@ void main() {
       _page(1, '상품 A 1,000\n중간 합계 1,000\n부가세 100\nTOTAL 1,100'),
     ]);
 
-    expect(
-      result.text,
-      '서울 마트\n상품 A 1,000\n중간 합계 1,000\n부가세 100\nTOTAL 1,100',
-    );
+    expect(result.text, '서울 마트\n상품 A 1,000\n중간 합계 1,000\n부가세 100\nTOTAL 1,100');
     expect(result.isComplete, isTrue);
     expect(result.unmatchedBoundaryIndexes, isEmpty);
   });
@@ -45,10 +40,7 @@ void main() {
       _page(1, '아메리카노 AMERICANO 4,500\n카페라떼 CAFE LATE 5,000\nTOTAL 합계 9,500'),
     ]);
 
-    expect(
-      result.text,
-      '영수증 RECEIPT\n아메리카노 AMERICANO 4,500\n카페라떼 CAFE LATTE 5,000\nTOTAL 합계 9,500',
-    );
+    expect(result.text, '영수증 RECEIPT\n아메리카노 AMERICANO 4,500\n카페라떼 CAFE LATTE 5,000\nTOTAL 합계 9,500');
     expect(result.isComplete, isTrue);
   });
 
@@ -58,19 +50,13 @@ void main() {
       _page(1, '완전히 다른 문장 7,700\n새로운 항목 8,800'),
     ]);
 
-    expect(
-      result.text,
-      '첫 번째 상품 1,000\n두 번째 상품 2,000\n완전히 다른 문장 7,700\n새로운 항목 8,800',
-    );
+    expect(result.text, '첫 번째 상품 1,000\n두 번째 상품 2,000\n완전히 다른 문장 7,700\n새로운 항목 8,800');
     expect(result.isComplete, isFalse);
     expect(result.unmatchedBoundaryIndexes, [0]);
   });
 
   test('short single-line candidate uses the stricter threshold', () {
-    final result = mergeReceiptOcrPages([
-      _page(0, '상점\nTOTAL 1,000'),
-      _page(1, 'TOTAL 1,000\n감사합니다'),
-    ]);
+    final result = mergeReceiptOcrPages([_page(0, '상점\nTOTAL 1,000'), _page(1, 'TOTAL 1,000\n감사합니다')]);
 
     expect(result.text, '상점\nTOTAL 1,000\nTOTAL 1,000\n감사합니다');
     expect(result.isComplete, isFalse);
@@ -93,10 +79,7 @@ void main() {
       _page(1, '다음 페이지 계속\n중간 합계 1,000\n서울 마트\nTOTAL 1,100'),
     ]);
 
-    expect(
-      result.text,
-      '서울 마트\n상품 A 1,000\n다음 페이지 계속\n중간 합계 1,000\n서울 마트\nTOTAL 1,100',
-    );
+    expect(result.text, '서울 마트\n상품 A 1,000\n다음 페이지 계속\n중간 합계 1,000\n서울 마트\nTOTAL 1,100');
     expect(result.isComplete, isTrue);
   });
 
@@ -114,23 +97,17 @@ void main() {
     expect(result.rejectedPageIndexes, [1, 3]);
   });
 
-  test(
-    'explicitly rejected page makes an otherwise proven merge incomplete',
-    () {
-      final result = mergeReceiptOcrPages(
-        [
-          _page(0, '서울 마트\n상품 A 1,000\n중간 합계 1,000'),
-          _page(1, '상품 A 1,000\n중간 합계 1,000\nTOTAL 1,100'),
-        ],
-        rejectedPageIndexes: const {1},
-      );
+  test('explicitly rejected page makes an otherwise proven merge incomplete', () {
+    final result = mergeReceiptOcrPages(
+      [_page(0, '서울 마트\n상품 A 1,000\n중간 합계 1,000'), _page(1, '상품 A 1,000\n중간 합계 1,000\nTOTAL 1,100')],
+      rejectedPageIndexes: const {1},
+    );
 
-      expect(result.text, '서울 마트\n상품 A 1,000\n중간 합계 1,000\nTOTAL 1,100');
-      expect(result.isComplete, isFalse);
-      expect(result.unmatchedBoundaryIndexes, isEmpty);
-      expect(result.rejectedPageIndexes, [1]);
-    },
-  );
+    expect(result.text, '서울 마트\n상품 A 1,000\n중간 합계 1,000\nTOTAL 1,100');
+    expect(result.isComplete, isFalse);
+    expect(result.unmatchedBoundaryIndexes, isEmpty);
+    expect(result.rejectedPageIndexes, [1]);
+  });
 
   test('empty page list returns an incomplete empty result', () {
     final result = mergeReceiptOcrPages(const []);
@@ -141,38 +118,23 @@ void main() {
   });
 
   test('out-of-range rejected page index fails before merging', () {
-    expect(
-      () => mergeReceiptOcrPages(
-        [_page(0, '영수증 RECEIPT')],
-        rejectedPageIndexes: const {1},
-      ),
-      throwsRangeError,
-    );
+    expect(() => mergeReceiptOcrPages([_page(0, '영수증 RECEIPT')], rejectedPageIndexes: const {1}), throwsRangeError);
   });
 
-  test(
-    'long exact overlap beyond the fuzzy comparison limit is emitted once',
-    () {
-      final shared = 'A' * 600;
+  test('long exact overlap beyond the fuzzy comparison limit is emitted once', () {
+    final shared = 'A' * 600;
 
-      final result = mergeReceiptOcrPages([
-        _page(0, '첫 페이지\n$shared'),
-        _page(1, '$shared\n마지막 페이지'),
-      ]);
+    final result = mergeReceiptOcrPages([_page(0, '첫 페이지\n$shared'), _page(1, '$shared\n마지막 페이지')]);
 
-      expect(result.text, '첫 페이지\n$shared\n마지막 페이지');
-      expect(result.isComplete, isTrue);
-      expect(result.unmatchedBoundaryIndexes, isEmpty);
-    },
-  );
+    expect(result.text, '첫 페이지\n$shared\n마지막 페이지');
+    expect(result.isComplete, isTrue);
+    expect(result.unmatchedBoundaryIndexes, isEmpty);
+  });
 
   test('long partial overlap preserves the unproven line suffix', () {
     final shared = 'A' * 600;
 
-    final result = mergeReceiptOcrPages([
-      _page(0, '첫 페이지\nLEFT-$shared'),
-      _page(1, '$shared-RIGHT\n마지막 페이지'),
-    ]);
+    final result = mergeReceiptOcrPages([_page(0, '첫 페이지\nLEFT-$shared'), _page(1, '$shared-RIGHT\n마지막 페이지')]);
 
     expect(result.text, '첫 페이지\nLEFT-$shared\n$shared-RIGHT\n마지막 페이지');
     expect(result.isComplete, isFalse);
@@ -197,38 +159,26 @@ void main() {
     const third = 'ITEM 003 SHARED RECEIPT ROW';
     const fourth = 'ITEM 004 NEW RECEIPT ROW';
 
-    final result = mergeReceiptOcrPages([
-      _page(0, '$first\n$second\n$third'),
-      _page(1, '$second\n$third\n$fourth'),
-    ]);
+    final result = mergeReceiptOcrPages([_page(0, '$first\n$second\n$third'), _page(1, '$second\n$third\n$fourth')]);
 
     expect(result.text, '$first\n$second\n$third\n$fourth');
     expect(result.isComplete, isTrue);
   });
 
-  test(
-    'equal bounded overlaps preserve lines outside the smallest proven window',
-    () {
-      final shared = 'A' * 600;
+  test('equal bounded overlaps preserve lines outside the smallest proven window', () {
+    final shared = 'A' * 600;
 
-      final result = mergeReceiptOcrPages([
-        _page(0, '이전 문장 PREVIOUS LINE\n$shared'),
-        _page(1, '$shared\n이어지는 문장 FOLLOWING LINE\nTOTAL 1,000'),
-      ]);
+    final result = mergeReceiptOcrPages([
+      _page(0, '이전 문장 PREVIOUS LINE\n$shared'),
+      _page(1, '$shared\n이어지는 문장 FOLLOWING LINE\nTOTAL 1,000'),
+    ]);
 
-      expect(
-        result.text,
-        '이전 문장 PREVIOUS LINE\n$shared\n이어지는 문장 FOLLOWING LINE\nTOTAL 1,000',
-      );
-      expect(result.isComplete, isTrue);
-    },
-  );
+    expect(result.text, '이전 문장 PREVIOUS LINE\n$shared\n이어지는 문장 FOLLOWING LINE\nTOTAL 1,000');
+    expect(result.isComplete, isTrue);
+  });
 
   test('does not mutate inputs', () {
-    final pages = [
-      _page(0, '서울 마트\n상품 A 1,000\n중간 합계 1,000'),
-      _page(1, '상품 A 1,000\n중간 합계 1,000\nTOTAL 1,100'),
-    ];
+    final pages = [_page(0, '서울 마트\n상품 A 1,000\n중간 합계 1,000'), _page(1, '상품 A 1,000\n중간 합계 1,000\nTOTAL 1,100')];
     final originalUris = pages.map((page) => page.uri).toList();
     final originalTexts = pages.map((page) => page.ocrText).toList();
 
@@ -237,18 +187,12 @@ void main() {
     expect(pages.map((page) => page.uri), originalUris);
     expect(pages.map((page) => page.ocrText), originalTexts);
     expect(result.pageUris, originalUris);
-    expect(
-      () => result.pageUris.add('file:///tmp/mutated.jpg'),
-      throwsUnsupportedError,
-    );
+    expect(() => result.pageUris.add('file:///tmp/mutated.jpg'), throwsUnsupportedError);
   });
 
   test('ten pages with 200 lines each merge within 100 ms after warm-up', () {
     final pages = List.generate(10, (pageIndex) {
-      final lines = List.generate(
-        200,
-        (lineIndex) => 'PAGE $pageIndex LINE $lineIndex ITEM 1234567890',
-      );
+      final lines = List.generate(200, (lineIndex) => 'PAGE $pageIndex LINE $lineIndex ITEM 1234567890');
       if (pageIndex > 0) {
         lines
           ..[0] = 'SHARED OVERLAP LINE ALPHA 1234567890'
