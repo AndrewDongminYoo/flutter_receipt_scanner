@@ -23,7 +23,6 @@ jobs:
     if: ${{ !contains(fromJSON('["dependabot[bot]", "renovate[bot]", "snyk-bot", "allcontributors[bot]"]'), github.actor) }}
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
-      flutter_version: 3.44.6
       format_line_length: 120
       working_directory: flutter_receipt_scanner_platform_interface
       # Pigeon-generated wire code is a single source of truth regenerated from
