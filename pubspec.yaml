@@ -19,8 +19,8 @@ topics:
   - document-scanner
 
 dev_dependencies:
-  melos: ^7.8.2
-  pigeon: ^22.0.0
+  melos: ^8.7.0
+  pigeon: ^29.0.1
 
 melos:
   name: flutter_receipt_scanner
