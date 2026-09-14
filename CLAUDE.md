@@ -21,7 +21,7 @@ melos bootstrap                 # resolve + link all workspace packages (run fir
 melos run analyze               # dart analyze across every package
 melos run test                  # flutter test in every package that has test/
 melos run test:ci               # same, with --coverage --concurrency 4
-melos run format                # dart fix --apply + dart format --line-length 120
+melos run format                # dart fix --apply + dart format
 melos run format:ci             # format check only (--set-exit-if-changed)
 melos run generate              # regenerate Pigeon contracts (see Transport)
 trunk fmt && trunk check        # format + lint all NON-Dart files

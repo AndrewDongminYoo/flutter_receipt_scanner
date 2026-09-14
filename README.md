@@ -145,7 +145,7 @@ melos run test       # test all packages
 
 The Pigeon schema is a single source of truth at the repo root (`pigeons/messages.dart`). `melos run generate` runs Pigeon once from the root, emitting the Dart client into `flutter_receipt_scanner_platform_interface` and the Swift/Kotlin hosts into their platform packages.
 
-Dart is formatted at 120 columns (`dart format --line-length 120`) and linted with `very_good_analysis`.
+Dart is formatted at 120 columns (`dart format`) and linted with `very_good_analysis`.
 Kotlin, Swift, YAML, and Markdown are owned by trunk; Dart is intentionally left to `flutter`/`melos`.
 
 ## License

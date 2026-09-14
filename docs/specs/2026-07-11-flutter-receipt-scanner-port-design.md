@@ -107,7 +107,7 @@ Deferred to later milestones (skeleton returns `PlatformException` / `unimplemen
 
 - **app-facing package:** unit tests for the OCR-floor gate and `OcrQuality` derivation — the highest-value re-derived logic. Cover: OCR off (no gate), `ocrFloor: false`, all-rejected → `rejected`, partial-pass → `success` with populated `rejectedImages`, absent-confidence-satisfied.
 - **platform_interface:** routing test against the Pigeon-generated mock host API.
-- **Lint/format:** `very_good_analysis`, `dart format --line-length 120`, 2-space indent.
+- **Lint/format:** `very_good_analysis`, `dart format`, 2-space indent.
   Dart is owned by melos + `flutter`; Kotlin/Swift/YAML/Markdown by trunk (Dart disabled in trunk, per precedent).
 
 ## 9. Clean-room discipline (IP gate)

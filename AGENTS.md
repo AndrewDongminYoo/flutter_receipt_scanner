@@ -33,7 +33,7 @@
 
 ## Coding Style & Naming Conventions
 
-- Dart code follows `very_good_analysis` (`analysis_options.yaml`) and is formatted with `dart format --line-length 120`.
+- Dart code follows `very_good_analysis` (`analysis_options.yaml`) and is formatted with `dart format`.
 - Indentation: 2 spaces for Dart and YAML.
 - Prefer clear, package-scoped names (e.g., `FlutterReceiptScanner*` in plugin code).
 - Dart is **owned by Flutter/Melos, not trunk** — trunk disables the `dart` linter on purpose (`.trunk/trunk.yaml`).

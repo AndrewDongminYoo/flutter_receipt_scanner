@@ -49,9 +49,9 @@ melos:
       description: Run Flutter tests with coverage for CI.
 
     format:
-      run: melos exec -- "dart fix --apply ; dart format --line-length 120 ."
+      run: melos exec -- "dart fix --apply ; dart format ."
       description: Apply fixes and format all Dart files in this project.
 
     format:ci:
-      run: melos exec -- "dart format --line-length 120 . --set-exit-if-changed"
+      run: melos exec -- "dart format . --set-exit-if-changed"
       description: Check Dart formatting for all packages in this project.

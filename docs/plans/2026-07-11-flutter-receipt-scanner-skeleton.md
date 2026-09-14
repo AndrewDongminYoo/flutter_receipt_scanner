@@ -15,7 +15,7 @@
 - Native returns image primitives; the OCR-floor gate + `OcrQuality` derivation run in Dart.
 - `extend`, never `implements`, the platform interface.
 - Public Dart symbols package-prefixed. Each package independently versioned, start `0.1.0`.
-- Dart format: `dart format --line-length 120`, 2-space indent. Lint: `very_good_analysis`. Dart is owned by flutter/melos — do NOT enable Dart in trunk.
+- Dart format: `dart format`, 2-space indent. Lint: `very_good_analysis`. Dart is owned by flutter/melos — do NOT enable Dart in trunk.
 - iOS deployment target 16.0 (Korean OCR via `VNRecognizeTextRequest`). Android minSdk 24.
 - Conventional Commits, no Co-Author lines, no `Claude-Session` trailer.
 - Skeleton milestone: only iOS `source: "camera"`. Every other path returns unimplemented.
@@ -71,7 +71,7 @@ melos:
       packageFilters:
         dirExists: test
     format:
-      run: dart format --line-length 120 .
+      run: dart format .
 ```
 
 - [ ] **Step 2 (removed): melos.yaml is not used in melos 7 — config lives in the root pubspec `melos:` key above.**
