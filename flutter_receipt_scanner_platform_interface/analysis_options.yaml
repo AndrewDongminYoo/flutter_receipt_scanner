@@ -7,3 +7,7 @@ analyzer:
     lines_longer_than_80_chars: ignore
     flutter_style_todos: ignore
     cascade_invocations: ignore
+
+formatter:
+  trailing_commas: preserve
+  page_width: 120
