@@ -27,7 +27,8 @@ lint:
       paths:
         - flutter_receipt_scanner/test/fixtures/long_receipt/fixture_manifest.json
   enabled:
-    - pinact@4.1.1
+    - pinact@4.1.1:
+        commands: [lint, upgrade]
     - shellcheck@0.11.0
     - shfmt@3.13.1
     - grype@0.110.0
