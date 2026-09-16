@@ -21,7 +21,7 @@ on:
 jobs:
   build:
     if: ${{ !contains(fromJSON('["dependabot[bot]", "renovate[bot]", "snyk-bot", "allcontributors[bot]"]'), github.actor) }}
-    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@bca17593224500d894e3fc7df09937ec603e35cd # v1.21.0
     with:
       format_line_length: 120
       working_directory: flutter_receipt_scanner_ios
