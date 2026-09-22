@@ -19,6 +19,7 @@ runtimes:
 lint:
   disabled:
     - dart
+    - svgo
   ignore:
     - linters: [oxipng]
       paths:
