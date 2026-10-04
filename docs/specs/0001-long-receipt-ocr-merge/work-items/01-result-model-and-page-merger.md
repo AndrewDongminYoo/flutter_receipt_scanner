@@ -9,7 +9,7 @@ parent: ../spec.md
 Add the public `MergedOcrResult` model to the platform-interface package and an optional `mergedOcr` field to `ScanReceiptResult`.
 Implement a private, pure Dart OCR page merger in the app-facing package.
 The merger must preserve page URI order, compare only adjacent suffix and prefix windows, remove only proven overlap, and report incomplete results without deleting uncertain text.
-Use only Dart core libraries and keep matching constants private.
+Use only Dart core libraries and keep matching rules private.
 
 ## Required context
 
@@ -21,10 +21,10 @@ The public result model lives in the platform-interface package because `ScanRec
 
 - [x] `MergedOcrResult` exposes text, completeness, ordered page URIs, unmatched boundary indexes, and rejected page indexes as immutable fields.
 - [x] `ScanReceiptResult.mergedOcr` is optional and defaults to null without breaking existing constructors.
-- [x] Exact adjacent overlap is emitted once.
-- [x] Korean-plus-Latin overlap at or above the specified similarity threshold is emitted once.
-- [x] An overlap below threshold is preserved and records the correct unmatched boundary.
-- [x] A single-line candidate uses the stricter length and similarity threshold.
+- [x] Exact adjacent overlap with at least two distinct normalized lines is emitted once, choosing the deepest match without a line-count cap.
+- [x] Case and whitespace normalization preserves earlier recognized text without fuzzy matching.
+- [x] Approximate matches, quantity or price changes, and different line segmentation preserve all text and record the correct unmatched boundary.
+- [x] Single-line matches and repeated identical rows split across a boundary remain unproven, preserving real purchases.
 - [x] Repeated receipt lines outside the adjacent suffix and prefix are preserved.
 - [x] Null or empty OCR and explicitly rejected page indexes produce an incomplete result.
 - [x] One non-empty page produces a complete result.
@@ -33,6 +33,8 @@ The public result model lives in the platform-interface package because `ScanRec
 - [x] Focused tests, workspace analysis, and the full workspace test suite pass.
 
 ## Covers
+
+Matching criteria were revised by [issue #3](https://github.com/AndrewDongminYoo/flutter_receipt_scanner/issues/3) to replace unsafe edit-distance matching.
 
 - User Stories: 3
 - Requirements: Result Model; OCR Merge; Performance and Resource Limits 1-2

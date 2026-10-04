@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- OCR page merging preserves real purchases at single-line, repeated-row, and approximate-match boundaries. An overlap now requires exact normalized lines with at least two distinct lines, choosing the deepest match without an eight-line cap.
+- OCR character differences or changed line segmentation now retain all text and report an incomplete merge through `unmatchedBoundaryIndexes`.
+
 ## 0.5.0
 
 ### Added

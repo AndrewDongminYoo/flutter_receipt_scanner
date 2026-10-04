@@ -121,19 +121,22 @@ final class MergedOcrResult {
 4. Matching normalization collapses consecutive whitespace, applies lowercase conversion, and otherwise preserves Korean, Latin, digits, and punctuation.
 5. Matching normalization is used only for seam comparison.
    The emitted text uses the trimmed recognized lines from the earlier page and the non-overlapping lines from the later page.
-6. For each adjacent boundary, compare suffix and prefix windows containing one through eight lines.
-7. Candidate similarity is `1 - levenshteinDistance / max(leftLength, rightLength)` on the normalized joined window.
-8. A normal candidate is accepted only when both normalized windows contain at least 12 characters and similarity is at least 0.85.
-9. If either candidate window contains only one line, both normalized windows must contain at least 24 characters and similarity must be at least 0.92.
-10. The selected candidate maximizes similarity, then the shorter normalized character count, then minimizes the number of prefix lines removed, then minimizes the number of suffix lines consumed.
-    This tie-breaking order must be deterministic.
+6. Normalize each non-empty line once, preserving line boundaries for comparison.
+7. For each adjacent boundary, compare equal-depth suffix and prefix windows from the smaller page's full line count down to two lines, with no eight-line cap.
+8. A candidate matches only when every pair of normalized lines is exactly equal and the matched region contains at least two distinct normalized lines.
+   A single line, or any number of repetitions of one normalized line, cannot prove a seam because they may be separate identical purchases.
+9. Select the first matching depth, so the deepest exact overlap wins over a shallow repeated header or separator.
+   There are no similarity scores, character-count thresholds, length-ratio prefilters, or edit-distance cost guards.
+10. OCR character differences and changed line segmentation leave the boundary unproven with all text intact.
+    This conservative rule supersedes the original fuzzy matching policy in [issue #3](https://github.com/AndrewDongminYoo/flutter_receipt_scanner/issues/3).
 11. An accepted boundary keeps the prior page suffix and removes only the matched prefix lines from the next page.
 12. An unmatched boundary appends every non-empty line from the next page, records the boundary index, and makes the result incomplete. [L5]
 13. A page with null or empty OCR records that page index as rejected for merge completeness and makes each adjacent boundary unmatched.
 14. A page rejected by the OCR floor is still represented in `pageUris` and may contribute its raw OCR text, but its index appears in `rejectedPageIndexes` and the merge is incomplete.
 15. The algorithm must not compare non-adjacent pages or globally remove repeated receipt lines such as headers, taxes, or totals.
-16. Matching constants remain private in version 1. [L9]
-17. The implementation uses bounded Dart code and adds no runtime dependency. [L9]
+16. Matching rules remain private in version 1. [L9]
+17. The implementation uses Dart core libraries and adds no runtime dependency. [L9]
+    It holds normalized line arrays and scans at most the smaller page's line count per boundary, with early exit on a mismatched line and quadratic worst-case line comparisons.
 
 ### Dataset and Fixture Policy
 
@@ -214,12 +217,12 @@ Confidence remains reporting-only at its current default.
 The likely production and public-example changes are:
 
 1. [`flutter_receipt_scanner/lib/src/receipt_scanner.dart`](../../../flutter_receipt_scanner/lib/src/receipt_scanner.dart) for option validation and orchestration.
-2. `flutter_receipt_scanner/lib/src/ocr_page_merger.dart` for the pure bounded merge algorithm.
+2. `flutter_receipt_scanner/lib/src/ocr_page_merger.dart` for the pure adjacent-page merge algorithm.
 3. [`flutter_receipt_scanner/lib/flutter_receipt_scanner.dart`](../../../flutter_receipt_scanner/lib/flutter_receipt_scanner.dart) for the new public result export.
 4. `flutter_receipt_scanner_platform_interface/lib/src/models/merged_ocr_result.dart` for `MergedOcrResult`.
 5. [`flutter_receipt_scanner_platform_interface/lib/src/models/scan_receipt_result.dart`](../../../flutter_receipt_scanner_platform_interface/lib/src/models/scan_receipt_result.dart) for the optional field.
 6. [`flutter_receipt_scanner_platform_interface/lib/src/models/models.dart`](../../../flutter_receipt_scanner_platform_interface/lib/src/models/models.dart) and the package barrel for exports.
-7. App-facing and platform-interface unit tests for validation, result construction, ordering, exact seams, fuzzy seams, incomplete seams, and floor interaction.
+7. App-facing and platform-interface unit tests for validation, result construction, ordering, exact seams, preserved approximate matches, incomplete seams, and floor interaction.
 8. The example app for an opt-in camera merge control and visible complete/incomplete diagnostics.
 9. A local benchmark manifest, deterministic fixture source and generator, generated images, and fixture documentation.
 10. Package README documentation for capture overlap guidance and the 11.0 support contract.
@@ -234,10 +237,10 @@ It must still avoid unrelated refactoring, formatting-only changes, and native t
 1. Verify the flag defaults to disabled and preserves the previous result exactly.
 2. Verify invalid `ocr`, `source`, and `maxPages` combinations throw before the fake platform receives a call.
 3. Verify a one-page result is complete.
-4. Verify exact two-line overlap is removed once.
-5. Verify a fuzzy Korean-plus-Latin overlap at or above threshold is removed once.
-6. Verify a candidate below threshold is preserved and records an unmatched boundary.
-7. Verify a single-line candidate uses the stricter threshold.
+4. Verify exact overlap with at least two distinct normalized lines is removed once, including overlaps deeper than eight lines and competing repeated headers.
+5. Verify Korean-plus-Latin approximate matches, including quantity or price changes across one or multiple rows, are preserved and record an unmatched boundary.
+6. Verify changed line segmentation is preserved and records an unmatched boundary; case and whitespace differences within lines still match.
+7. Verify single-line candidates and repeated identical rows split across a boundary are preserved, regardless of character count; repeated purchases within a distinct exact overlap retain their count.
 8. Verify repeated totals away from the adjacent suffix and prefix are preserved.
 9. Verify null OCR and OCR-floor-rejected pages make the merge incomplete.
 10. Verify cancellation returns no merged result.
@@ -251,7 +254,7 @@ It must still avoid unrelated refactoring, formatting-only changes, and native t
 3. Feed canonical page OCR strings into the pure merger and require byte-for-byte equality with the canonical normalized receipt text.
 4. Require zero duplicated accepted seam lines.
 5. Require zero missing non-overlap lines.
-6. Require the missing-page, unmatched-boundary, and rejected-page fixtures to report `isComplete == false` with exact diagnostic indexes.
+6. Require the missing-page, unmatched-boundary, segmentation-difference, and rejected-page fixtures to report `isComplete == false` with exact diagnostic indexes.
 
 ### Public Dataset Calibration
 
@@ -304,7 +307,7 @@ Run only one heavy mobile job at a time.
 5. Changing native OCR engines or document scanner SDKs.
 6. Changing the Pigeon transport or generated Swift, Kotlin, or Dart.
 7. Runtime measurement of physical millimetres from image pixels.
-8. Exposing similarity thresholds as public configuration. [L9]
+8. Exposing matching rules as public configuration. [L9]
 9. Claiming support above aspect ratio 11.0.
 10. Redistributing public receipt photos without a separate license and privacy review. [L7]
 
@@ -320,7 +323,7 @@ Run only one heavy mobile job at a time.
 ## Follow-Ups
 
 1. Decompose implementation into a public-model slice, pure merger slice, scan orchestration slice, example/documentation slice, and benchmark/physical-acceptance slice.
-2. Calibrate the private similarity constants against the deterministic fixtures and the five Appen annotated samples before changing them.
+2. Measure unproven seams on device data before considering a digit-aware comparison that requires equal digit runs; do not restore edit-distance similarity floors that can delete real purchases.
 3. Consider ordered gallery support only as a separate Spec that includes explicit selection order and a review-and-reorder surface.
 4. Consider structured line-item merging only after raw text merge completeness is proven.
 

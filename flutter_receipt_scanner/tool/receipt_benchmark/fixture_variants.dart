@@ -61,9 +61,9 @@ Map<String, Object?> buildReceiptFixtureVariants(List<String> pageTexts, List<St
       'ocrTexts': segmentedPages,
       'rejectedPageIndexes': <int>[],
       'expected': {
-        'text': canonicalText,
-        'isComplete': true,
-        'unmatchedBoundaryIndexes': <int>[],
+        'text': _mergeExactPages(segmentedPages, unmatchedBoundaryIndexes: const {2}),
+        'isComplete': false,
+        'unmatchedBoundaryIndexes': [2],
         'rejectedPageIndexes': <int>[],
       },
     },
