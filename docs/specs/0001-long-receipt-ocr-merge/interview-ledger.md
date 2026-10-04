@@ -72,7 +72,8 @@ Status: current
 Question: How are page seams detected and what happens when a seam cannot be proven?
 
 Answer: Compare only adjacent page suffix and prefix windows using normalized OCR lines.
-Deduplicate a seam only when a deterministic similarity threshold is met.
+Deduplicate only the deepest exact match containing at least two distinct normalized lines.
+This replaces the original similarity-threshold answer following [issue #3](https://github.com/AndrewDongminYoo/flutter_receipt_scanner/issues/3), which demonstrated deletion of real purchases.
 
 Decision: A merge with any unmatched seam or OCR-floor-rejected page is returned as incomplete, with the affected indexes exposed.
 The implementation must append unproven page text without deleting it and must never silently guess an overlap.
@@ -132,8 +133,8 @@ Question: Does the first version need configurable merge thresholds or a new run
 
 Answer: No.
 
-Decision: Keep overlap-window and similarity constants private and test-backed.
-Implement normalization and bounded edit-distance comparison with Dart core libraries.
+Decision: Keep matching rules private and test-backed.
+Implement normalization and deepest-first exact line comparison with Dart core libraries, as revised by issue #3.
 
 Reason: Public threshold configuration and a runtime dependency are unnecessary for the first shippable behavior and can be added later only if calibration proves a need.
 

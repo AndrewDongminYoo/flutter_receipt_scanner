@@ -77,6 +77,8 @@ void main() {
       expect(firstImages.map((image) => image['sha256']), secondImages.map((image) => image['sha256']));
       expect(first['canonicalText'], fixtureManifest['canonicalText']);
       expect(second['canonicalText'], fixtureManifest['canonicalText']);
+      expect(first['variants'], fixtureManifest['variants']);
+      expect(second['variants'], fixtureManifest['variants']);
     } finally {
       await firstOutput.delete(recursive: true);
       await secondOutput.delete(recursive: true);
