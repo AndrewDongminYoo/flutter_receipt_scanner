@@ -182,7 +182,7 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
         let pageCount = min(scan.pageCount, effectiveMaxPages)
         // VisionKit cannot enforce a page limit in its UI — keep the first
         // `maxPages` pages unchanged and surface how many were dropped.
-        let discardedPageCount = Int64(max(0, scan.pageCount - effectiveMaxPages))
+        let totalPageCount = scan.pageCount
         var pages: [UIImage] = []
         for index in 0 ..< pageCount {
             pages.append(scan.imageOfPage(at: index))
@@ -190,8 +190,10 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
 
         workQueue.async { [weak self] in
             ImageProcessor.deletePreviousSessionFiles()
-            let images = pages.compactMap { Self.process($0, options: opts) }
-            if images.isEmpty, pageCount > 0 {
+            let batch = PageBatch<ReceiptImageWire>.process(
+                pages, maxPages: effectiveMaxPages, selectedPageCount: totalPageCount
+            ) { Self.process($0, options: opts) }
+            if batch.images.isEmpty, pageCount > 0 {
                 self?.finish(.failure(PigeonError(
                     code: "PROCESSING_FAILED",
                     message: "Failed to process the scanned pages.",
@@ -201,9 +203,9 @@ final class ReceiptScannerApiImpl: NSObject, ReceiptScannerApi,
             }
             self?.finish(.success(ScanResultWire(
                 status: .success,
-                images: images,
+                images: batch.images,
                 rejectedImages: [],
-                discardedPageCount: discardedPageCount
+                discardedPageCount: Int64(batch.discardedPageCount)
             )))
         }
     }

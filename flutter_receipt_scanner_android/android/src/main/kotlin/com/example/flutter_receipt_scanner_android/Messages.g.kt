@@ -754,9 +754,9 @@ data class ScanResultWire(
     val images: List<ReceiptImageWire>,
     val rejectedImages: List<ReceiptImageWire>,
     /**
-     * Natively captured pages dropped before processing (absent means zero).
-     * iOS can exceed `maxPages` because VisionKit cannot enforce a page limit
-     * in its UI; declared last to keep existing wire positions stable.
+     * Captured or selected pages omitted from the native result (absent means zero).
+     * Includes the `maxPages` cap, processing failures, and iOS gallery editor skips.
+     * Declared last to keep existing wire positions stable.
      */
     val discardedPageCount: Long? = null,
 ) {

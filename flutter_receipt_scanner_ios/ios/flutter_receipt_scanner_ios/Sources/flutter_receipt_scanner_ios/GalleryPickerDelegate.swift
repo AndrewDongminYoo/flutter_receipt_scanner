@@ -29,6 +29,7 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
     private var results: [ReceiptImageWire] = []
     private var queuedItems: [PHPickerResult] = []
     private var queueIndex = 0
+    private var selectedPageCount = 0
 
     init(
         options: ScanOptionsWire,
@@ -43,7 +44,7 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
     // MARK: - Resolved options
 
     private var maxPages: Int {
-        max(1, Int(options.maxPages ?? 1))
+        min(10, max(1, Int(options.maxPages ?? 1)))
     }
 
     private var runOcr: Bool {
@@ -95,7 +96,8 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
             ImageProcessor.deletePreviousSessionFiles()
             // Serial queue — concurrent present(_:) on the same presenter is
             // silently rejected by UIKit (see the type doc / ADR-004 anti-pattern).
-            self.queuedItems = results
+            self.selectedPageCount = results.count
+            self.queuedItems = Array(results.prefix(self.maxPages))
             self.queueIndex = 0
             self.processNextQueuedItem()
         }
@@ -105,11 +107,14 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
 
     private func processNextQueuedItem() {
         if queueIndex >= queuedItems.count {
-            if results.isEmpty {
-                completion(.success(Self.cancelled()))
-            } else {
-                completion(.success(ScanResultWire(status: .success, images: results, rejectedImages: [])))
-            }
+            let batch = PageBatch(images: results, selectedPageCount: selectedPageCount)
+            // Preserve the existing all-skipped status, including editor cancellations.
+            completion(.success(ScanResultWire(
+                status: results.isEmpty ? .cancelled : .success,
+                images: batch.images,
+                rejectedImages: [],
+                discardedPageCount: Int64(batch.discardedPageCount)
+            )))
             return
         }
 

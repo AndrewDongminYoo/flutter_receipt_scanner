@@ -26,9 +26,12 @@ final class ScanReceiptResult {
   /// Ordered OCR text assembled by the app-facing package when requested.
   final MergedOcrResult? mergedOcr;
 
-  /// Natively captured pages dropped before processing.
+  /// Captured or selected pages omitted from the native result.
   ///
-  /// Non-zero only on iOS, whose VisionKit scanner cannot enforce a page limit
-  /// in its UI: pages beyond `maxPages` are discarded and counted here.
+  /// Includes pages beyond `maxPages`, image-processing failures on either
+  /// platform, and iOS gallery photos skipped by cancelling their crop editor.
+  /// Does not include [rejectedImages], which still have usable image results.
+  /// iOS gallery batches with no returned images retain [ScanStatus.cancelled],
+  /// including when processing failed; this count still reports their omissions.
   final int discardedPageCount;
 }

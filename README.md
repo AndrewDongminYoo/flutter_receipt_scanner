@@ -82,7 +82,9 @@ If OCR changes a character or splits lines differently, the merger keeps all tex
 A gap between adjacent captures surfaces as an unmatched boundary, but a missed receipt top or bottom cannot be detected — start at the very first printed line and finish past the last one.
 
 Set `maxPages` to the ceiling (10) when merging.
-iOS cannot enforce a page limit in the VisionKit scanner UI, so pages captured beyond `maxPages` are discarded before processing without native recourse; `ScanReceiptResult.discardedPageCount` reports how many were dropped, and a positive count always makes the merged result incomplete.
+iOS cannot enforce a page limit in the VisionKit scanner UI, so pages captured beyond `maxPages` are discarded before processing without native recourse; `ScanReceiptResult.discardedPageCount` reports all captured or selected pages omitted from the native result, including image-processing failures on either platform and iOS gallery crop-editor skips.
+A positive count always makes the merged result incomplete.
+Partial batches retain successful images in order; iOS gallery batches with no returned images keep the existing `cancelled` status, including when processing failed.
 
 Prefer the scanner's manual shutter while sectioning a long receipt — the automatic shutter can fire before a section is framed.
 On iOS, use the Auto/Manual toggle inside the scanner UI; the package cannot switch it programmatically.
