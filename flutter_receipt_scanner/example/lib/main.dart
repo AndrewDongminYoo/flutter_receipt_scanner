@@ -577,7 +577,7 @@ class _MergedOcrCard extends StatelessWidget {
 
   final MergedOcrResult result;
 
-  /// maxPages 초과로 네이티브에서 폐기된 페이지 수 (iOS에서만 0보다 클 수 있음).
+  /// 촬영·선택했지만 네이티브 결과에 포함되지 않은 페이지 수.
   final int discardedPageCount;
 
   void _copyText(BuildContext context) {
@@ -616,7 +616,7 @@ class _MergedOcrCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _MetaRow('페이지 수', '${result.pageUris.length}'),
-            if (discardedPageCount > 0) _MetaRow('폐기된 페이지', '$discardedPageCount장 (maxPages 초과로 미처리)'),
+            if (discardedPageCount > 0) _MetaRow('누락된 페이지', '$discardedPageCount장 (스캔 결과에 포함되지 않음)'),
             _MetaRow('경계 미확인', unmatchedBoundaries.isEmpty ? '없음' : unmatchedBoundaries),
             _MetaRow('OCR 기준 미달', rejectedPages.isEmpty ? '없음' : rejectedPages),
             _DetailTile(

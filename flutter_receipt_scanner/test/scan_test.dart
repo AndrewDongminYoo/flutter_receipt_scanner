@@ -304,6 +304,37 @@ void main() {
     expect(result.discardedPageCount, 1);
   });
 
+  test('one survivor after native processing failures is incomplete despite the one-page merge rule', () async {
+    FlutterReceiptScannerPlatform.instance = _RecordingPlatform(
+      result: ScanReceiptResult(
+        status: ScanStatus.success,
+        images: _defaultResult.images,
+        discardedPageCount: 2,
+      ),
+    );
+
+    final result = await scan(options: const ScanReceiptOptions(maxPages: 3), mergeOcrPages: true);
+
+    expect(result.images, hasLength(1));
+    expect(result.discardedPageCount, 2);
+    expect(result.mergedOcr?.pageUris, ['file:///tmp/a.jpg']);
+    expect(result.mergedOcr?.unmatchedBoundaryIndexes, isEmpty);
+    expect(result.mergedOcr?.isComplete, isFalse);
+  });
+
+  test('cancelled gallery batch retains omissions and never merges OCR', () async {
+    FlutterReceiptScannerPlatform.instance = _RecordingPlatform(
+      result: const ScanReceiptResult(status: ScanStatus.cancelled, discardedPageCount: 3),
+    );
+
+    final result = await scan(options: const ScanReceiptOptions(source: ScanSource.gallery, maxPages: 3));
+
+    expect(result.status, ScanStatus.cancelled);
+    expect(result.images, isEmpty);
+    expect(result.discardedPageCount, 3);
+    expect(result.mergedOcr, isNull);
+  });
+
   test('discarded count is preserved when merging is disabled', () async {
     final platform = _RecordingPlatform(
       result: ScanReceiptResult(status: ScanStatus.success, images: _defaultResult.images, discardedPageCount: 2),
