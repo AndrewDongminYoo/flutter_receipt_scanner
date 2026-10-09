@@ -11,7 +11,7 @@ Expose the feature in the example app, document it with honest calibration scope
 Example app: add an editable OCR language list control (comma-separated BCP 47 input seeded with `ko-KR, en-US`) that is disabled when `ocr` is off, a capabilities action that invokes `getOcrCapabilities()` and renders the platform variant (supported languages on iOS, per-script model states on Android) without triggering downloads, and surfacing of the new configuration errors in the existing error display path with the `PlatformException` code visible.
 
 Documentation: add a multilingual OCR section to both READMEs covering the option, the default-preserving behavior, the capability query, the four error codes, and the Android bundled-versus-dynamic model distinction.
-Label the 11.0 aspect-ratio support claim and the seam similarity thresholds as validated for Korean plus Latin only; other scripts are provider-supported and uncalibrated.
+Label the 11.0 aspect-ratio target and exact seam-matching calibration as Korean plus Latin only; other scripts are provider-supported and uncalibrated.
 Release notes must not claim improved OCR or merge accuracy for uncalibrated languages.
 
 Release: bump all four packages to 0.5.0 with changelog entries, regenerate the workspace lockfile in the same commit, and publish in RELEASING.md dependency order after operator approval.
@@ -33,9 +33,11 @@ Android physical QA (dynamic model download, install-wait flow, offline `OCR_MOD
 - [x] The example renders a `getOcrCapabilities()` result per platform variant without triggering downloads, and shows the new error codes in the existing error path.
 - [x] Example widget tests cover the language control (default seed and disabled state) and rendering of a canned capabilities result, with no live platform calls.
 - [x] Both READMEs document the option, default-preserving behavior, capability query, four error codes, and the Android bundled-versus-dynamic model distinction.
-- [x] Both READMEs label the 11.0 claim and seam thresholds as Korean-plus-Latin calibrated, with other scripts marked provider-supported and uncalibrated.
+- [x] Both READMEs label the 11.0 target and seam matching as Korean-plus-Latin calibrated, with other scripts marked provider-supported and uncalibrated.
 - [x] All four packages are bumped to 0.5.0 with changelog entries that make no accuracy claims for uncalibrated languages, and the lockfile is regenerated in the same commit.
-- [x] iOS physical QA covers the default regression scan, one non-default supported language, and one unsupported tag rejected before UI; results are appended to the acceptance record.
+- [ ] The acceptance record identifies the default regression scan, one non-default supported language scan, and one unsupported tag rejected before UI separately.
+      The existing record confirms the language option and capability query generally, but does not name the non-default or unsupported tags or record those individual outcomes.
+      This is an evidence gap, not proof that the scenarios failed or were not run.
 - [x] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, and `trunk check` pass, and `dart pub publish --dry-run` reports zero warnings in all four packages.
 - [x] Publication happens only after operator approval, in RELEASING.md dependency order, with each publish workflow verified before the next tag is pushed.
 

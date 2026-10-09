@@ -2,14 +2,17 @@
 
 **Date:** 2026-07-11
 **Author:** research phase (faithful port; IP cleared, operator owns both repos — personal account AndrewDongminYoo)
-**Source of truth:** the RN native code in `react-native-receipt-scanner` (iOS Obj-C++ / Android Kotlin).
+**Current implementation authority:** the Swift/Kotlin source in this Flutter repository.
+**Historical port reference:** the RN native code in `react-native-receipt-scanner` (iOS Obj-C++ / Android Kotlin).
 **Target:** `flutter_receipt_scanner` federated plugin, driven by Pigeon `ReceiptScannerApi.scan(options)` (`@async`).
 
 ## 0. How to read this document
 
-For every feature below: (a) the algorithm as implemented in RN, (b) framework APIs, (c) which Pigeon `ScanOptions` fields drive it and which `ScanResult` / `ReceiptImage` / `ReceiptExif` fields it fills, (d) iOS↔Android asymmetries, (e) ADR gotchas.
+For every feature below: (a) the historical RN algorithm, (b) framework APIs, (c) the corresponding Flutter transport and model fields, (d) iOS↔Android asymmetries, (e) ADR gotchas.
+Current Pigeon names carry the `Wire` suffix (`ScanOptionsWire`, `ScanResultWire`, `ReceiptImageWire`, `ReceiptExifWire`); the RN names and method spellings in algorithm descriptions are historical references, not local Flutter symbols.
 
-**The RN _code_ is authoritative — the RN _docs_ have drifted in three places.** Where a doc and the code disagree, implement the code and I flag the drift inline with **[DOC DRIFT]**.
+The **[DOC DRIFT]** annotations record discrepancies found in RN documentation during the original port.
+For present-day Flutter behavior, use this repository's code; later Flutter changes and intentional merge divergence are not subject to RN parity.
 
 ### 0.1 Pigeon boundary contract (read first — differs from RN's JS envelope)
 
@@ -25,9 +28,10 @@ The RN JS layer (`scan.tsx`) owns the OCR-floor acceptance gate and the quality 
 
 ### 0.2 Target scaffolding anchors (where `scan()` lands today)
 
-- **iOS:** `ReceiptScannerApiImpl.swift` (`ReceiptScannerApiImpl: NSObject, ReceiptScannerApi`), registered by `FlutterReceiptScannerPlugin.register(with:)` which retains `apiImpl` statically. Camera path is already sketched (camera-only, no EXIF, no rotation, no gallery). Extend this class; add per-flow delegate objects held with strong refs (see §Async-lifecycle risk).
-- **Android:** `FlutterReceiptScannerPlugin.kt` — currently `scan()` returns `unimplemented` and the class is **not** `ActivityAware`. The port must make it (or a delegate it owns) implement `ActivityAware` + `PluginRegistry.ActivityResultListener` to receive the GMS scanner and `CropEditorActivity` results. This is the single biggest structural change from the skeleton.
-- Pigeon schema: `flutter_receipt_scanner/pigeons/messages.dart`. Enums `ScanSource{camera,gallery}`, `ImageOrigin{camera,screenshot,download,unknown}`, `ScanStatus{success,cancelled,rejected}`.
+- **iOS:** `ReceiptScannerApiImpl.swift` (`ReceiptScannerApiImpl: NSObject, ReceiptScannerApi`), registered by `FlutterReceiptScannerPlugin.register(with:)`, implements camera and gallery paths with EXIF, OCR, rotation, and retained gallery delegates.
+- **Android:** `FlutterReceiptScannerPlugin.kt` implements `ActivityAware` and `PluginRegistry.ActivityResultListener`, retains the pending Pigeon callback, and handles both camera and gallery results; it no longer returns an unimplemented stub.
+- Pigeon schema: root `pigeons/messages.dart`.
+  Transport enums are `ScanSourceWire`, `ImageOriginWire`, and `ScanStatusWire`; public Dart enums are `ScanSource`, `ImageOrigin`, and `ScanStatus`.
 
 ---
 
@@ -170,7 +174,8 @@ Both platforms: system photo picker → detect a document quad → present a 4-h
 - **iOS filename:** `receipt_<epochMillis>_<8charUUID>.jpg` in `NSCachesDirectory`. `uri = fileURL.absoluteString` (percent-encoded — never manually concat `"file://"+path`, breaks on spaces/non-ASCII usernames).
 - **Android filename:** `receipt_<System.currentTimeMillis()>.jpg` in `context.cacheDir`. `uri = "file://" + file.absolutePath`. (Gallery picker copies are `receipt_pick_<ts>_<i>.jpg`.)
 - **Lifecycle:** at the **start of each `scan()`** call `deletePreviousSessionFiles()` — deletes `receipt_*.jpg` in the cache dir. URIs are stable until the next `scan()` and do **not** survive app restarts (OS clears cache). Document this contract to Dart consumers unchanged.
-- **Flutter note:** iOS uses `FileManager.temporaryDirectory` in the current skeleton but RN used `NSCachesDirectory`. Pick one and keep the `deletePreviousSessionFiles` prefix-sweep consistent with it. Android should use `cacheDir`.
+- **Current Flutter directories:** iOS writes to `FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]`; Android writes to `context.cacheDir`.
+  Keep the `deletePreviousSessionFiles` prefix-sweep consistent with each output directory.
 
 ---
 
@@ -213,14 +218,18 @@ Both output pixels are orientation-normalized and both report `exif.orientation 
 
 ### 5.1 iOS (`RNOcrProcessor.m`)
 
-- `VNRecognizeTextRequest`, `recognitionLanguages = ["ko-KR","en-US"]`, `usesLanguageCorrection = NO` (prices/codes are not dictionary words). `minimumTextHeight = caller value if >0 else 1/32` (`kReceiptMinTextHeight`). **`minimumTextHeight` is iOS-only** (`ScanOptions.minimumTextHeight`); Android ignores it.
+- `VNRecognizeTextRequest` uses the caller's resolved `languages` for every recognition pass, defaulting through Dart to `["ko-KR", "en-US"]`; `usesLanguageCorrection = false` (prices/codes are not dictionary words).
+  `minimumTextHeight` uses the caller value if positive, otherwise `OcrProcessor.defaultMinTextHeight` (1/32).
+  **`minimumTextHeight` is iOS-only** (`ScanOptionsWire.minimumTextHeight`); Android ignores it.
 - Text = join `topCandidates(1).string` per observation with `\n`.
 - `confidence` = mean of `topCandidates(1).confidence` across observations → `OcrQuality.confidence`.
-- **[NOTE — current skeleton]** `ReceiptScannerApiImpl.recognizeText` sets `usesLanguageCorrection = true` and skips rotation detection. The faithful port must set it to **`false`** and route through the rotation-detecting entry (§6).
+- Recognition is implemented in `OcrProcessor.swift`; the earlier skeleton's language-correction and missing-rotation behavior is superseded (§6).
 
 ### 5.2 Android (`OcrProcessor.kt`)
 
-- `TextRecognition.getClient(KoreanTextRecognizerOptions.Builder().build())` — Korean model covers Latin too (ADR-006), so no separate Latin recognizer. **Must `close()`** the client once per scan after all pages (releases the ML Kit client).
+- `OcrScriptResolver` selects one script family from the caller's language hints, and `OcrScriptFamily.newRecognizer()` constructs its client.
+  The default Korean recognizer is bundled and covers Latin too; Latin-only, Japanese, Chinese, and Devanagari scans use dynamically delivered Play services recognizers.
+  **Must `close()`** the selected client after processing (releases the ML Kit client).
 - Text = `Text.text`. `lineCount = textBlocks.sumOf { lines.size }`.
 - `confidence` = mean of `line.confidence` over all lines (NaN skipped) → `OcrQuality.confidence`. **[DOC DRIFT — platform-asymmetries §2.2]** claims Android confidence is always absent / iOS-only. **False in current code** — `meanLineConfidence` computes it from the _bundled_ Korean recognizer and `ResultBuilder` emits it; `types.ts` confirms "both platforms". Confidence is populated on **both**.
 - Threading: every method blocks on `Tasks.await` → **background thread only** (the module's single-thread executor).
@@ -235,7 +244,8 @@ Both output pixels are orientation-normalized and both report `exif.orientation 
 
 **[UPDATED 2026-07-25 — synced to RN `react-native-receipt-scanner` v0.7.0]** The two per-platform heuristics below are **no longer the primary signal**. Both platforms now decide rotation primarily from the **per-line text angle** (`OcrGeometry.dominantQuarterTurn` — ML Kit `Text.Line.getAngle` on Android, the Vision observation quad `topLeft`→`topRight` on iOS), because the angle carries _direction_ and so separates 90 from 270 and catches a plain 180 flip — cases neither the count nor the aspect heuristic can reach. §6.1 (iOS count) and §6.2 (Android aspect) are retained as the **fallback** used only when the angle sample is too small or too split to judge. The old "two deliberately different algorithms — do not unify / do not port iOS's multi-pass to Android" guidance is **superseded**: the unified signal _is_ the angle; the per-platform code that survives is only the fallback. This sync also added per-line OCR **geometry** (`ocrGeometry` option → `ReceiptImage.ocrLines`): after a rotation is baked, the image is re-recognized so the text order and boxes belong to the shipped frame; boxes that can't be re-measured are remapped with `OcrGeometry.rotateClockwise` + `clamp`. See the shared `OcrGeometry` on both platforms.
 
-`autoRotate` only bakes pixels when `ocr==true` and a non-zero rotation was detected; when `autoRotate==false`, detection still corrects the OCR _text_ (180° reads) but pixels are not rotated.
+`autoRotate` only bakes pixels when `ocr == true` and a non-zero rotation was detected.
+When `autoRotate == false`, both platforms return the initial OCR pass before rotation detection; no additional orientation probe or corrective rotation is performed.
 
 ### 6.1 iOS multi-pass count-based — now the fallback (`OcrProcessor.recognize`)
 
@@ -304,9 +314,12 @@ Same 4-value enum (`ImageOrigin{camera,screenshot,download,unknown}`), different
 
 ### 8.2 Android
 
-- **Gradle deps:** `com.google.android.gms:play-services-mlkit-document-scanner:16.0.0`, `com.google.mlkit:text-recognition-korean:16.0.1` (carry the rotation-invariance guard comment), `androidx.exifinterface:exifinterface:1.4.2`, `androidx.activity:activity-ktx:1.10.1` (PhotoPicker contracts). Kotlin 2.0.21.
-- **SDK:** `minSdk 24`, `targetSdk 36`, `compileSdk 36`.
-- **Host manifest:** only `android.permission.INTERNET`. ML Kit Document Scanner handles the camera grant via Play Services; the gallery flow uses the system photo picker (no `READ_MEDIA_IMAGES`).
+- **Gradle deps:** `com.google.android.gms:play-services-mlkit-document-scanner:16.0.0`, `com.google.mlkit:text-recognition-korean:16.0.1` (carry the rotation-invariance guard comment), `androidx.exifinterface:exifinterface:1.4.2`, `androidx.activity:activity-ktx:1.10.1` (PhotoPicker contracts), plus the dynamic OCR artifacts listed in Spec 0003.
+  AGP and Kotlin come from the consuming app's plugin management; the example uses AGP 9.0.1 and Kotlin 2.3.20.
+- **Library SDK:** `minSdk 24`, `compileSdk 36`; no library `targetSdk` is declared because AGP 9 removed that setting.
+  The consuming app owns `targetSdk`.
+- **Host manifest:** no app-declared scanner or picker permission is required.
+  ML Kit Document Scanner handles the camera grant via Play Services; the gallery flow uses the system photo picker (no `READ_MEDIA_IMAGES`).
 - `CropEditorActivity` must be declared in the plugin's `AndroidManifest.xml` (`internal` activity). It is `ComponentActivity`, uses `androidx.core.view` window-insets.
 
 ---
@@ -315,7 +328,9 @@ Same 4-value enum (`ImageOrigin{camera,screenshot,download,unknown}`), different
 
 1. **rotationDegrees CW/CCW is opposite per platform** (iOS `cgImageByRotating:90`=CCW; Android `postRotate(90)`=CW). Each is internally self-consistent because detection + pixel-rotation share a convention _within_ the platform. Keep rotation **native-internal, per-platform**; never introduce a shared Dart rotation type or normalize the value — doing so silently breaks one platform. It is never on the Pigeon surface.
 2. **Rotation now shares a text-angle primary signal (see §6 UPDATED 2026-07-25).** Both platforms decide rotation from `OcrGeometry.dominantQuarterTurn`; the iOS count-probe and Android aspect-mismatch survive only as the fallback. The old "keep the two algorithms different / do not port iOS's multi-pass to Android" rule is superseded. The ML Kit version pin (`text-recognition-korean` 16.0.1) still matters — the fallback's rotation-invariance assumption and the per-line confidence field both depend on it — so keep the pin and the guard.
-3. **Async result must survive the VC/Activity round-trip.** RN used retained delegates (iOS) and `pendingPromise` + `ActivityEventListener` (Android). The Flutter port must: iOS — hold strong refs to the camera/gallery/crop delegate objects on the plugin impl until the completion fires (skeleton already retains `apiImpl` but not per-flow delegates); Android — make the plugin `ActivityAware` + register a `PluginRegistry.ActivityResultListener`, holding the Pigeon `callback` across **both** the GMS scanner and `CropEditorActivity` results. This is the classic Flutter-plugin failure point and the biggest delta from the current stub (Android `scan()` is entirely unimplemented and not ActivityAware).
+3. **Async result must survive the VC/Activity round-trip.** RN used retained delegates (iOS) and `pendingPromise` + `ActivityEventListener` (Android).
+   Flutter retains the iOS API implementation and gallery delegate, and Android implements `ActivityAware` plus `PluginRegistry.ActivityResultListener` while holding the Pigeon callback across both scanner and crop-editor results.
+   Preserve these implemented ownership rules; the earlier unimplemented skeleton is superseded.
 4. **ADR-004 iOS crop-editor fixes must port verbatim** (they fail only on real devices, not the simulator): `UIButton` not `UIBarButtonItem`; button bar `view.bottomAnchor -34` not `safeAreaLayoutGuide`; handles added before the button bar for hit-test z-order; `VNImageRequestHandler(cgImage:orientation:)` not `initWithCIImage:`; bake orientation (`imageByApplyingOrientation:`) before `CIPerspectiveCorrection`; fresh `CIContext` per call.
 5. **autoRotate pipeline order differs and is load-bearing.** iOS OCRs the CGImage _before_ encoding and bakes rotation into pixels; Android OCRs the _encoded file_ after, then `rotateFileInPlace`, and **`writeExifToFile` must run last** (a later re-compress strips the tags). Also the iOS gallery batch **must serialize** editor presentations (`queuedItems`/`processNextQueuedItem`) — a parallel `present` for-loop makes UIKit silently drop all but the first and the Promise/completion hangs forever.
 

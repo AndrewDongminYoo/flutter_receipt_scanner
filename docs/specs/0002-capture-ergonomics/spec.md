@@ -5,6 +5,10 @@ title: Long Receipt Capture Ergonomics
 
 ## Problem
 
+Status: implemented in the coordinated 0.4.0 release; the problem description below records the pre-fix state.
+The current `discardedPageCount` contract also includes image-processing failures on either platform and iOS gallery crop-editor skips, as documented in the [README](../../../README.md#capture-guidance).
+The original page-limit-only requirements below describe the 0.4.0 change, not the full current omission contract.
+
 The 2026-07-30 iOS physical acceptance run ([record](../../notes/2026-07-30-physical-acceptance-record.md)) exposed two capture-ergonomics failure modes in long-receipt scanning.
 
 First, iOS silently discards scanner pages beyond `maxPages`.

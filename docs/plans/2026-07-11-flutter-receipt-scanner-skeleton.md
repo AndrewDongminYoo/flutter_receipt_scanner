@@ -1,5 +1,10 @@
 # flutter_receipt_scanner Skeleton Implementation Plan
 
+Status: archived skeleton plan (2026-07-11); do not execute these steps against the current repository.
+The historical `packages/` paths, generation helper, Pigeon-backed default implementation, dependency ranges, and unchecked steps below do not describe current setup or remaining work.
+Use [AGENTS.md](../../AGENTS.md), the root `pubspec.yaml`, and current source instead.
+The workspace now includes the example app as a fifth package; `melos list` confirms the current set.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Stand up a federated Flutter plugin `flutter_receipt_scanner` whose iOS camera path scans a receipt end-to-end (VisionKit → JPEG → Vision OCR → typed Pigeon result → Dart OCR-floor gate).

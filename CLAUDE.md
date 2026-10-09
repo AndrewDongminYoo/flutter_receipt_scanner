@@ -22,7 +22,7 @@ melos run analyze               # dart analyze across every package
 melos run test                  # flutter test in every package that has test/
 melos run test:ci               # same, with --coverage --concurrency 4
 melos run format                # dart fix --apply + dart format
-melos run format:ci             # format check only (--set-exit-if-changed)
+melos run format:ci             # formats files and exits nonzero if any changed
 melos run generate              # regenerate Pigeon contracts (see Transport)
 trunk fmt && trunk check        # format + lint all NON-Dart files
 ```
@@ -33,9 +33,14 @@ Run one package's tests, or a single test:
 
 ```bash
 cd flutter_receipt_scanner && flutter test                                   # one package
-cd flutter_receipt_scanner && flutter test test/ocr_floor_test.dart          # one file
-cd flutter_receipt_scanner && flutter test --plain-name "applies the floor"  # one test by name
+cd flutter_receipt_scanner && flutter test test/ocr_floor_gate_test.dart     # one file
+cd flutter_receipt_scanner && flutter test --plain-name "all images below floor -> rejected"  # one test by name
 ```
+
+`format:ci` uses Dart's default `--output=write`; `--set-exit-if-changed` does not make formatting read-only.
+For a read-only check, run `dart format --output=none --set-exit-if-changed <explicit paths>`.
+The package CI additionally runs `flutter analyze lib test` and requires 100% coverage, excluding generated Pigeon Dart in the platform-interface package.
+`melos run analyze` and `melos run test:ci` alone do not enforce these CI gates.
 
 ## Architecture
 
@@ -87,8 +92,9 @@ Wire types are `*Wire` (e.g. `ScanOptionsWire`, `ReceiptImageWire`); public mode
 
 ## Reference docs
 
-- `docs/specs/2026-07-11-flutter-receipt-scanner-port-design.md` — port design.
-- `docs/specs/2026-07-11-native-port-map.md` — native surface map.
-- `docs/plans/2026-07-11-flutter-receipt-scanner-skeleton.md` — skeleton plan.
+- `docs/specs/2026-07-11-flutter-receipt-scanner-port-design.md` — historical skeleton design; its layout and transport names are superseded.
+- `docs/specs/2026-07-11-native-port-map.md` — native surface map, with historical RN algorithms identified separately from current Flutter behavior.
+- `docs/plans/2026-07-11-flutter-receipt-scanner-skeleton.md` — archived skeleton plan; do not execute it against the current repository.
 
-Both platforms currently implement camera and gallery + crop paths end-to-end; there are no `unimplemented` stubs left in native code. Treat the native source and the port map as the authority on implementation state.
+Both platforms currently implement camera and gallery + crop paths end-to-end; there are no `unimplemented` stubs left in native code.
+Treat the native source as the authority on implementation state and the port map as a reference.

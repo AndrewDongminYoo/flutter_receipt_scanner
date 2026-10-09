@@ -48,7 +48,10 @@ Ships as a coordinated 0.5.0 minor release of all four packages. [L4]
 
 ### Transport
 
-1. `ScanOptionsWire` gains a trailing optional `ocrLanguages` list field; new wire types (`OcrCapabilitiesWire`, `OcrModelStateWire`, and a model-status wire enum) and the `@async` `getOcrCapabilities()` host method are declared after all existing classes so shipped codec byte assignments stay stable. [L4]
+1. `ScanOptionsWire` gains a trailing optional `ocrLanguages` list field; new wire classes and the `@async` `getOcrCapabilities()` host method are appended after existing classes. [L4]
+   Appending classes preserves earlier class codec bytes only when the enum set is unchanged.
+   Pigeon allocates all enum bytes before class bytes, so adding `OcrModelStatusWire` shifts existing class bytes even though its declaration follows the shipped classes: `ScanOptionsWire` changed from 132 in 0.4.0 to 133 in 0.5.0.
+   Compatibility requires the coordinated release described below, not stable bytes across those releases.
 2. All changes are made only in the root `pigeons/messages.dart` and regenerated via `melos run generate`; generated Dart, Swift, and Kotlin files are never hand-edited.
 3. Mixed-version wire payloads are not supported; compatibility relies on the coordinated 0.5.0 version constraints (same posture as the 0.4.0 `discardedPageCount` field).
 4. `FlutterReceiptScannerPlatform` gains `getOcrCapabilities()` with a default `UnimplementedError` body; both platform packages override it and hold the wire↔model mapping. [L4]
@@ -97,7 +100,8 @@ Ships as a coordinated 0.5.0 minor release of all four packages. [L4]
 
 1. `mergeOcrPages: true` is accepted with any valid `ocrLanguages`; existing merge validation (`ocr`, camera source, `maxPages >= 2`) is unchanged. [L2]
 2. Seam matching, thresholds, boundary and rejected-page diagnostics, and the `discardedPageCount` completeness override operate unchanged on whatever text the selected recognizer returns.
-3. Documentation labels the 11.0 aspect-ratio support claim and the seam similarity thresholds as validated for Korean+Latin only; other scripts are "provider-supported, uncalibrated". [L2]
+3. Documentation labels the 11.0 aspect-ratio target and exact seam-matching calibration as Korean+Latin only; other scripts are "provider-supported, uncalibrated". [L2]
+   The current merger uses deepest exact normalized-line overlap with at least two distinct lines; the earlier Levenshtein similarity thresholds are superseded by Spec 0001's revised OCR Merge requirements.
 4. Release notes must not claim improved OCR or merge accuracy for uncalibrated languages.
 5. Long-receipt merge design carries no RN-parity obligation in either direction. [L3]
 
@@ -145,7 +149,8 @@ Ships as a coordinated 0.5.0 minor release of all four packages. [L4]
 ## Status
 
 Implemented and published as 0.5.0 on 2026-08-02 (PR #5, merged as `fff9b76`).
-Work Items 01-03 are complete; iOS device confirmation is recorded in the [acceptance record](../../notes/2026-07-30-physical-acceptance-record.md).
+The implementation and release tasks in Work Items 01-03 are complete; general iOS device confirmation is recorded in the [acceptance record](../../notes/2026-07-30-physical-acceptance-record.md).
+The record does not separately identify the supported non-default scan or unsupported-tag rejection, so those evidence criteria remain open in Work Item 03.
 Android hardware QA remains outstanding — see Open Questions.
 
 ## Open Questions
@@ -161,7 +166,9 @@ Android hardware QA remains outstanding — see Open Questions.
 
 ## Notes
 
-- Normative upstream contract: `/Volumes/dongminyu/Development/01_personal/react-native-receipt-scanner/docs/specs/multilingual-ocr.md` (Implemented; RN 0.8.0, PR #16).
-- Current hardcoded sites: `flutter_receipt_scanner_ios/.../OcrProcessor.swift` (`recognitionLanguages = ["ko-KR", "en-US"]`, `usesLanguageCorrection = false`), `flutter_receipt_scanner_android/.../OcrProcessor.kt` (`KoreanTextRecognizerOptions`), `flutter_receipt_scanner_android/android/build.gradle.kts` (`text-recognition-korean:16.0.1`).
+- Recorded upstream contract location (historical; this absolute path does not resolve in the audit environment): `/Volumes/dongminyu/Development/01_personal/react-native-receipt-scanner/docs/specs/multilingual-ocr.md` (Implemented; RN 0.8.0, PR #16).
+  Use this Spec's requirements and the current Flutter source for local implementation guidance.
+- Current language application: `flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/OcrProcessor.swift` assigns `recognitionLanguages = languages` with `usesLanguageCorrection = false`; Android selects a recognizer through `OcrScriptResolver` and `OcrModelProvider` in `flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/OcrModelProvider.kt`.
+  The Korean default remains bundled at `text-recognition-korean:16.0.1` in `flutter_receipt_scanner_android/android/build.gradle.kts`.
 - Wire-stability rule and JVM test harness: project memory `rn-port-tracking`.
 - External references: [ML Kit Text Recognition v2](https://developers.google.com/ml-kit/vision/text-recognition/v2), [supported languages](https://developers.google.com/ml-kit/vision/text-recognition/v2/languages), [ModuleInstallClient](https://developers.google.com/android/reference/com/google/android/gms/common/moduleinstall/ModuleInstallClient), [VNRecognizeTextRequest](https://developer.apple.com/documentation/vision/vnrecognizetextrequest).

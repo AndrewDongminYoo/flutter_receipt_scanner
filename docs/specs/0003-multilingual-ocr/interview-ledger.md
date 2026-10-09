@@ -33,8 +33,12 @@ Question: How do `mergeOcrPages` (Flutter-only long-receipt merge) and `ocrLangu
 
 Recommended Answer:
 
-- Allow `mergeOcrPages: true` with any valid `ocrLanguages` — the merger (trimmed-line normalization + Levenshtein seam matching) is script-agnostic.
-- Label the 11.0 aspect-ratio support claim and the seam similarity thresholds (0.85 / 0.92) as validated for Korean+Latin only; other scripts are "provider-supported, uncalibrated" per the RN accuracy-claims wording.
+- Allow `mergeOcrPages: true` with any valid `ocrLanguages` — normalized-line seam comparison is script-agnostic.
+- Label the 11.0 aspect-ratio target and seam-matching calibration as Korean+Latin only; other scripts are "provider-supported, uncalibrated" per the RN accuracy-claims wording.
+
+The original recommendation used Levenshtein similarity thresholds of 0.85 / 0.92.
+That matching policy is superseded by [Spec 0001's OCR Merge requirements](../0001-long-receipt-ocr-merge/spec.md#ocr-merge): deepest exact normalized-line overlap with at least two distinct lines.
+The language and calibration-scope decision below remains current.
 
 Answer: 추천안 (전 언어 허용 + 보정 범위 명시)으로 진행해주세요.
 
@@ -67,7 +71,9 @@ Answer: Resolved from repository conventions without further interview.
 
 Decision:
 
-- Pigeon wire: `ScanOptionsWire` gains a trailing `ocrLanguages` field; new wire types (`OcrCapabilitiesWire`, `OcrModelStateWire`, status enum) and the new `@async getOcrCapabilities()` host method are declared after existing classes to keep codec byte assignments stable (`rn-port-tracking` wire-class rule).
+- Pigeon wire: `ScanOptionsWire` gains a trailing `ocrLanguages` field; new wire classes and the `@async getOcrCapabilities()` host method are appended after existing classes.
+  Pigeon allocates enums before classes, so the new status enum shifts existing class codec bytes regardless of its declaration location.
+  Cross-version wire compatibility relies on the coordinated 0.5.0 release, not unchanged codec bytes (`rn-port-tracking` enum rule).
 - No web capability variant — this plugin has no web endorsement.
 - Error mapping: the four RN error codes surface as native `PlatformException` codes rejecting before scanner/picker UI; Dart-side pre-validation (empty list, empty tag after trimming) throws `ArgumentError` in the app-facing `scan()` before the platform call, mirroring the existing `mergeOcrPages` validation precedent.
 - `ScanReceiptOptions.ocrLanguages` is non-nullable with const default `['ko-KR', 'en-US']`, matching the options class's defaulted-field style; the wire always carries the resolved list so the native boundary stays deterministic.

@@ -19,9 +19,10 @@ Android documentation inspected for the parent Spec did not state an explicit lo
 ## Status
 
 Blocked on Android hardware, not on work.
-The **iOS half of every criterion below passed** on 2026-07-30 (iPhone 16 Pro / iOS 26.5.2: aggregate CER 0.0068, Hangul 0.0102, Latin 0.0120, 75/75 lines, zero duplicated seam lines) and is recorded in the [acceptance record](../../../notes/2026-07-30-physical-acceptance-record.md).
-The boxes stay unchecked because each one reads "on both devices" and no physical Android device has been available.
-Resume by running the same protocol on Android — nothing needs re-doing on iOS.
+The accepted iOS scan is recorded in the [acceptance record](../../../notes/2026-07-30-physical-acceptance-record.md) (2026-07-30, iPhone 16 Pro / iOS 26.5.2: aggregate CER 0.0068, Hangul 0.0102, Latin 0.0120, 75/75 lines, zero duplicated seam lines).
+The record marks the exact accepted page count, JPEG widths, and duration as not transcribed; those details remain partial evidence rather than a fully recorded pass of every criterion.
+The boxes stay unchecked because Android physical acceptance and public-dataset calibration have not been executed.
+Resume with the Android protocol and dataset calibration; supplement the missing iOS measurements if recoverable, or rerun only the scenarios needed to record them.
 
 ## Acceptance criteria
 

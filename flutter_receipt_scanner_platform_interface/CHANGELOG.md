@@ -5,8 +5,9 @@
 ### Added
 
 - **Multilingual OCR Support:** Added `ocrLanguages` to `ScanReceiptOptions` (default: `['ko-KR', 'en-US']`).
-- Added `FlutterReceiptScanner.getOcrCapabilities()` to query script family installation status (Android) or active Vision framework support (iOS).
-- Added `OcrLanguageException` (and native error codes `INVALID_OCR_LANGUAGE`, `OCR_LANGUAGE_NOT_SUPPORTED`, `OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED`, `OCR_MODEL_INSTALL_FAILED`) for capability rejection without charging a capture.
+- Added `FlutterReceiptScannerPlatform.getOcrCapabilities()` and the capability models used by the app-facing top-level `getOcrCapabilities()` function.
+- Native capability rejection surfaces as `PlatformException` with codes `INVALID_OCR_LANGUAGE`, `OCR_LANGUAGE_NOT_SUPPORTED`, `OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED`, and `OCR_MODEL_INSTALL_FAILED` before scanner UI opens.
+  `OcrLanguageException` is an Android implementation type, not a public Dart exception.
 - Android: The scanner now dynamically downloads and manages ML Kit non-Latin language modules via Google Play Services.
 - Added capabilities inspection UI and BCP 47 language input to the example app.
 
