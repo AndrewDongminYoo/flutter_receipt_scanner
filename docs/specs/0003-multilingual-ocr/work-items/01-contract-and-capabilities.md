@@ -8,7 +8,9 @@ parent: ../spec.md
 
 Land the full transport and Dart contract for multilingual OCR, plus the capability query on both platforms, without yet changing how native scanning consumes the language list.
 
-Add to the root `pigeons/messages.dart`: a trailing optional `ocrLanguages` list on `ScanOptionsWire`, and — declared after every existing class so shipped codec byte assignments stay stable — `OcrCapabilitiesWire`, `OcrModelStateWire`, a model-status wire enum, and an `@async getOcrCapabilities()` host method.
+Add to the root `pigeons/messages.dart`: a trailing optional `ocrLanguages` list on `ScanOptionsWire`, appended `OcrCapabilitiesWire` and `OcrModelStateWire` classes, a model-status wire enum, and an `@async getOcrCapabilities()` host method.
+Appending classes alone preserves existing class bytes, but Pigeon allocates every enum before the classes.
+The new status enum therefore shifts existing class bytes; mixed-version transport is unsupported and requires the coordinated 0.5.0 release.
 Regenerate with `melos run generate`.
 
 Add `ScanReceiptOptions.ocrLanguages` (non-nullable, const default `['ko-KR', 'en-US']`), app-facing normalization (trim, drop exact duplicates preserving first occurrence) with `ArgumentError` before the platform call for an empty list or a tag empty after trimming, and always forward the resolved list on the wire.
@@ -21,7 +23,7 @@ Scan behavior stays unchanged in this Work Item: natives keep their current reco
 
 ## Required context
 
-- Wire-stability rule (append new Pigeon classes after existing ones or codec bytes shift) and the Android JVM test harness: project memory `rn-port-tracking`; the 0.4.0 `discardedPageCount` field is the precedent for a trailing optional wire field and its mixed-version posture.
+- Wire-stability rule (append new Pigeon classes; any new enum shifts class bytes) and the Android JVM test harness: project memory `rn-port-tracking`; the 0.4.0 `discardedPageCount` field is the precedent for a trailing optional wire field and its mixed-version posture.
 - Platform packages `extend` `FlutterReceiptScannerPlatform` and hold wire↔model mapping in both directions; `ScanReceiptOptions` uses defaulted non-nullable fields.
 - Upstream normative contract: `react-native-receipt-scanner/docs/specs/multilingual-ocr.md` (§Public API, §`getOcrCapabilities()`).
 - Never hand-edit `messages.g.dart`, `Messages.g.swift`, or `Messages.g.kt`.

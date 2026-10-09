@@ -3,6 +3,11 @@
 Status: approved for skeleton milestone (2026-07-11).
 Author: Dongmin Yu (personal / AndrewDongminYoo).
 
+This is a historical skeleton design, not the current implementation guide.
+The `packages/` tree, `melos.yaml`, unsuffixed Pigeon transport names, and deferred native paths below are superseded.
+The current packages live directly under the repository root, Melos configuration lives in `pubspec.yaml`, and the root `pigeons/messages.dart` generates the `*Wire` contract.
+Use [AGENTS.md](../../AGENTS.md) and the native source for current setup and behavior.
+
 ## 1. Goal
 
 Reconstruct the existing `react-native-receipt-scanner` package as a federated Flutter plugin named `flutter_receipt_scanner`, exposing on-device receipt image acquisition, crop, orientation normalization, JPEG compression, EXIF extraction, and OCR (raw string) to Flutter apps on iOS and Android.

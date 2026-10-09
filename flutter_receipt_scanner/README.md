@@ -56,7 +56,8 @@ if (merged != null) {
 - The supported logical receipt content aspect ratio is `contentHeight / contentWidth <= 11.0`.
 - The physical interpretation is a receipt up to 600 mm long on paper at least 57.0 mm wide (`600 / 57.0 = 10.53`).
 - The reference capture layout is six portrait pages with approximately 20% vertical overlap between adjacent pages.
-- The 11.0 limit is a tested capability claim, not a runtime physical-length measurement — a scan is never rejected because a physical size cannot be inferred from pixels.
+- The 11.0 target has deterministic fixture coverage and an iOS physical acceptance record; Android physical acceptance remains pending, so the full two-platform release gate is not yet satisfied ([acceptance status](../docs/specs/0001-long-receipt-ocr-merge/work-items/05-physical-device-acceptance.md)).
+- The limit is not a runtime physical-length measurement — a scan is never rejected because a physical size cannot be inferred from pixels.
 
 ### Capture guidance
 
@@ -116,6 +117,8 @@ if (capabilities is IosOcrCapabilities) {
 }
 ```
 
+- Native language canonicalization failures surface as `PlatformException('INVALID_OCR_LANGUAGE')` before scanner UI opens.
+  Empty lists and blank tags are rejected earlier by Dart with `ArgumentError` when OCR is enabled.
 - **iOS:** The system language bundle handles OCR. If a requested language is not supported by the active Vision framework revision, it throws `PlatformException('OCR_LANGUAGE_NOT_SUPPORTED')`.
 - **Android:** The Korean module (`com.google.mlkit:text-recognition-korean`, which also reads Latin) is bundled with the plugin, so the default language list works offline. Latin, Japanese, Chinese, and Devanagari use the `play-services-mlkit-text-recognition*` modules delivered dynamically by Google Play services. If a script family is not installed, the first `scan()` will trigger a download and may throw `PlatformException('OCR_MODEL_INSTALL_FAILED')` if offline. At most one non-Latin script can be requested at a time, or it throws `PlatformException('OCR_LANGUAGE_COMBINATION_NOT_SUPPORTED')`.
 

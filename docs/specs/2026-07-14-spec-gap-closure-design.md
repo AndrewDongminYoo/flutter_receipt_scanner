@@ -5,6 +5,11 @@ Author: Dongmin Yu (personal / AndrewDongminYoo).
 Scope: close the deltas found by the 2026-07-14 spec-vs-code audit against
 `docs/specs/2026-07-11-native-port-map.md`, approved for full scope (all 8 items).
 
+Status: historical gap-closure plan; the problem descriptions below describe the pre-fix state, not current outstanding work.
+The `targetSdk = 36` library-module proposal was superseded by the AGP 9-compatible plugin configuration, which declares only `minSdk` and `compileSdk`; the consuming app owns `targetSdk`.
+The rotation-algorithm separation below was superseded by the text-angle primary signal documented in the [native port map](2026-07-11-native-port-map.md#6-autorotate-text-angle-rotation--line-geometry).
+Use current source and the port map's updated sections rather than reapplying this plan.
+
 ## Discipline (from oracle precedent)
 
 - The four intentional cross-platform asymmetries (rotation CW/CCW, OCR

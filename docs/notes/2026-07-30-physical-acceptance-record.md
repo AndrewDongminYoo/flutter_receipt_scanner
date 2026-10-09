@@ -49,7 +49,8 @@ Target was home-printed. Example app built with `flutter build ios --release` an
 
 Findings for follow-up:
 
-1. iOS silently drops pages beyond `maxPages` — a long-receipt footgun. Candidate 0.4.0 work: surface a truncation diagnostic (or at minimum document it); until then, set `maxPages` to the ceiling (10) when merging.
+1. Resolved in 0.4.0 and confirmed in Run 3: `discardedPageCount` surfaces pages dropped beyond `maxPages`, and a positive count makes the merge incomplete.
+   The current count also reports image-processing omissions on either platform and iOS gallery crop-editor skips; keep `maxPages: 10` guidance for long-receipt capture.
 2. Auto shutter fires before framing, causing gap/tail risk. iOS exposes no programmatic control (VisionKit UI toggle only). Android's `GmsDocumentScannerOptions` defines `CAPTURE_MODE_AUTO`/`CAPTURE_MODE_MANUAL` constants but its public `Builder` has no capture-mode setter (googlesamples/mlkit#846 open, unanswered), so no programmatic control exists on either platform — tracked in Spec `0002-capture-ergonomics`.
 
 ## Multilingual OCR — iOS device check (2026-08-02)
@@ -65,6 +66,9 @@ Two example-app defects surfaced during the check; neither is in the published l
 2. The OCR-languages field felt slow to focus. Ruled out as a defect: the run was a **debug** build, where the form's eager `ListView(children:)` plus per-section build helpers rebuild on every keyboard-inset frame. Not reproduced or investigated in release/profile; revisit only if it appears in a release build.
 
 [PARTIAL] Per-language CER was not measured — the check confirmed function, not accuracy. Non-default scripts remain provider-supported and uncalibrated, as documented.
+
+[PARTIAL] The record does not name a supported non-default language or an unsupported tag, or separately record a non-default scan and rejection before UI.
+Those individual Spec 0003 scenarios cannot be verified from this record; this does not establish that they failed or were not run.
 
 ## Public dataset calibration
 

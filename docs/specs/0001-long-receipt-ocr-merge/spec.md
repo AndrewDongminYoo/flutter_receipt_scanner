@@ -26,6 +26,12 @@ This covers a 600 mm receipt on the minimum 57.0 mm paper width allowed by Epson
 The reference acceptance artifact is a 1,200 × 13,200 logical receipt split into six 1,200 × 2,640 page images with 528 pixels, or 20%, overlap between adjacent pages. [L6]
 The feature merges OCR data only and does not allocate a 13,200-pixel-tall output image. [L2]
 
+## Status
+
+Implementation status: the Dart merge API and deterministic fixtures are implemented.
+The full physical release gate remains incomplete because Android acceptance and public-dataset calibration are not recorded; see [Work Item 05](work-items/05-physical-device-acceptance.md).
+Later omission reporting also makes a merge incomplete when `discardedPageCount > 0`, including a non-empty one-page result.
+
 ## User Stories
 
 1. As an app developer, I can enable multi-page OCR merging without changing existing scan behavior for callers that leave the flag disabled. [L3]
@@ -334,7 +340,7 @@ Run only one heavy mobile job at a time.
 - The repository boundary states that native packages return image primitives and raw OCR while receipt-domain logic stays in the app-facing Dart package in [`AGENTS.md`](../../../AGENTS.md).
 - The current app-facing [`scan()`](../../../flutter_receipt_scanner/lib/src/receipt_scanner.dart) calls the native platform and then applies the OCR floor.
 - The current [`applyOcrFloor`](../../../flutter_receipt_scanner/lib/src/ocr_floor.dart) uses defaults of 12 trimmed characters, two non-empty lines, and report-only zero confidence.
-- The current public [`ScanReceiptResult`](../../../flutter_receipt_scanner_platform_interface/lib/src/models/scan_receipt_result.dart) contains only status, accepted images, and rejected images.
+- The current public [`ScanReceiptResult`](../../../flutter_receipt_scanner_platform_interface/lib/src/models/scan_receipt_result.dart) contains status, accepted images, rejected images, optional `mergedOcr`, and `discardedPageCount` for captured or selected pages omitted from the native result.
 - The current Android image processor limits the processed long edge to 3,072 pixels in `flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/ImageProcessor.kt`.
 - The current native scanners constrain `maxPages` to one through ten and process pages individually.
 

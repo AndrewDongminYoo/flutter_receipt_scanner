@@ -31,6 +31,11 @@
 - `cd flutter_receipt_scanner/example && flutter run` — run the example app locally.
 - `trunk fmt` / `trunk check` — format and lint all non-Dart files per `.trunk/trunk.yaml`.
 
+`melos run format:ci` formats files and exits nonzero if any changed; it is not read-only.
+For a read-only check, use `dart format --output=none --set-exit-if-changed <explicit paths>`.
+The package CI additionally runs `flutter analyze lib test` and requires 100% coverage, excluding generated Pigeon Dart in the platform-interface package.
+`melos run analyze` and `melos run test:ci` alone do not enforce these CI gates.
+
 ## Coding Style & Naming Conventions
 
 - Dart code follows `very_good_analysis` (`analysis_options.yaml`) and is formatted with `dart format`.
