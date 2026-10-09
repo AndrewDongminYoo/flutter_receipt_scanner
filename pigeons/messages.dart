@@ -145,10 +145,10 @@ class OcrCapabilitiesWire {
 
 @HostApi()
 abstract class ReceiptScannerApi {
-  @async
+  @asyncCallback
   ScanResultWire scan(ScanOptionsWire options);
 
   /// Reports current OCR capability. Must not download a model or open UI.
-  @async
+  @asyncCallback
   OcrCapabilitiesWire getOcrCapabilities();
 }

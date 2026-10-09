@@ -1,0 +1,3 @@
+# Pigeon's explicit Optional enum pattern must remain a pattern, not Any?.none.
+--filter flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift
+--disable typeSugar

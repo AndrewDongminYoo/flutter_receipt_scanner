@@ -11,14 +11,8 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MessageCodec
 import io.flutter.plugin.common.StandardMessageCodec
 import io.flutter.plugin.common.StandardMethodCodec
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 private object MessagesPigeonUtils {
     fun wrapResult(result: Any?): List<Any?> = listOf(result)
@@ -1135,10 +1129,13 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface ReceiptScannerApi {
-    suspend fun scan(options: ScanOptionsWire): ScanResultWire
+    fun scan(
+        options: ScanOptionsWire,
+        callback: (Result<ScanResultWire>) -> Unit,
+    )
 
     /** Reports current OCR capability. Must not download a model or open UI. */
-    suspend fun getOcrCapabilities(): OcrCapabilitiesWire
+    fun getOcrCapabilities(callback: (Result<OcrCapabilitiesWire>) -> Unit)
 
     companion object {
         /** The codec used by ReceiptScannerApi. */
@@ -1165,14 +1162,14 @@ interface ReceiptScannerApi {
                     channel.setMessageHandler { message, reply ->
                         val args = message as List<Any?>
                         val optionsArg = args[0] as ScanOptionsWire
-                        CoroutineScope(Dispatchers.Main).launch {
-                            val wrapped: List<Any?> =
-                                try {
-                                    listOf(api.scan(optionsArg))
-                                } catch (exception: Throwable) {
-                                    MessagesPigeonUtils.wrapError(exception)
-                                }
-                            reply.reply(wrapped)
+                        api.scan(optionsArg) { result: Result<ScanResultWire> ->
+                            val error = result.exceptionOrNull()
+                            if (error != null) {
+                                reply.reply(MessagesPigeonUtils.wrapError(error))
+                            } else {
+                                val data = result.getOrNull()
+                                reply.reply(MessagesPigeonUtils.wrapResult(data))
+                            }
                         }
                     }
                 } else {
@@ -1188,14 +1185,14 @@ interface ReceiptScannerApi {
                     )
                 if (api != null) {
                     channel.setMessageHandler { _, reply ->
-                        CoroutineScope(Dispatchers.Main).launch {
-                            val wrapped: List<Any?> =
-                                try {
-                                    listOf(api.getOcrCapabilities())
-                                } catch (exception: Throwable) {
-                                    MessagesPigeonUtils.wrapError(exception)
-                                }
-                            reply.reply(wrapped)
+                        api.getOcrCapabilities { result: Result<OcrCapabilitiesWire> ->
+                            val error = result.exceptionOrNull()
+                            if (error != null) {
+                                reply.reply(MessagesPigeonUtils.wrapError(error))
+                            } else {
+                                val data = result.getOrNull()
+                                reply.reply(MessagesPigeonUtils.wrapResult(data))
+                            }
                         }
                     }
                 } else {

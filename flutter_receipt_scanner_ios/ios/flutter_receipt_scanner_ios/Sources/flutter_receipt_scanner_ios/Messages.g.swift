@@ -61,7 +61,7 @@ enum MessagesPigeonInternal {
             return true
         }
 
-        if case Optional<Any>.some(Any?.none) = value {
+        if case Optional<Any>.some(Optional<Any>.none) = value {
             return true
         }
 
@@ -956,9 +956,9 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
 
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol ReceiptScannerApi {
-    func scan(options: ScanOptionsWire) async throws -> ScanResultWire
+    func scan(options: ScanOptionsWire, completion: @escaping (Result<ScanResultWire, Error>) -> Void)
     /// Reports current OCR capability. Must not download a model or open UI.
-    func getOcrCapabilities() async throws -> OcrCapabilitiesWire
+    func getOcrCapabilities(completion: @escaping (Result<OcrCapabilitiesWire, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -975,11 +975,11 @@ class ReceiptScannerApiSetup {
             scanChannel.setMessageHandler { message, reply in
                 let args = message as! [Any?]
                 let optionsArg = args[0] as! ScanOptionsWire
-                Task { @MainActor in
-                    do {
-                        let result = try await api.scan(options: optionsArg)
-                        reply(wrapResult(result))
-                    } catch {
+                api.scan(options: optionsArg) { result in
+                    switch result {
+                    case let .success(res):
+                        reply(wrapResult(res))
+                    case let .failure(error):
                         reply(wrapError(error))
                     }
                 }
@@ -991,11 +991,11 @@ class ReceiptScannerApiSetup {
         let getOcrCapabilitiesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_receipt_scanner.ReceiptScannerApi.getOcrCapabilities\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
         if let api = api {
             getOcrCapabilitiesChannel.setMessageHandler { _, reply in
-                Task { @MainActor in
-                    do {
-                        let result = try await api.getOcrCapabilities()
-                        reply(wrapResult(result))
-                    } catch {
+                api.getOcrCapabilities { result in
+                    switch result {
+                    case let .success(res):
+                        reply(wrapResult(res))
+                    case let .failure(error):
                         reply(wrapError(error))
                     }
                 }
