@@ -5,23 +5,41 @@ updates:
     directory: /
     schedule:
       interval: daily
+    groups:
+      actions:
+        patterns: ["*"]
   - package-ecosystem: pub
     directory: /flutter_receipt_scanner
     schedule:
       interval: daily
+    groups:
+      core:
+        patterns: ["*"]
   - package-ecosystem: pub
     directory: /flutter_receipt_scanner/example
     schedule:
       interval: daily
+    groups:
+      example:
+        patterns: ["*"]
   - package-ecosystem: pub
     directory: /flutter_receipt_scanner_platform_interface
     schedule:
       interval: daily
+    groups:
+      interface:
+        patterns: ["*"]
   - package-ecosystem: pub
     directory: /flutter_receipt_scanner_android
     schedule:
       interval: daily
+    groups:
+      android:
+        patterns: ["*"]
   - package-ecosystem: pub
     directory: /flutter_receipt_scanner_ios
     schedule:
       interval: daily
+    groups:
+      ios:
+        patterns: ["*"]
