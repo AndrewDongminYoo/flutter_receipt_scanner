@@ -6,7 +6,6 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "09:00"
       timezone: Asia/Seoul
     groups:
       actions:
@@ -17,27 +16,26 @@ updates:
       github-actions-security:
         applies-to: security-updates
         patterns:
-          - '*'
+          - "*"
     open-pull-requests-limit: 3
   - package-ecosystem: pub
     directory: /
     schedule:
       interval: weekly
       day: monday
-      time: "09:00"
       timezone: Asia/Seoul
     open-pull-requests-limit: 3
     groups:
       pub-minor-patch:
         patterns:
-          - '*'
+          - "*"
         update-types:
           - minor
           - patch
       pub-security:
         applies-to: security-updates
         patterns:
-          - '*'
+          - "*"
   - package-ecosystem: gradle
     directories:
       - /flutter_receipt_scanner/example/android
@@ -45,17 +43,16 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "09:00"
       timezone: Asia/Seoul
     open-pull-requests-limit: 3
     groups:
       gradle-minor-patch:
         patterns:
-          - '*'
+          - "*"
         update-types:
           - minor
           - patch
       gradle-security:
         applies-to: security-updates
         patterns:
-          - '*'
+          - "*"
