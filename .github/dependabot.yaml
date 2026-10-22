@@ -4,42 +4,58 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
     groups:
       actions:
         patterns: ["*"]
+        update-types:
+          - minor
+          - patch
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+    open-pull-requests-limit: 3
   - package-ecosystem: pub
-    directory: /flutter_receipt_scanner
+    directory: /
     schedule:
-      interval: daily
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 3
     groups:
-      core:
-        patterns: ["*"]
-  - package-ecosystem: pub
-    directory: /flutter_receipt_scanner/example
+      pub-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+      pub-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+  - package-ecosystem: gradle
+    directories:
+      - /flutter_receipt_scanner/example/android
+      - /flutter_receipt_scanner_android/android
     schedule:
-      interval: daily
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 3
     groups:
-      example:
-        patterns: ["*"]
-  - package-ecosystem: pub
-    directory: /flutter_receipt_scanner_platform_interface
-    schedule:
-      interval: daily
-    groups:
-      interface:
-        patterns: ["*"]
-  - package-ecosystem: pub
-    directory: /flutter_receipt_scanner_android
-    schedule:
-      interval: daily
-    groups:
-      android:
-        patterns: ["*"]
-  - package-ecosystem: pub
-    directory: /flutter_receipt_scanner_ios
-    schedule:
-      interval: daily
-    groups:
-      ios:
-        patterns: ["*"]
+      gradle-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+      gradle-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
