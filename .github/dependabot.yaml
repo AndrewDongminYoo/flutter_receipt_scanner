@@ -8,11 +8,9 @@ updates:
       day: monday
       timezone: Asia/Seoul
     groups:
+      # Every version update, majors included, in one PR; CI runs the actions it bumps.
       actions:
         patterns: ["*"]
-        update-types:
-          - minor
-          - patch
       github-actions-security:
         applies-to: security-updates
         patterns:
@@ -45,6 +43,14 @@ updates:
       day: monday
       timezone: Asia/Seoul
     open-pull-requests-limit: 3
+    ignore:
+      # Gradle wrapper upgrades follow the Flutter/AGP toolchain, not Dependabot.
+      # update-types limits this to version updates; security updates still open.
+      - dependency-name: gradle-wrapper
+        update-types:
+          - version-update:semver-patch
+          - version-update:semver-minor
+          - version-update:semver-major
     groups:
       gradle-minor-patch:
         patterns:

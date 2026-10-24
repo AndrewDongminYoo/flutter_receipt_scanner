@@ -11,6 +11,8 @@ on:
     paths:
       - .github/workflows/flutter_receipt_scanner.yaml
       - flutter_receipt_scanner/**
+      - pubspec.yaml
+      - pubspec.lock
   push:
     branches:
       - main
@@ -20,7 +22,6 @@ on:
 
 jobs:
   build:
-    if: ${{ !contains(fromJSON('["dependabot[bot]", "renovate[bot]", "snyk-bot", "allcontributors[bot]"]'), github.actor) }}
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@61d25935870f12a1f2c23f2a04d5f193c83f4e5d # v1.21.1
     with:
       format_line_length: 120
