@@ -8,16 +8,9 @@ updates:
       day: monday
       timezone: Asia/Seoul
     groups:
-      # Dependabot counts each reusable workflow file as its own dependency.
-      # Keep them on one version, majors included, in a single PR.
-      very-good-workflows:
-        patterns:
-          - "VeryGoodOpenSource/very_good_workflows*"
+      # Every version update, majors included, in one PR; CI runs the actions it bumps.
       actions:
         patterns: ["*"]
-        update-types:
-          - minor
-          - patch
       github-actions-security:
         applies-to: security-updates
         patterns:
