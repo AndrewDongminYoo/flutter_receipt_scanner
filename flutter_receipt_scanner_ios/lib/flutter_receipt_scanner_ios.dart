@@ -8,7 +8,7 @@ import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scann
 /// public models exported by the platform interface.
 class FlutterReceiptScannerIos extends FlutterReceiptScannerPlatform {
   /// Creates the iOS platform, optionally with an injected [api] for tests.
-  FlutterReceiptScannerIos({@visibleForTesting ReceiptScannerApi? api}) : _api = api ?? ReceiptScannerApi();
+  new({@visibleForTesting ReceiptScannerApi? api}) : _api = api ?? ReceiptScannerApi();
 
   final ReceiptScannerApi _api;
 

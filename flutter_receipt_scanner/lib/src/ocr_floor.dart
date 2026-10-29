@@ -4,7 +4,7 @@ import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scann
 /// floor, the corresponding image is moved from `images` into `rejectedImages`.
 class OcrFloor {
   /// Creates a floor. Missing arguments fall back to the package defaults.
-  const OcrFloor({this.minTextLength = 12, this.minLines = 2, this.minConfidence = 0});
+  const new({this.minTextLength = 12, this.minLines = 2, this.minConfidence = 0});
 
   /// Minimum trimmed text length, in characters.
   final int minTextLength;
@@ -23,10 +23,10 @@ const OcrFloor kDefaultOcrFloor = OcrFloor();
 /// Either an active [OcrFloor] or an explicit "disabled" marker.
 class OcrFloorOrDisabled {
   /// Wraps an active floor.
-  const OcrFloorOrDisabled.floor(OcrFloor value) : _value = value, isDisabled = false;
+  const new floor(OcrFloor value) : _value = value, isDisabled = false;
 
   /// Disables the gate entirely.
-  const OcrFloorOrDisabled.disabled() : _value = null, isDisabled = true;
+  const new disabled() : _value = null, isDisabled = true;
 
   final OcrFloor? _value;
 

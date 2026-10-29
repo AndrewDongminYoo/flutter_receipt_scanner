@@ -9,7 +9,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 /// not break existing platform packages.
 abstract class FlutterReceiptScannerPlatform extends PlatformInterface {
   /// Constructs a platform implementation.
-  FlutterReceiptScannerPlatform() : super(token: _token);
+  new() : super(token: _token);
 
   static final Object _token = Object();
 

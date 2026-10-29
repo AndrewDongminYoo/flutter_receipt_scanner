@@ -4,7 +4,7 @@ import 'package:flutter_receipt_scanner_platform_interface/src/models/scan_enums
 /// Derived OCR quality metrics. Populated whenever OCR ran.
 final class OcrQuality {
   /// Creates OCR quality metrics.
-  const OcrQuality({required this.textLength, required this.lineCount, this.confidence});
+  const new({required this.textLength, required this.lineCount, this.confidence});
 
   /// Character count of the trimmed OCR text.
   final int textLength;
@@ -27,7 +27,7 @@ final class OcrQuality {
 /// [ReceiptImage.ocrText]'s newline-separated lines.
 final class OcrLine {
   /// Creates one OCR line box.
-  const OcrLine({
+  const new({
     required this.text,
     required this.x,
     required this.y,
@@ -60,7 +60,7 @@ final class OcrLine {
 /// app restarts.
 final class ReceiptImage {
   /// Creates a receipt image.
-  const ReceiptImage({
+  const new({
     required this.uri,
     required this.width,
     required this.height,

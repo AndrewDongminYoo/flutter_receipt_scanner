@@ -13,7 +13,7 @@ enum OcrModelStatus {
 /// One script family's readiness on Android.
 final class OcrModelState {
   /// Creates a script-model state.
-  const OcrModelState({required this.script, required this.status});
+  const new({required this.script, required this.status});
 
   /// Unicode script identifier such as `Latn`, `Kore`, `Jpan`, `Hans`, `Hant`, or `Deva`.
   final String script;
@@ -27,7 +27,7 @@ final class OcrModelState {
 /// The two variants are not symmetric on purpose: iOS Vision reports exact
 /// language identifiers, while Android ML Kit selects a recognizer by script.
 sealed class OcrCapabilities {
-  const OcrCapabilities();
+  const new();
 
   /// The language list used when a caller supplies none.
   List<String> get defaultLanguages => kDefaultOcrLanguages;
@@ -37,8 +37,7 @@ sealed class OcrCapabilities {
 /// at the accurate recognition level.
 final class IosOcrCapabilities extends OcrCapabilities {
   /// Creates an iOS capability report.
-  IosOcrCapabilities({required List<String> supportedLanguages})
-    : supportedLanguages = List.unmodifiable(supportedLanguages);
+  new({required List<String> supportedLanguages}) : supportedLanguages = List.unmodifiable(supportedLanguages);
 
   /// Exact identifiers returned by the active request revision.
   final List<String> supportedLanguages;
@@ -48,7 +47,7 @@ final class IosOcrCapabilities extends OcrCapabilities {
 /// package ships, and whether each is installed.
 final class AndroidOcrCapabilities extends OcrCapabilities {
   /// Creates an Android capability report.
-  AndroidOcrCapabilities({required List<OcrModelState> models}) : models = List.unmodifiable(models);
+  new({required List<OcrModelState> models}) : models = List.unmodifiable(models);
 
   /// Readiness per script family.
   final List<OcrModelState> models;

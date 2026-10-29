@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 // A platform that extends the interface without overriding scan(), so calling
 // scan() falls through to the base default implementation.
-class _DefaultScanPlatform extends FlutterReceiptScannerPlatform {}
+class _DefaultScanPlatform extends FlutterReceiptScannerPlatform;
 
 void main() {
   // Capture the pristine default (`_UnimplementedReceiptScanner`) during the

@@ -10,11 +10,9 @@ import 'package:pigeon/pigeon.dart';
     dartOut:
         'flutter_receipt_scanner_platform_interface/lib/src/messages.g.dart',
     dartPackageName: 'flutter_receipt_scanner',
-    swiftOut:
-        'flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
+    swiftOut: 'flutter_receipt_scanner_ios/ios/flutter_receipt_scanner_ios/Sources/flutter_receipt_scanner_ios/Messages.g.swift',
     swiftOptions: SwiftOptions(),
-    kotlinOut:
-        'flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
+    kotlinOut: 'flutter_receipt_scanner_android/android/src/main/kotlin/com/example/flutter_receipt_scanner_android/Messages.g.kt',
     kotlinOptions: KotlinOptions(
       package: 'com.example.flutter_receipt_scanner_android',
     ),

@@ -8,7 +8,7 @@ import 'package:flutter_receipt_scanner_platform_interface/src/models/gps_data.d
 /// orientation-normalized); `raw['Orientation']` holds the original value.
 final class ReceiptExif {
   /// Creates an EXIF white-list block.
-  const ReceiptExif({
+  const new({
     this.orientation,
     this.colorSpace,
     this.lightSource,

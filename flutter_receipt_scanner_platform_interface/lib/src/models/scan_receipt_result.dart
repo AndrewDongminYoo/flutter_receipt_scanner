@@ -6,7 +6,7 @@ import 'package:flutter_receipt_scanner_platform_interface/src/models/scan_enums
 /// [rejectedImages] are always lists for interface symmetry.
 final class ScanReceiptResult {
   /// Creates a scan result.
-  const ScanReceiptResult({
+  const new({
     required this.status,
     this.images = const [],
     this.rejectedImages = const [],

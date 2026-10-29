@@ -2,7 +2,7 @@
 /// `includeGpsExif` is true and the source carried GPS metadata.
 final class GpsData {
   /// Creates GPS data.
-  const GpsData({
+  const new({
     required this.latitude,
     required this.longitude,
     this.altitude,

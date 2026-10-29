@@ -6,7 +6,7 @@ import 'package:flutter_receipt_scanner_platform_interface/src/models/scan_enums
 /// app-facing package, so it is intentionally absent here.
 final class ScanReceiptOptions {
   /// Creates scan options. Every field has a receipt-tuned default.
-  const ScanReceiptOptions({
+  const new({
     this.source = ScanSource.camera,
     this.maxPages = 1,
     this.quality = 0.82,

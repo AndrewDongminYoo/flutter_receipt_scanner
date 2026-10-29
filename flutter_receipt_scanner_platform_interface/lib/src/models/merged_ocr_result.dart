@@ -1,7 +1,7 @@
 /// OCR text assembled from ordered receipt pages with seam diagnostics.
 final class MergedOcrResult {
   /// Creates an immutable merged OCR result.
-  MergedOcrResult({
+  new({
     required this.text,
     required this.isComplete,
     required List<String> pageUris,

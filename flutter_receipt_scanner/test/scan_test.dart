@@ -31,7 +31,7 @@ const _defaultResult = ScanReceiptResult(
 );
 
 class _RecordingPlatform extends FlutterReceiptScannerPlatform {
-  _RecordingPlatform({this.result = _defaultResult, OcrCapabilities? capabilities})
+  new({this.result = _defaultResult, OcrCapabilities? capabilities})
     : _capabilities = capabilities ?? IosOcrCapabilities(supportedLanguages: const []);
 
   final ScanReceiptResult result;
@@ -55,7 +55,7 @@ class _RecordingPlatform extends FlutterReceiptScannerPlatform {
 }
 
 final class _ChangingIterationList extends ListBase<ReceiptImage> {
-  _ChangingIterationList(this._firstIteration, this._laterIterations);
+  new(this._firstIteration, this._laterIterations);
 
   final List<ReceiptImage> _firstIteration;
   final List<ReceiptImage> _laterIterations;
