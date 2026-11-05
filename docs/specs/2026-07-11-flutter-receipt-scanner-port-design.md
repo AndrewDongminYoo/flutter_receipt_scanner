@@ -29,11 +29,11 @@ The reject-on-sight test (three questions, from ADR-003): does a change read/wri
 
 ## 3. Key decisions (collected 2026-07-11)
 
-| Decision        | Choice                      | Note                                                                                                                                                                                                                                      |
-| --------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Native sourcing | Clean-room re-derivation    | No copy/port; conforms to the operator's recorded IP discipline (`ip-hygiene-expression-vs-mechanic`, `employer-ip-moonlighting-risk`). The conservative path is safe regardless of the still-open "employment terms reviewed?" question. |
-| Transport       | Pigeon codegen              | Type-safe message classes generated for Dart/Swift/Kotlin. New precedent (prior federated plugin used MethodChannel+EventChannel).                                                                                                        |
-| First milestone | iOS camera walking skeleton | Thinnest end-to-end slice through every layer.                                                                                                                                                                                            |
+| Decision        | Choice                      | Note                                                                                                                                                                                                                           |
+| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Native sourcing | Clean-room re-derivation    | No copy/port; conforms to the recorded IP discipline (`ip-hygiene-expression-vs-mechanic`, `employer-ip-moonlighting-risk`). The conservative path is safe regardless of the still-open "employment terms reviewed?" question. |
+| Transport       | Pigeon codegen              | Type-safe message classes generated for Dart/Swift/Kotlin. New precedent (prior federated plugin used MethodChannel+EventChannel).                                                                                             |
+| First milestone | iOS camera walking skeleton | Thinnest end-to-end slice through every layer.                                                                                                                                                                                 |
 
 ## 4. Package layout (federated — follows `ble_proximity_signal` precedent)
 

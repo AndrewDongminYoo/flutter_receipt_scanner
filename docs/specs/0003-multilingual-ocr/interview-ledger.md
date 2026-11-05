@@ -21,7 +21,7 @@ Answer: 좋습니다. 진행해주세요.
 
 Decision: The Flutter contract is a faithful port of `react-native-receipt-scanner/docs/specs/multilingual-ocr.md` (Implemented, shipped in RN 0.8.0 on 2026-07-30, PR #16); only Pigeon/Dart/federation adaptations may differ.
 
-Reason: The Flutter native layer is a hand-port of RN (project memory `rn-port-tracking`); re-deriving a contract the operator shipped one day earlier would diverge from reviewed precedent and raise port-tracking cost.
+Reason: The Flutter native layer is a hand-port of RN (project memory `rn-port-tracking`); re-deriving a contract I shipped one day earlier would diverge from reviewed precedent and raise port-tracking cost.
 
 Source: Oracle precedent lookup 2026-07-31; `react-native-receipt-scanner/docs/specs/multilingual-ocr.md`.
 
@@ -55,11 +55,11 @@ Status: current
 
 Question: Does the RN package's own long-receipt work constrain this Spec?
 
-Answer: RN is implementing long-receipt stitching with a deliberately different design from Flutter's `ocr_page_merger`; the RN side argued its case and the operator approved the divergence (2026-07-31).
+Answer: RN is implementing long-receipt stitching with a deliberately different design from Flutter's `ocr_page_merger`; the RN side argued its case and the divergence was approved (2026-07-31).
 
-Decision: Long-receipt merge designs are a sanctioned divergence point — neither direction syncs merge design without explicit operator direction. The multilingual×merge interplay contract (L2) is therefore Flutter-specific and carries no RN-parity obligation.
+Decision: Long-receipt merge designs are a sanctioned divergence point — neither direction syncs merge design without explicit direction. The multilingual×merge interplay contract (L2) is therefore Flutter-specific and carries no RN-parity obligation.
 
-Source: Operator statement 2026-07-31.
+Source: statement 2026-07-31.
 
 ### L4
 

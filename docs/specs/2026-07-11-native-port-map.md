@@ -1,7 +1,7 @@
 # Native Port Map — RN receipt-scanner → Flutter federated plugin
 
 **Date:** 2026-07-11
-**Author:** research phase (faithful port; IP cleared, operator owns both repos — personal account AndrewDongminYoo)
+**Author:** research phase (faithful port; IP cleared, I own both repos — personal account AndrewDongminYoo)
 **Current implementation authority:** the Swift/Kotlin source in this Flutter repository.
 **Historical port reference:** the RN native code in `react-native-receipt-scanner` (iOS Obj-C++ / Android Kotlin).
 **Target:** `flutter_receipt_scanner` federated plugin, driven by Pigeon `ReceiptScannerApi.scan(options)` (`@async`).

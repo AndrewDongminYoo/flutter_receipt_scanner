@@ -8,7 +8,7 @@ title: Multilingual OCR
 The OCR language boundary is hardcoded to Korean+Latin: iOS sets `recognitionLanguages = ["ko-KR", "en-US"]` (`flutter_receipt_scanner_ios/.../OcrProcessor.swift`), and Android pins the bundled `com.google.mlkit:text-recognition-korean` recognizer (`OcrProcessor.kt`, `build.gradle.kts`).
 `ScanReceiptOptions` has no language field, so consumers cannot scan receipts in other languages, which limits production usability.
 
-The operator already designed and shipped this expansion in the RN sibling: `react-native-receipt-scanner` v0.8.0 (2026-07-30) implements `docs/specs/multilingual-ocr.md`.
+I already designed and shipped this expansion in the RN sibling: `react-native-receipt-scanner` v0.8.0 (2026-07-30) implements `docs/specs/multilingual-ocr.md`.
 The Flutter package is a hand-port of RN, currently synced to v0.7.0 — exactly this release behind. [L1]
 
 ## Proposed Outcome

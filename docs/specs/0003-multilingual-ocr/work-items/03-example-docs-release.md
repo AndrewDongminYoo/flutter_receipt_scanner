@@ -14,7 +14,7 @@ Documentation: add a multilingual OCR section to both READMEs covering the optio
 Label the 11.0 aspect-ratio target and exact seam-matching calibration as Korean plus Latin only; other scripts are provider-supported and uncalibrated.
 Release notes must not claim improved OCR or merge accuracy for uncalibrated languages.
 
-Release: bump all four packages to 0.5.0 with changelog entries, regenerate the workspace lockfile in the same commit, and publish in RELEASING.md dependency order after operator approval.
+Release: bump all four packages to 0.5.0 with changelog entries, regenerate the workspace lockfile in the same commit, and publish in RELEASING.md dependency order after approval.
 
 iOS physical QA before release: a default Korean plus English regression scan, one supported non-default language scan, and one syntactically valid but unsupported tag rejected before UI.
 Record the runs in `docs/notes/2026-07-30-physical-acceptance-record.md`.
@@ -24,7 +24,7 @@ Android physical QA (dynamic model download, install-wait flow, offline `OCR_MOD
 
 - `flutter_receipt_scanner/example/lib/main.dart` is already large — keep diffs surgical and do not decompose the UI without an explicit request.
 - The READMEs' existing "Long receipts (multi-page OCR merge)" sections hold the support contract and capture guidance; extend them rather than adding parallel sections.
-- Release procedure and tag pattern: `RELEASING.md`; publishing is external impact and needs operator approval before tags are pushed.
+- Release procedure and tag pattern: `RELEASING.md`; publishing is external impact and needs approval before tags are pushed.
 - Merge behavior is unchanged by language selection: seam matching, thresholds, boundary and rejected-page diagnostics, and the `discardedPageCount` completeness override operate on whatever text the selected recognizer returns.
 
 ## Acceptance criteria
@@ -39,7 +39,7 @@ Android physical QA (dynamic model download, install-wait flow, offline `OCR_MOD
       The existing record confirms the language option and capability query generally, but does not name the non-default or unsupported tags or record those individual outcomes.
       This is an evidence gap, not proof that the scenarios failed or were not run.
 - [x] `melos run format`, `melos run analyze`, `melos run test`, `trunk fmt`, and `trunk check` pass, and `dart pub publish --dry-run` reports zero warnings in all four packages.
-- [x] Publication happens only after operator approval, in RELEASING.md dependency order, with each publish workflow verified before the next tag is pushed.
+- [x] Publication happens only after approval, in RELEASING.md dependency order, with each publish workflow verified before the next tag is pushed.
 
 ## Covers
 
@@ -55,4 +55,4 @@ Android physical QA (dynamic model download, install-wait flow, offline `OCR_MOD
 
 ## Blocking decisions
 
-- Operator approval is required before pushing publish tags; Android physical QA remains deferred until a device is available.
+- Approval is required before pushing publish tags; Android physical QA remains deferred until a device is available.

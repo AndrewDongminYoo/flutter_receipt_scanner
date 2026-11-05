@@ -8,7 +8,7 @@ Contract: [native build contract](../specs/2026-10-10-native-build-contract.md).
 4. Replace the placeholder Simulator test with synthetic native batch/wire regressions and validate the production plugin through the example build.
 5. Resolve the pinned Android graph online with task-local caches and run the native unit-test target without device access.
 6. Run Flutter tests, analysis, formatting, independent review, and scoped commits.
-7. Publish one follow-up PR explaining the remaining verification after PR 17; observe exact-head CI/code/security review and leave merge to the operator.
+7. Publish one follow-up PR explaining the remaining verification after PR 17; observe exact-head CI/code/security review and leave merge to me.
 
 Owned paths are the root Pigeon schema and generated outputs, the scoped `.swiftformat` configuration, example iOS configuration and RunnerTests, and this contract/plan.
 Android source changes are permitted only if the normal pinned native build identifies a concrete defect related to this verification.

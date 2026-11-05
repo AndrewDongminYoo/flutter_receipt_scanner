@@ -11,7 +11,7 @@ Contract: [native page omission diagnostics](../specs/2026-10-10-native-page-omi
 5. Add native helper, one-survivor OCR, cancellation-count, and example diagnostic regressions.
 6. Run the project checks, inspect callers and sibling paths, perform mutation checks and independent review, and fix verified findings.
 7. Commit by concern, push the scoped branch, open the PR, and inspect current-head CI and hosted review within the recorded loop budget.
-8. Leave merge to the operator and preserve unavailable native integration checks in the PR and final report.
+8. Leave merge to me and preserve unavailable native integration checks in the PR and final report.
 
 ## Owned paths
 
