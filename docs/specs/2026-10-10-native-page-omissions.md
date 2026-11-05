@@ -29,7 +29,7 @@ Change native acquisition batch accounting, its pure test seams, public field de
 Do not add a new public field, change the whole-batch error policy, migrate Pigeon APIs, upgrade dependencies, or change receipt-domain OCR merging.
 Do not use physical-device camera capture or actual photo-library access.
 The native image primitives boundary remains unchanged.
-The label change does not introduce layout, motion, or artwork requiring operator visual judgment.
+The label change does not introduce layout, motion, or artwork requiring visual judgment.
 
 ## Acceptance and verification limits
 

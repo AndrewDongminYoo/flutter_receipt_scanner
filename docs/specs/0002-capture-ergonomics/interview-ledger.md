@@ -34,9 +34,9 @@ Status: current
 
 Question: Why did the 2026-07-30 iOS acceptance run 1 report a complete merge while the final three receipt lines were missing?
 
-Answer: The operator captured one more page than `maxPages`.
+Answer: I captured one more page than `maxPages`.
 VisionKit cannot enforce a page limit in its UI, so the iOS implementation silently processes only the first `maxPages` pages (`ReceiptScannerApiImpl.swift`, `pageCount = min(scan.pageCount, maxPages)`), and the dropped final page held the only copy of the last three lines.
-Confirmed by operator reproduction.
+Confirmed by reproduction.
 Android's GMS scanner enforces `setPageLimit` in-UI, so the failure mode is iOS-only, but the discarded count must be computed defensively on both platforms.
 
 Decision: Surface truncation as an explicit diagnostic (`discardedPageCount`) instead of dropping pages silently, and a merged OCR result must not report `isComplete == true` when pages were discarded.
