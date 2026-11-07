@@ -140,7 +140,8 @@ class FlutterReceiptScannerPlugin :
                 @Suppress("DEPRECATION")
                 activity.startActivityForResult(
                     Intent(activity, CropEditorActivity::class.java)
-                        .putExtra(CropEditorActivity.EXTRA_MAX_IMAGES, maxPages),
+                        .putExtra(CropEditorActivity.EXTRA_MAX_IMAGES, maxPages)
+                        .putExtra(CropEditorActivity.EXTRA_OCR_ENABLED, options.ocr != false),
                     GALLERY_REQUEST_CODE,
                 )
             }.onFailure { reject("GALLERY_LAUNCH_FAILED", it.message) }
