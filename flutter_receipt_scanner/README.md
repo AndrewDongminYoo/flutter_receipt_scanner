@@ -64,7 +64,11 @@ if (merged != null) {
 Capture consecutive sections top-to-bottom in one camera session, overlapping each page with the previous one by roughly 20%.
 The overlap is what lets the merger prove each adjacent seam and remove the duplicated lines exactly once.
 
-Exact page division is not required. The merger chooses the deepest adjacent overlap whose OCR lines match exactly after ignoring case and collapsing whitespace, with at least two distinct lines. A single repeated purchase row cannot prove a seam, even if it appears several times. The ~20% figure is the reference layout with margin.
+Exact page division is not required.
+The merger chooses the deepest adjacent overlap whose OCR lines match exactly after ignoring case and collapsing whitespace, with at least two distinct lines and at least 12 UTF-16 code units when those normalized lines are joined with one space.
+Shorter overlaps remain unproven and retain both pages' text.
+A single repeated purchase row cannot prove a seam, even if it appears several times.
+The ~20% figure is the reference layout with margin.
 
 If OCR changes a character or splits lines differently, the merger keeps all text and reports the boundary in `unmatchedBoundaryIndexes` with `isComplete == false`. Review these boundaries before treating the text as one complete receipt.
 A gap between adjacent captures surfaces as an unmatched boundary, but a missed receipt top or bottom cannot be detected — start at the very first printed line and finish past the last one.

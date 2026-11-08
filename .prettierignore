@@ -1,0 +1,2 @@
+# Preserve the canonical RN snapshot bytes verified by manifest checksums.
+flutter_receipt_scanner/test/fixtures/ocr-contracts/v1/*.json

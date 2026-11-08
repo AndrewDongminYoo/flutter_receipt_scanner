@@ -21,7 +21,7 @@ The public result model lives in the platform-interface package because `ScanRec
 
 - [x] `MergedOcrResult` exposes text, completeness, ordered page URIs, unmatched boundary indexes, and rejected page indexes as immutable fields.
 - [x] `ScanReceiptResult.mergedOcr` is optional and defaults to null without breaking existing constructors.
-- [x] Exact adjacent overlap with at least two distinct normalized lines is emitted once, choosing the deepest match without a line-count cap.
+- [x] Exact adjacent overlap with at least two distinct normalized lines and 12 UTF-16 code units when joined with one space is emitted once, choosing the deepest match without a line-count cap.
 - [x] Case and whitespace normalization preserves earlier recognized text without fuzzy matching.
 - [x] Approximate matches, quantity or price changes, and different line segmentation preserve all text and record the correct unmatched boundary.
 - [x] Single-line matches and repeated identical rows split across a boundary remain unproven, preserving real purchases.
