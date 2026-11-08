@@ -131,8 +131,9 @@ final class MergedOcrResult {
 7. For each adjacent boundary, compare equal-depth suffix and prefix windows from the smaller page's full line count down to two lines, with no eight-line cap.
 8. A candidate matches only when every pair of normalized lines is exactly equal and the matched region contains at least two distinct normalized lines.
    A single line, or any number of repetitions of one normalized line, cannot prove a seam because they may be separate identical purchases.
+   The normalized lines joined with one space must contain at least 12 UTF-16 code units, including those separators; emoji count as two units, not one character or four UTF-8 bytes.
 9. Select the first matching depth, so the deepest exact overlap wins over a shallow repeated header or separator.
-   There are no similarity scores, character-count thresholds, length-ratio prefilters, or edit-distance cost guards.
+   There are no similarity scores, upper character-count limits, length-ratio prefilters, or edit-distance cost guards.
 10. OCR character differences and changed line segmentation leave the boundary unproven with all text intact.
     This conservative rule supersedes the original fuzzy matching policy in [issue #3](https://github.com/AndrewDongminYoo/flutter_receipt_scanner/issues/3).
 11. An accepted boundary keeps the prior page suffix and removes only the matched prefix lines from the next page.
@@ -243,7 +244,8 @@ It must still avoid unrelated refactoring, formatting-only changes, and native t
 1. Verify the flag defaults to disabled and preserves the previous result exactly.
 2. Verify invalid `ocr`, `source`, and `maxPages` combinations throw before the fake platform receives a call.
 3. Verify a one-page result is complete.
-4. Verify exact overlap with at least two distinct normalized lines is removed once, including overlaps deeper than eight lines and competing repeated headers.
+4. Verify exact overlap with at least two distinct normalized lines and 12 UTF-16 code units is removed once, including overlaps deeper than eight lines and competing repeated headers.
+   Shared fixtures exercise 11/12/13-unit windows, normalized whitespace, supplementary characters and short distinct overlaps that must remain unproven.
 5. Verify Korean-plus-Latin approximate matches, including quantity or price changes across one or multiple rows, are preserved and record an unmatched boundary.
 6. Verify changed line segmentation is preserved and records an unmatched boundary; case and whitespace differences within lines still match.
 7. Verify single-line candidates and repeated identical rows split across a boundary are preserved, regardless of character count; repeated purchases within a distinct exact overlap retain their count.
@@ -254,6 +256,12 @@ It must still avoid unrelated refactoring, formatting-only changes, and native t
 12. Verify the ten-page, 200-lines-per-page benchmark stays within 100 ms.
 
 ### Deterministic Fixture Tests
+
+The shared OCR contract snapshot in `flutter_receipt_scanner/test/fixtures/ocr-contracts/v1/` is maintained in the RN repository and tested by `ocr_contracts_test.dart`.
+Its manifest pins corpus and schema bytes with SHA-256; `sourceCommit` stays null until the new canonical snapshot is committed and must be pinned before publication.
+`sourceBaseCommit` records the inspected RN implementation, not a commit that already contains these new fixtures.
+The [canonical maintenance guide](https://github.com/AndrewDongminYoo/react-native-receipt-scanner/tree/main/src/__tests__/fixtures/ocr-contracts) explains updates and the offline comparison command.
+The shared snapshot preserves current confidence gating; camera-only validation and discarded-page completeness remain this package's adapter policy.
 
 1. Generate the 1,200 × 13,200 logical receipt from project-authored Korean-plus-Latin source text.
 2. Split it into six 1,200 × 2,640 images with 528-pixel overlaps and verify dimensions and checksums.

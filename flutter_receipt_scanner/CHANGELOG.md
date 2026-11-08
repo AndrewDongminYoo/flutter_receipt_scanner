@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Exact OCR overlaps now require at least 12 UTF-16 code units after normalized lines are joined with one space, matching the React Native scanner contract. Shorter distinct overlaps retain both pages' text and report an unmatched boundary instead of a complete merge.
+
 ### Fixed
 
 - OCR page merging preserves real purchases at single-line, repeated-row, and approximate-match boundaries. An overlap now requires exact normalized lines with at least two distinct lines, choosing the deepest match without an eight-line cap.

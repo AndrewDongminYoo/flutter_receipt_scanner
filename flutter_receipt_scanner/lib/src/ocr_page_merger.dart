@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scanner_platform_interface.dart';
 
 final _whitespace = RegExp(r'\s+');
+const _minWindowCharacters = 12;
 
 /// Merges ordered page OCR while preserving text at unproven boundaries.
 MergedOcrResult mergeReceiptOcrPages(List<ReceiptImage> pages, {Set<int> rejectedPageIndexes = const {}}) {
@@ -77,7 +78,9 @@ int _findOverlap(List<String> leftLines, List<String> rightLines) {
     }
     // One row, even repeated many times, is not enough evidence of overlap:
     // consecutive identical purchases must remain visible at an unproven seam.
-    if (matches && hasDistinctLines) return depth;
+    // Match the RN contract: count normalized UTF-16 code units, including
+    // the single spaces between lines, rather than bytes or raw whitespace.
+    if (matches && hasDistinctLines && rightLines.take(depth).join(' ').length >= _minWindowCharacters) return depth;
   }
   return 0;
 }

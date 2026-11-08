@@ -194,7 +194,7 @@ void main() {
     expect(() => mergeReceiptOcrPages([_page(0, '영수증 RECEIPT')], rejectedPageIndexes: const {1}), throwsRangeError);
   });
 
-  test('exact distinct lines have no character limit', () {
+  test('exact distinct lines have no upper character limit', () {
     final shared = '${'A' * 600}\n${'B' * 600}';
 
     final result = mergeReceiptOcrPages([_page(0, '첫 페이지\n$shared'), _page(1, '$shared\n마지막 페이지')]);
@@ -260,12 +260,12 @@ void main() {
     expect(result.unmatchedBoundaryIndexes, [0]);
   });
 
-  test('short distinct lines can prove an exact overlap', () {
+  test('distinct lines below the shared length floor remain unproven', () {
     final result = mergeReceiptOcrPages([_page(0, 'START\nA\nB'), _page(1, 'A\nB\nEND')]);
 
-    expect(result.text, 'START\nA\nB\nEND');
-    expect(result.isComplete, isTrue);
-    expect(result.unmatchedBoundaryIndexes, isEmpty);
+    expect(result.text, 'START\nA\nB\nA\nB\nEND');
+    expect(result.isComplete, isFalse);
+    expect(result.unmatchedBoundaryIndexes, [0]);
   });
 
   test('repeated purchases within a distinct exact overlap retain their count', () {
