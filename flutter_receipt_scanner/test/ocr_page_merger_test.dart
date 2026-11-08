@@ -13,6 +13,17 @@ ReceiptImage _page(int index, String? text) => ReceiptImage(
 );
 
 void main() {
+  test('retains Dart VM final-sigma lowercasing outside the shared corpus', () {
+    final result = mergeReceiptOcrPages([
+      _page(0, 'START\nΟΣ 1000\nTOTAL 1000'),
+      _page(1, 'ος 1000\nTOTAL 1000\nEND'),
+    ]);
+
+    expect(result.text, 'START\nΟΣ 1000\nTOTAL 1000\nος 1000\nTOTAL 1000\nEND');
+    expect(result.isComplete, isFalse);
+    expect(result.unmatchedBoundaryIndexes, [0]);
+  });
+
   group('issue #3 false overlap regressions', () {
     test('preserves identical purchases at a single-line boundary', () {
       const purchase = '서울우유 1L 흰우유 990ml    1     2,000';

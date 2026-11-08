@@ -262,6 +262,10 @@ Its manifest pins corpus and schema bytes with SHA-256; `sourceCommit` stays nul
 `sourceBaseCommit` records the inspected RN implementation, not a commit that already contains these new fixtures.
 The [canonical maintenance guide](https://github.com/AndrewDongminYoo/react-native-receipt-scanner/tree/main/src/__tests__/fixtures/ocr-contracts) explains updates and the offline comparison command.
 The shared snapshot preserves current confidence gating; camera-only validation and discarded-page completeness remain this package's adapter policy.
+Common expectations cover the corpus inputs, not every Unicode string.
+Each package retains its runtime's lowercase and whitespace semantics: the Dart VM maps `ΟΣ 1000` to `οσ 1000`, whereas JavaScript maps it to `ος 1000`.
+Consequently, an otherwise sufficient overlap against `ος 1000` remains unproven in the Dart VM but merges in JavaScript; separate package tests characterize this existing difference.
+Runtime normalization alignment needs a separate compatibility decision.
 
 1. Generate the 1,200 × 13,200 logical receipt from project-authored Korean-plus-Latin source text.
 2. Split it into six 1,200 × 2,640 images with 528-pixel overlaps and verify dimensions and checksums.
