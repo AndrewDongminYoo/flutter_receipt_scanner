@@ -1,0 +1,49 @@
+name: Native Android Unit Tests
+
+permissions: read-all
+
+concurrency:
+  group: native-android-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/native-android.yaml
+      - flutter_receipt_scanner_android/**
+      - flutter_receipt_scanner/example/**
+      - flutter_receipt_scanner/test/fixtures/ocr-contracts/**
+      - flutter_receipt_scanner_platform_interface/**
+      - pubspec.yaml
+      - pubspec.lock
+
+jobs:
+  native-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install JDK
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: zulu
+          java-version: "17"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        working-directory: flutter_receipt_scanner/example
+        run: flutter pub get
+      - name: Configure Android build
+        working-directory: flutter_receipt_scanner/example
+        run: flutter build apk --debug --config-only
+      - name: Run Kotlin unit tests
+        working-directory: flutter_receipt_scanner/example/android
+        run: ./gradlew :flutter_receipt_scanner_android:testDebugUnitTest --no-daemon --max-workers=2 --console=plain

@@ -244,6 +244,11 @@ Both output pixels are orientation-normalized and both report `exif.orientation 
 
 **[UPDATED 2026-07-25 — synced to RN `react-native-receipt-scanner` v0.7.0]** The two per-platform heuristics below are **no longer the primary signal**. Both platforms now decide rotation primarily from the **per-line text angle** (`OcrGeometry.dominantQuarterTurn` — ML Kit `Text.Line.getAngle` on Android, the Vision observation quad `topLeft`→`topRight` on iOS), because the angle carries _direction_ and so separates 90 from 270 and catches a plain 180 flip — cases neither the count nor the aspect heuristic can reach. §6.1 (iOS count) and §6.2 (Android aspect) are retained as the **fallback** used only when the angle sample is too small or too split to judge. The old "two deliberately different algorithms — do not unify / do not port iOS's multi-pass to Android" guidance is **superseded**: the unified signal _is_ the angle; the per-platform code that survives is only the fallback. This sync also added per-line OCR **geometry** (`ocrGeometry` option → `ReceiptImage.ocrLines`): after a rotation is baked, the image is re-recognized so the text order and boxes belong to the shipped frame; boxes that can't be re-measured are remapped with `OcrGeometry.rotateClockwise` + `clamp`. See the shared `OcrGeometry` on both platforms.
 
+Android's `GeometryConformanceTest` reads the vendored `flutter_receipt_scanner/test/fixtures/ocr-contracts/v1/contract.json` corpus and calls production `OcrGeometry` and `QuadGeometry` directly.
+The shared expectations cover quarter-turn ties, finite-angle filtering and majority boundaries, clockwise correction, rotated/clamped boxes, and crop-quad distortion including valid long receipts.
+First run `flutter build apk --debug --config-only` from `flutter_receipt_scanner/example` to prepare the ignored Gradle wrapper and Android configuration.
+Then run `./gradlew :flutter_receipt_scanner_android:testDebugUnitTest` from `flutter_receipt_scanner/example/android`; the native Android workflow also runs this task for pull requests and relevant source or fixture pushes.
+
 `autoRotate` only bakes pixels when `ocr == true` and a non-zero rotation was detected.
 When `autoRotate == false`, both platforms return the initial OCR pass before rotation detection; no additional orientation probe or corrective rotation is performed.
 
