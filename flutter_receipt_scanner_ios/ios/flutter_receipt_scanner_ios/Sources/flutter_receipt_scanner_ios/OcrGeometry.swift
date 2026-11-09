@@ -81,7 +81,9 @@ enum OcrGeometry {
                 width: turned.size.width * scaleX, height: turned.size.height * scaleY
             )
             let clamped = scaled.intersection(bounds)
-            if clamped.isNull || clamped.isEmpty { continue }
+            if clamped.isNull || clamped.isEmpty {
+                continue
+            }
             var out = line
             out.box = clamped
             placed.append(out)
@@ -137,12 +139,16 @@ enum OcrGeometry {
     static func dominantQuarterTurn(fromAngles angles: [CGFloat]) -> Int {
         let bins = quarterTurnHistogram(fromAngles: angles)
         let total = bins.reduce(0, +)
-        if total < angleMinLines { return quarterTurnUnknown }
+        if total < angleMinLines {
+            return quarterTurnUnknown
+        }
         var best = 0
         for i in 1 ..< bins.count where bins[i] > bins[best] {
             best = i
         }
-        if Double(bins[best]) / Double(total) < angleMajority { return quarterTurnUnknown }
+        if Double(bins[best]) / Double(total) < angleMajority {
+            return quarterTurnUnknown
+        }
         return best * 90
     }
 }

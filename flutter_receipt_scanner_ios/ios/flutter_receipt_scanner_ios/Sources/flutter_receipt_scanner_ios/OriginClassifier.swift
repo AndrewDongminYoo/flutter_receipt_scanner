@@ -17,9 +17,15 @@ enum OriginClassifier {
         model: String?,
         dateTimeOriginal: String?
     ) -> ImageOriginWire? {
-        if dateTimeOriginal != nil { return .camera }
-        if make != nil, model != nil { return .camera }
-        if make == nil, model == nil { return .download }
+        if dateTimeOriginal != nil {
+            return .camera
+        }
+        if make != nil, model != nil {
+            return .camera
+        }
+        if make == nil, model == nil {
+            return .download
+        }
         return nil
     }
 

@@ -33,7 +33,9 @@ enum ImageProcessor {
     /// Redraws `image` upright when its orientation is not already `.up`, so the
     /// encoded pixels need no orientation transform.
     static func normalized(_ image: UIImage) -> CGImage? {
-        if image.imageOrientation == .up { return image.cgImage }
+        if image.imageOrientation == .up {
+            return image.cgImage
+        }
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
         let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
@@ -44,7 +46,9 @@ enum ImageProcessor {
     /// Rotates `cg` counter-clockwise by 90/180/270 degrees (iOS convention).
     static func rotated(_ cg: CGImage, byDegreesCCW degrees: Int) -> CGImage {
         let normalized = ((degrees % 360) + 360) % 360
-        if normalized == 0 { return cg }
+        if normalized == 0 {
+            return cg
+        }
         let swaps = normalized == 90 || normalized == 270
         let outW = swaps ? cg.height : cg.width
         let outH = swaps ? cg.width : cg.height
@@ -162,7 +166,9 @@ extension ImageProcessor {
 
         // ── File props: forward the raw dicts (orientation stripped to Up). ──
         var fileProps: [CFString: Any] = [:]
-        if let exifDict { fileProps[kCGImagePropertyExifDictionary] = exifDict }
+        if let exifDict {
+            fileProps[kCGImagePropertyExifDictionary] = exifDict
+        }
         if var tiffDict {
             tiffDict[kCGImagePropertyTIFFOrientation] = CGImagePropertyOrientation.up.rawValue
             fileProps[kCGImagePropertyTIFFDictionary] = tiffDict
@@ -267,11 +273,19 @@ extension ImageProcessor {
             guard let dict else { return }
             for (cfKey, value) in dict {
                 let key = cfKey as String
-                if deny.contains(key) { continue }
+                if deny.contains(key) {
+                    continue
+                }
                 // Skip values the codec can't marshal cleanly.
-                if value is Data { continue }
-                if value is [AnyHashable: Any] { continue }
-                if !(value is String || value is NSNumber || value is [Any]) { continue }
+                if value is Data {
+                    continue
+                }
+                if value is [AnyHashable: Any] {
+                    continue
+                }
+                if !(value is String || value is NSNumber || value is [Any]) {
+                    continue
+                }
                 let outKey = (prefix != nil && !key.hasPrefix(prefix!))
                     ? prefix! + key
                     : key

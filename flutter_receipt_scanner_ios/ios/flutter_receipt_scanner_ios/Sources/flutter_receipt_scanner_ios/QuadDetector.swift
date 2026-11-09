@@ -106,8 +106,12 @@ enum QuadDetector {
         // shortest/longest-edge gate was intentionally dropped (it flagged
         // legitimate high-aspect-ratio receipts).
         let maxE = max(max(topW, botW), max(leftH, rightH))
-        if maxE <= 0 { return true }
-        if !isConvex(tl: tl, tr: tr, br: br, bl: bl) { return true }
+        if maxE <= 0 {
+            return true
+        }
+        if !isConvex(tl: tl, tr: tr, br: br, bl: bl) {
+            return true
+        }
 
         let wRatio = max(topW, botW) / max(min(topW, botW), .leastNonzeroMagnitude)
         let hRatio = max(leftH, rightH) / max(min(leftH, rightH), .leastNonzeroMagnitude)
@@ -121,7 +125,9 @@ enum QuadDetector {
             let a = p[i], b = p[(i + 1) % 4], c = p[(i + 2) % 4]
             let cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)
             let s = cross > 0 ? 1 : (cross < 0 ? -1 : 0)
-            if s == 0 { return false } // colinear / coincident → degenerate
+            if s == 0 {
+                return false
+            } // colinear / coincident → degenerate
             if sign == 0 {
                 sign = s
             } else if s != sign {
@@ -167,7 +173,9 @@ enum QuadDetector {
             let bbox = ciInput.extent.intersection(
                 CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             )
-            if bbox.isNull || bbox.width < 1 || bbox.height < 1 { return nil }
+            if bbox.isNull || bbox.width < 1 || bbox.height < 1 {
+                return nil
+            }
             let cropped = ciInput.cropped(to: bbox).transformed(
                 by: CGAffineTransform(translationX: -bbox.origin.x, y: -bbox.origin.y)
             )

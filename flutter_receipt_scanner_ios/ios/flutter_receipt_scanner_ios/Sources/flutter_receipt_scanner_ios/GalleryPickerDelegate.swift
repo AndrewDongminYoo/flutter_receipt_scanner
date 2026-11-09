@@ -268,7 +268,9 @@ final class GalleryPickerDelegate: NSObject, PHPickerViewControllerDelegate {
     /// failure or the user cancelled its editor) — continue the batch.
     private func didFinishOneItem(_ imageResult: ReceiptImageWire?) {
         DispatchQueue.main.async {
-            if let imageResult { self.results.append(imageResult) }
+            if let imageResult {
+                self.results.append(imageResult)
+            }
             self.processNextQueuedItem()
         }
     }

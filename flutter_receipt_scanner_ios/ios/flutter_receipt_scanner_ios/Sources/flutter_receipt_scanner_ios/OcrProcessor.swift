@@ -90,8 +90,12 @@ enum OcrProcessor {
         // Fast paths: a clearly-upright page needs no probing.
         let aspect = Double(cg.width) / Double(max(cg.height, 1))
         let isLandscape = aspect > 1
-        if !isLandscape, pass0.count >= uprightLineCount { return upright }
-        if isLandscape, pass0.count >= uprightLineCount, aspect <= 1.5 { return upright }
+        if !isLandscape, pass0.count >= uprightLineCount {
+            return upright
+        }
+        if isLandscape, pass0.count >= uprightLineCount, aspect <= 1.5 {
+            return upright
+        }
 
         // Fallback: count-based multi-pass probe.
         let probes = isLandscape ? [90, 180, 270] : [180]
@@ -207,7 +211,9 @@ enum OcrProcessor {
             // Forward the identifier Vision actually reported, not the caller's:
             // a subtag-only match (`en-GB` against `en-US`) would otherwise set a
             // language Vision rejects, and `perform` swallows that into empty OCR.
-            if !resolved.contains(match) { resolved.append(match) }
+            if !resolved.contains(match) {
+                resolved.append(match)
+            }
         }
         guard !resolved.isEmpty else { throw LanguageError.invalid("") }
         return resolved
@@ -264,7 +270,9 @@ enum OcrProcessor {
         for obs in observations {
             guard let top = obs.topCandidates(1).first else { continue }
             let trimmed = top.string.trimmingCharacters(in: .whitespaces)
-            if trimmed.isEmpty { continue }
+            if trimmed.isEmpty {
+                continue
+            }
             lineStrings.append(top.string)
             confSum += top.confidence
             confCount += 1
