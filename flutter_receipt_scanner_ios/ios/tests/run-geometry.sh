@@ -25,7 +25,8 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as source:
     corpus = json.load(source)
-corpus["geometry"]["boxCases"][1]["expectedRotated"][0] += 1
+case = next(c for c in corpus["geometry"]["boxCases"] if c["id"] == "rotate-90")
+case["expectedRotated"][0] += 1
 with open(sys.argv[2], "w", encoding="utf-8") as output:
     json.dump(corpus, output)
 PY
