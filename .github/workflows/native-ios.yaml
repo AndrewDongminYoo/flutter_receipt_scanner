@@ -1,0 +1,53 @@
+name: Native iOS Geometry Tests
+
+permissions: read-all
+
+concurrency:
+  group: native-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/native-ios.yaml
+      - flutter_receipt_scanner_ios/**
+      - flutter_receipt_scanner/example/**
+      - flutter_receipt_scanner/test/fixtures/ocr-contracts/**
+      - flutter_receipt_scanner_platform_interface/**
+      - pubspec.yaml
+      - pubspec.lock
+
+jobs:
+  geometry:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Boot iPhone simulator and run production Swift helpers
+        env:
+          VERIFY_CORRUPTION: "1"
+        run: |
+          SIMULATOR_UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone")))')
+          export SIMULATOR_UDID
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          bash flutter_receipt_scanner_ios/ios/tests/run-geometry.sh
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+      - name: Install example dependencies
+        working-directory: flutter_receipt_scanner/example
+        run: flutter pub get
+      - name: Build example for iOS simulator
+        working-directory: flutter_receipt_scanner/example
+        run: flutter build ios --simulator --debug --no-codesign
