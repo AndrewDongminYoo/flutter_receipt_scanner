@@ -5,18 +5,18 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: "9bfb8122e2505aca17219018593c384a87166cfe860d11c7ae927e7f978eb05f"
+      sha256: "1c5591cc6f252d5f440d96ab87c03e43504be552a3fa49d7cb7563f04c51fb0a"
       url: "https://pub.dev"
     source: hosted
-    version: "110.0.0"
+    version: "111.0.0"
   analyzer:
     dependency: transitive
     description:
       name: analyzer
-      sha256: "74c36179c4de542efea24c9dff78324375e4b118a2c1e14e8a7659f457947f8d"
+      sha256: "6c39bd5486a310e56217bed7cb1691377959f31be4227e41750107db7e6dd55c"
       url: "https://pub.dev"
     source: hosted
-    version: "14.6.0"
+    version: "14.7.0"
   ansi_styles:
     dependency: transitive
     description:
@@ -319,10 +319,10 @@ packages:
     dependency: "direct dev"
     description:
       name: melos
-      sha256: "35d8700e44563acdead669d1504b72c892b89182533cc29ff7c5be0d6f4896c1"
+      sha256: d0d9f8b8d566daf9b7a9bccd0b151d640c2d4b9c552b6fabf354328b5ad97080
       url: "https://pub.dev"
     source: hosted
-    version: "8.10.0"
+    version: "8.10.1"
   meta:
     dependency: transitive
     description:
@@ -367,10 +367,10 @@ packages:
     dependency: "direct dev"
     description:
       name: pigeon
-      sha256: "411982de387d13e7c532c3fa5d16d44e7c87235776f6ce5c5f052e34c6bb62d6"
+      sha256: "4842f7cd2dc49b1eece4e4121e1feb4f052eb80d4fe2b1c967372fbcf624b499"
       url: "https://pub.dev"
     source: hosted
-    version: "29.0.12"
+    version: "29.1.1"
   platform:
     dependency: transitive
     description:
