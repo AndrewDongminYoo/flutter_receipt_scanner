@@ -246,7 +246,7 @@ Both output pixels are orientation-normalized and both report `exif.orientation 
 
 Android's `GeometryConformanceTest` reads the vendored `flutter_receipt_scanner/test/fixtures/ocr-contracts/v1/contract.json` corpus and calls production `OcrGeometry` and `QuadGeometry` directly.
 The shared expectations cover quarter-turn ties, finite-angle filtering and majority boundaries, clockwise correction, rotated/clamped boxes, and crop-quad distortion including valid long receipts.
-The [canonical numeric contract](https://github.com/AndrewDongminYoo/react-native-receipt-scanner/blob/186bc2d17af06047198bb42d9bc8b9e99c9d4f7d/src/__tests__/fixtures/ocr-contracts/README.md#geometry-numeric-contract) defines exact integer pixel boxes and discrete results, binary32 angle/quad inputs, and the absolute 0.000001-pixel tolerance reserved for future floating-point box readers.
+The [canonical numeric contract](https://github.com/AndrewDongminYoo/react-native-receipt-scanner/blob/0179aa4663d1dedd9aa7dd9268ca1744bd6adbc3/src/__tests__/fixtures/ocr-contracts/README.md#geometry-numeric-contract) defines exact integer pixel boxes and discrete results, binary32 angle/quad inputs, and the absolute 0.000001-pixel tolerance reserved for future floating-point box readers.
 First run `flutter build apk --debug --config-only` from `flutter_receipt_scanner/example` to prepare the ignored Gradle wrapper and Android configuration.
 Then run `./gradlew :flutter_receipt_scanner_android:testDebugUnitTest` from `flutter_receipt_scanner/example/android`; the native Android workflow also runs this task for pull requests and relevant source or fixture pushes.
 
