@@ -37,7 +37,7 @@ Run package commands from their named package directories unless stated otherwis
 | Publication inventory                        | Core: `dart pub publish --dry-run`                                                                                                                                                                                 | 0    | Package has 0 warnings; full snapshot, hook and generated bindings included; compressed archive approximately 15 KB                                                |
 | Independently unpacked source consumer       | Root: `python3 receipt_scanner_core/tool/verify_packed.py`                                                                                                                                                         | 0    | Snapshot verified, offline dependency resolution, source build and `PACKED_CONSUMER_PASS overlap=2`; independently assembled source archive 14,674 bytes           |
 
-The independent verifier builds a independently assembled source archive, then unpacks it into a temporary directory and resolves a separate Dart consumer offline.
+The independent verifier builds an independently assembled source archive, then unpacks it into a temporary directory and resolves a separate Dart consumer offline.
 It removes only the extracted package's workspace-resolution marker to stand alone.
 This is distinct from the pub dry-run inventory and does not claim inspection of a downloaded published artifact.
 There is no build-time core download.
