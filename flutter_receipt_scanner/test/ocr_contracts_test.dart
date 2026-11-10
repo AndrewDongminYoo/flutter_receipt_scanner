@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_receipt_scanner/flutter_receipt_scanner.dart';
 import 'package:flutter_receipt_scanner/src/ocr_page_merger.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:receipt_scanner_core/receipt_scanner_core.dart';
 
 Map<String, Object?> _map(Object? value) => value! as Map<String, Object?>;
 List<Object?> _list(Object? value) => value! as List<Object?>;
@@ -23,6 +24,12 @@ ReceiptImage _page(int index, String? text, {double? confidence}) => ReceiptImag
 );
 
 void main() {
+  test('pilot seam rejects invalid counts', () {
+    final pages = [_page(0, 'coffee 1000\nbread 2000'), _page(1, 'coffee 1000\nbread 2000')];
+    for (final count in [-1, 3]) {
+      expect(() => mergeReceiptOcrPages(pages, overlapMatcher: (_, _) => count), throwsStateError);
+    }
+  });
   final directory = Directory('test/fixtures/ocr-contracts/v1');
   final corpus = _map(jsonDecode(File('${directory.path}/contract.json').readAsStringSync()));
   final manifest = _map(jsonDecode(File('${directory.path}/manifest.json').readAsStringSync()));
@@ -37,24 +44,29 @@ void main() {
     }
   });
 
-  for (final fixture in _list(corpus['mergeCases']).map(_map)) {
-    test('merge: ${fixture['id']}', () {
-      final texts = _list(fixture['pages']).cast<String?>();
-      final pages = [for (var index = 0; index < texts.length; index++) _page(index, texts[index])];
-      final rejected = _indexes(fixture['rejectedPageIndexes']).toSet();
-      if (fixture['expectedError'] == 'RangeError') {
-        expect(() => mergeReceiptOcrPages(pages, rejectedPageIndexes: rejected), throwsRangeError);
-        return;
-      }
-      final result = mergeReceiptOcrPages(pages, rejectedPageIndexes: rejected);
-      expect({
-        'text': result.text,
-        'isComplete': result.isComplete,
-        'unmatchedBoundaryIndexes': result.unmatchedBoundaryIndexes,
-        'rejectedPageIndexes': result.rejectedPageIndexes,
-      }, fixture['expected']);
-      expect(result.pageUris, pages.map((page) => page.uri).toList());
-    });
+  for (final matcher in <OverlapMatcher?>[null, findReceiptOverlap]) {
+    for (final fixture in _list(corpus['mergeCases']).map(_map)) {
+      test('merge ${matcher == null ? 'dart' : 'native'}: ${fixture['id']}', () {
+        final texts = _list(fixture['pages']).cast<String?>();
+        final pages = [for (var index = 0; index < texts.length; index++) _page(index, texts[index])];
+        final rejected = _indexes(fixture['rejectedPageIndexes']).toSet();
+        if (fixture['expectedError'] == 'RangeError') {
+          expect(
+            () => mergeReceiptOcrPages(pages, rejectedPageIndexes: rejected, overlapMatcher: matcher),
+            throwsRangeError,
+          );
+          return;
+        }
+        final result = mergeReceiptOcrPages(pages, rejectedPageIndexes: rejected, overlapMatcher: matcher);
+        expect({
+          'text': result.text,
+          'isComplete': result.isComplete,
+          'unmatchedBoundaryIndexes': result.unmatchedBoundaryIndexes,
+          'rejectedPageIndexes': result.rejectedPageIndexes,
+        }, fixture['expected']);
+        expect(result.pageUris, pages.map((page) => page.uri).toList());
+      });
+    }
   }
 
   for (final fixture in _list(corpus['qualityCases']).map(_map)) {

@@ -3,6 +3,7 @@ publish_to: none
 environment:
   sdk: ^3.13.7
 workspace:
+  - receipt_scanner_core
   - flutter_receipt_scanner_platform_interface
   - flutter_receipt_scanner
   - flutter_receipt_scanner_android
@@ -26,6 +27,7 @@ melos:
   name: flutter_receipt_scanner
 
   packages:
+    - receipt_scanner_core
     - flutter_receipt_scanner_platform_interface
     - flutter_receipt_scanner
     - flutter_receipt_scanner_android
@@ -40,12 +42,15 @@ melos:
       run: melos exec -- "dart analyze ."
       description: Analyze all Dart packages in this project.
 
+    test:core:
+      run: melos exec --scope=receipt_scanner_core -- "dart test"
+
     test:
-      run: melos exec --dir-exists=test --fail-fast -- "flutter test --test-randomize-ordering-seed random"
+      run: melos run test:core && melos exec --ignore=receipt_scanner_core --dir-exists=test --fail-fast -- "flutter test --test-randomize-ordering-seed random"
       description: Run Flutter tests for every package that has a test directory.
 
     test:ci:
-      run: melos exec --dir-exists=test --fail-fast -- "flutter test --concurrency 4 --coverage --test-randomize-ordering-seed random"
+      run: melos run test:core && melos exec --ignore=receipt_scanner_core --dir-exists=test --fail-fast -- "flutter test --concurrency 4 --coverage --test-randomize-ordering-seed random"
       description: Run Flutter tests with coverage for CI.
 
     format:

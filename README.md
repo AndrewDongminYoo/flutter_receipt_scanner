@@ -162,3 +162,10 @@ Kotlin, Swift, YAML, and Markdown are owned by trunk; Dart is intentionally left
 ## License
 
 BSD 3-Clause — see [LICENSE](LICENSE).
+
+## Explicit overlap pilot
+
+The experimental `receipt_scanner_core` workspace package builds its vendored C++ source through Dart code assets.
+Ordinary scanner calls retain Dart matching.
+The example can explicitly run `flutter run --target lib/overlap_pilot.dart` to check shared merge fixtures and 48 frozen synthetic workloads without opening scanner UI.
+See the [pilot report](docs/notes/flutter-overlap-pilot-report.md) for verification and incomplete measurement gates.

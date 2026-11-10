@@ -5,8 +5,15 @@ import 'package:flutter_receipt_scanner_platform_interface/flutter_receipt_scann
 final _whitespace = RegExp(r'\s+');
 const _minWindowCharacters = 12;
 
+/// Internal pilot injection point; scanner callers retain the Dart matcher.
+typedef OverlapMatcher = int Function(List<String> left, List<String> right);
+
 /// Merges ordered page OCR while preserving text at unproven boundaries.
-MergedOcrResult mergeReceiptOcrPages(List<ReceiptImage> pages, {Set<int> rejectedPageIndexes = const {}}) {
+MergedOcrResult mergeReceiptOcrPages(
+  List<ReceiptImage> pages, {
+  Set<int> rejectedPageIndexes = const {},
+  OverlapMatcher? overlapMatcher,
+}) {
   _validateRejectedIndexes(rejectedPageIndexes, pages.length);
 
   final linesByPage = pages.map((page) => _nonEmptyLines(page.ocrText)).toList(growable: false);
@@ -30,7 +37,13 @@ MergedOcrResult mergeReceiptOcrPages(List<ReceiptImage> pages, {Set<int> rejecte
       continue;
     }
 
-    final overlap = _findOverlap(comparisonLinesByPage[pageIndex - 1], comparisonLinesByPage[pageIndex]);
+    final overlap = (overlapMatcher ?? _findOverlap)(
+      comparisonLinesByPage[pageIndex - 1],
+      comparisonLinesByPage[pageIndex],
+    );
+    if (overlap < 0 || overlap > math.min(previousLines.length, currentLines.length)) {
+      throw StateError('Invalid overlap count: $overlap');
+    }
     if (overlap == 0) {
       unmatchedBoundaries.add(pageIndex - 1);
       mergedLines.addAll(currentLines);

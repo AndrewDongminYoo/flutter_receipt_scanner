@@ -3,6 +3,7 @@
 ## Project Structure & Module Organization
 
 - Root is a Melos workspace for a federated Flutter plugin, split into packages:
+  - `receipt_scanner_core/` (explicit source-built FFI overlap pilot; `dart test`, no production switch)
   - `flutter_receipt_scanner/` (app-facing plugin API; example app in `flutter_receipt_scanner/example/`)
   - `flutter_receipt_scanner_platform_interface/` (abstract platform interface, hand-written public models in `lib/src/models/`, and the Pigeon-generated Dart in `lib/src/messages.g.dart`)
   - `flutter_receipt_scanner_android/` (Android implementation; native code in `android/`)
@@ -25,7 +26,7 @@
 
 - `melos bootstrap` — resolve and link all workspace packages.
 - `melos run analyze` — run `dart analyze` across every package.
-- `melos run test` — run `flutter test` for every package that has a `test/` directory.
+- `melos run test` — run `dart test` for the pure Dart core pilot, then `flutter test` for Flutter packages with `test/`.
 - `melos run format` — apply `dart fix` and format all Dart files at 120 columns.
 - `melos run generate` — regenerate the Pigeon message contract.
 - `cd flutter_receipt_scanner/example && flutter run` — run the example app locally.

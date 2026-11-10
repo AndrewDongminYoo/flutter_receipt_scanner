@@ -29,6 +29,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  receipt_scanner_core: ^0.0.1
   flutter:
     sdk: flutter
 
@@ -40,6 +41,8 @@ dependencies:
     path: ../
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
 

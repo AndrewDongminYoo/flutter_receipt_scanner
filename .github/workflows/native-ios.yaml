@@ -16,6 +16,7 @@ on:
     paths:
       - .github/workflows/native-ios.yaml
       - flutter_receipt_scanner_ios/**
+      - receipt_scanner_core/**
       - flutter_receipt_scanner/example/**
       - flutter_receipt_scanner/test/fixtures/ocr-contracts/**
       - flutter_receipt_scanner_platform_interface/**
@@ -38,6 +39,7 @@ jobs:
           devices = json.load(sys.stdin)["devices"]
           print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone")))')
           export SIMULATOR_UDID
+          echo "SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
           xcrun simctl bootstatus "$SIMULATOR_UDID" -b
           bash flutter_receipt_scanner_ios/ios/tests/run-geometry.sh
       - name: Setup Flutter
@@ -51,3 +53,6 @@ jobs:
       - name: Build example for iOS simulator
         working-directory: flutter_receipt_scanner/example
         run: flutter build ios --simulator --debug --no-codesign
+      - name: Execute overlap FFI pilot on iOS simulator
+        working-directory: flutter_receipt_scanner/example
+        run: flutter test integration_test/overlap_pilot_test.dart -d "$SIMULATOR_UDID" --reporter expanded
