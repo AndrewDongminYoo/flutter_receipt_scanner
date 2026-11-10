@@ -73,8 +73,8 @@ The hook builds optimized C++17, disables exceptions/RTTI, hides non-ABI symbols
 
 CI checks source manifest/inventory, pinned source identity, generated binding drift, Dart tests, shared corpus and independently unpacked source consumption.
 The Linux sanitizer job runs ASan and UBSan, with leak detection enabled, and uses an explicit Flutter fixture path for the unchanged upstream corpus reader.
-The existing iOS Simulator CI job additionally executes `example/integration_test/overlap_pilot_test.dart` against all 29 merge fixtures and 48 workloads.
-This uses Flutter SDK `integration_test`; its driver dependencies are development-only.
+The iOS Simulator CI job builds the headless `lib/overlap_pilot.dart` consumer, then `tool/run_overlap_simulator.py` launches the packaged app and checks all 29 merge fixtures and 48 workloads through its exact completion marker.
+The separate manual `example/integration_test/overlap_pilot_test.dart` regression uses Flutter SDK `integration_test`; its driver dependencies are development-only.
 Android pilot runtime parity is locally verified; continuous Android CI currently runs the existing Kotlin suite rather than this pilot.
 The vendored CMake corpus test's default path assumes the RN layout; CI invokes that reader explicitly rather than editing the immutable snapshot.
 Configured CI jobs are not recorded as executed remote evidence.
@@ -91,16 +91,44 @@ These limits retain the Dart default and prevent an adoption claim.
 
 ## Final verification records
 
-Worker final host records:
+The root retained complete local gate logs and checked the final production LCOV records.
+Host: macOS arm64, Flutter 3.47.9, Dart 3.13.7, Xcode 26.6.
+Android: Play-enabled arm64 Android 17/API 37 emulator, 4 KiB pages, Debug.
+iOS: iPhone 17 Simulator, iOS 26.5, Debug.
+The packed mobile consumers used an independently archived and extracted core in a fresh workspace copy, resolved offline without original package build caches.
 
-| Scenario                                 | Invocation                                                                                                                                                 | Exit | Output                                                                                   |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------- |
-| Final core suite including size/identity | Core: `dart test --reporter expanded`                                                                                                                      | 0    | All 6 tests passed                                                                       |
-| Complete workspace strict analysis       | Root: `dart run melos run analyze`                                                                                                                         | 0    | All 6 packages: No issues found                                                          |
-| Scoped formatting                        | Root: `dart format --output=none --set-exit-if-changed` over core lib/hook/generator/tests, merger, contract/pilot tests and headless/workload entrypoints | 0    | 14 files, 0 changed                                                                      |
-| Final snapshot check                     | Root: `python3 receipt_scanner_core/third_party/receipt_core/vendor.py --check`                                                                            | 0    | ABI v1 verified at pinned revision                                                       |
-| App coverage reader                      | Python reader of each `SF:lib/` record in `flutter_receipt_scanner/coverage/lcov.info`                                                                     | 0    | Zero uncovered lines in `ocr_floor.dart`, `receipt_scanner.dart`, `ocr_page_merger.dart` |
+| Gate                                                  | Observed result                                                                                                   | Limit                                                                              |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Workspace analysis                                    | Six packages, no issues                                                                                           | Static analysis                                                                    |
+| `dart run melos run test:ci`                          | Core 6; Flutter app 155, Android 10, iOS 10, platform interface 24, example 5; all passed                         | Host execution                                                                     |
+| `flutter analyze lib test` in four published packages | No issues                                                                                                         | Existing strict package gate                                                       |
+| Production LCOV                                       | App 135/135, Android 92/92, iOS 86/86, platform interface 55/55                                                   | Generated Pigeon Dart excluded under CI policy                                     |
+| Binding regeneration and source integrity             | No generated drift; manifest and canonical bytes verified                                                         | Pinned source only                                                                 |
+| Offline unpacked source consumer                      | `PACKED_CONSUMER_PASS overlap=2`, archive 14,716 bytes at this check                                              | Observed archive, not reproducibility or paired release growth                     |
+| Final pub dry-run                                     | 15 KB compressed, zero warnings; hook, bindings and sources included                                              | Inventory; nothing published                                                       |
+| Original Android example                              | 29 merge fixtures and 48 workloads passed; hot restart repeated the marker                                        | Local Debug consumer                                                               |
+| Packed Android consumer                               | 29 merge fixtures and 48 workloads passed                                                                         | Emulator integration                                                               |
+| Packed iOS consumer                                   | 29 merge fixtures and 48 workloads passed; hot restart repeated the marker                                        | Simulator integration                                                              |
+| Manual iOS SDK integration test                       | Passed on the Simulator                                                                                           | CI now uses native launch instead of VM discovery                                  |
+| Fresh Simulator native launch                         | Current PID and timestamp matched the pinned 29/48 marker; app cleanup passed                                     | No physical latency claim                                                          |
+| Native log-reader controls                            | Five tests passed, rejecting other PID, stale time, wrong revision and missing marker                             | Reader protocol only                                                               |
+| Packed Android artifact                               | Core 4,472 bytes; two LOAD alignments `0x4000`; libc/libdl only; two defined ABI exports; ZIP 16 KiB check passed | Debug artifact, no 16 KiB runtime or paired release-size claim                     |
+| Canonical CMake safety                                | ASan and UBSan: core, C ABI, shared corpus and vendor snapshot passed                                             | macOS leak detection disabled; Linux CI enables it                                 |
+| Formatting and Trunk                                  | Scoped formatting and full changed-file check passed                                                              | Immutable vendor bytes excluded only from Prettier; integrity checks remain active |
 
-`dart run melos run test:ci` exited 0 after core and all five Flutter packages passed.
-Its streamed transcript was truncated by the tool, so root must retain a complete final reader before using it as exhaustive evidence.
-Root integration records still required: scoped Trunk, Android/iOS Simulator parity, packed mobile consumer execution and artifact checks.
+Independent core and pipeline reviews found no blocking code issues.
+Physical measurement gates remain incomplete under the operator-confirmed scope.
+
+## CI transport regression
+
+At head `f15f827`, [the hosted iOS job](https://github.com/AndrewDongminYoo/flutter_receipt_scanner/actions/runs/42731384970) reached a successful integration-test Xcode build, then produced no Dart test-start output before its 15-minute job limit.
+Flutter 3.47.9 waits for the VM URI through an asynchronously started Simulator log reader; [Flutter issue #181771](https://github.com/flutter/flutter/issues/181771#issuecomment-3891689120) describes a matching race.
+That is a plausible cause, not a confirmed diagnosis of the hosted runner.
+
+The algorithm gate does not need VM attachment or UI driving.
+CI now builds the explicit headless app once and launches it directly with `simctl`.
+The runner reads persisted unified-log JSON after launch, matching the launched PID, a timestamp after launch, and the exact fixture/workload/ABI/source marker.
+It fails on missing completion, a different process, a stale event, a different revision, or a bounded timeout; it terminates only the app it launched.
+Five reader tests include negative controls for those false-pass paths.
+A fresh local Simulator completed the native parity run with the pinned 29/48 marker; raw console-only capture was rejected because Flutter writes that marker to unified logging.
+The existing 15-minute CI job limit and all pilot acceptance budgets remain unchanged.

@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify native parity completion reader
+        run: python3 -B -m unittest discover -s tool -p test_run_overlap_simulator.py -v
       - name: Boot iPhone simulator and run production Swift helpers
         env:
           VERIFY_CORRUPTION: "1"
@@ -50,9 +52,11 @@ jobs:
       - name: Install example dependencies
         working-directory: flutter_receipt_scanner/example
         run: flutter pub get
-      - name: Build example for iOS simulator
+      - name: Build headless overlap consumer for iOS simulator
         working-directory: flutter_receipt_scanner/example
-        run: flutter build ios --simulator --debug --no-codesign
-      - name: Execute overlap FFI pilot on iOS simulator
-        working-directory: flutter_receipt_scanner/example
-        run: flutter test integration_test/overlap_pilot_test.dart -d "$SIMULATOR_UDID" --reporter expanded
+        run: flutter build ios --simulator --debug --no-codesign --target lib/overlap_pilot.dart
+      - name: Execute packaged overlap consumer through native Simulator logs
+        run: >-
+          python3 tool/run_overlap_simulator.py
+          --app flutter_receipt_scanner/example/build/ios/iphonesimulator/Runner.app
+          --device "$SIMULATOR_UDID"
