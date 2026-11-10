@@ -1,0 +1,1427 @@
+// Explicit headless pilot. Ordinary example/main.dart and scan() remain unchanged.
+import 'dart:convert';
+
+import 'package:flutter/widgets.dart';
+import 'package:flutter_receipt_scanner/flutter_receipt_scanner.dart';
+// ignore: implementation_imports
+import 'package:flutter_receipt_scanner/src/ocr_page_merger.dart';
+import 'package:receipt_scanner_core/receipt_scanner_core.dart';
+
+import 'pilot_workloads.dart';
+
+ReceiptImage pilotPage(int index, String? text) => ReceiptImage(
+  uri: 'file:///contract/page-$index.jpg',
+  width: 1,
+  height: 1,
+  fileName: 'page-$index.jpg',
+  fileSize: 1,
+  imageOrigin: ImageOrigin.camera,
+  ocrText: text,
+);
+
+Map<String, Object?> pilotResult(MergedOcrResult result) => {
+  'text': result.text,
+  'isComplete': result.isComplete,
+  'unmatchedBoundaryIndexes': result.unmatchedBoundaryIndexes,
+  'rejectedPageIndexes': result.rejectedPageIndexes,
+};
+
+int runPilotParity(Map<String, dynamic> corpus) {
+  var count = 0;
+  for (final fixture in (corpus['mergeCases'] as List).cast<Map<String, dynamic>>()) {
+    final texts = (fixture['pages'] as List).cast<String?>();
+    final pages = [for (var i = 0; i < texts.length; i++) pilotPage(i, texts[i])];
+    final rejected = (fixture['rejectedPageIndexes'] as List).cast<int>().toSet();
+    for (final matcher in <OverlapMatcher?>[null, findReceiptOverlap]) {
+      try {
+        final result = mergeReceiptOcrPages(pages, rejectedPageIndexes: rejected, overlapMatcher: matcher);
+        if (fixture['expectedError'] != null || jsonEncode(pilotResult(result)) != jsonEncode(fixture['expected'])) {
+          throw StateError('Fixture mismatch: ${fixture['id']}');
+        }
+        if (jsonEncode(result.pageUris) != jsonEncode(pages.map((page) => page.uri).toList())) {
+          throw StateError('URI ordering mismatch: ${fixture['id']}');
+        }
+      } on RangeError {
+        if (fixture['expectedError'] != 'RangeError') rethrow;
+      }
+    }
+    count++;
+  }
+  for (final workload in pilotWorkloads()) {
+    final pages = [for (var i = 0; i < workload.pages.length; i++) pilotPage(i, workload.pages[i])];
+    final baseline = pilotResult(mergeReceiptOcrPages(pages));
+    final candidate = pilotResult(mergeReceiptOcrPages(pages, overlapMatcher: findReceiptOverlap));
+    if (jsonEncode(candidate) != jsonEncode(baseline)) throw StateError('Workload mismatch: ${workload.id}');
+  }
+  return count;
+}
+
+// Complete operation: normalization, native conversion/call/cleanup and assembly.
+// Only physical release runs with recorded device/thermal metadata can qualify.
+void runPilotBenchmark() {
+  var sink = 0;
+  for (final workload in pilotWorkloads()) {
+    final pages = [for (var i = 0; i < workload.pages.length; i++) pilotPage(i, workload.pages[i])];
+    for (var run = 0; run < 5; run++) {
+      for (final native in run.isEven ? [false, true] : [true, false]) {
+        final matcher = native ? findReceiptOverlap : null;
+        for (var warmup = 0; warmup < 100; warmup++) {
+          sink ^= mergeReceiptOcrPages(pages, overlapMatcher: matcher).text.length;
+        }
+        final samples = <int>[];
+        for (var sample = 0; sample < 1000; sample++) {
+          final timer = Stopwatch()..start();
+          final result = mergeReceiptOcrPages(pages, overlapMatcher: matcher);
+          timer.stop();
+          sink ^= result.text.length;
+          samples.add(timer.elapsedMicroseconds);
+        }
+        final sorted = [...samples]..sort();
+        // ignore: avoid_print
+        print(
+          jsonEncode({
+            'workload': workload.id,
+            'run': run,
+            'native': native,
+            'medianUs': (sorted[499] + sorted[500]) / 2,
+            'p95Us': sorted[949],
+            'samplesUs': samples,
+            'sink': sink,
+          }),
+        );
+      }
+    }
+  }
+}
+
+Map<String, dynamic> pilotContract() => jsonDecode(_pilotContract) as Map<String, dynamic>;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final corpus = pilotContract();
+  final count = runPilotParity(corpus);
+  // ignore: avoid_print
+  print('OVERLAP_PILOT_PASS mergeCases=$count workloads=48 abi=1 source=fb37f24a86014829a31897ca891d45a78208aa6c');
+  if (const bool.fromEnvironment('PILOT_BENCHMARK')) runPilotBenchmark();
+  runApp(const SizedBox.shrink());
+}
+
+// Frozen shared corpus v1; host tests compare this literal with its checksum-verified source.
+const _pilotContract = r'''{
+  "schemaVersion": 1,
+  "mergeCases": [
+    {
+      "id": "empty-pages",
+      "pages": [],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "trim-and-drop-empty-lines",
+      "pages": ["  START  \n\n END \t"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "exact-distinct-overlap",
+      "pages": ["START\nITEM A 1 1000\nTOTAL 1000", "ITEM A 1 1000\nTOTAL 1000\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nITEM A 1 1000\nTOTAL 1000\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "short-distinct-overlap",
+      "pages": ["START\nA\nB", "A\nB\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nA\nB\nA\nB\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "non-ascii-overlap-below-floor",
+      "pages": ["START\n가가가\n나나나", "가가가\n나나나\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\n가가가\n나나나\n가가가\n나나나\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "overlap-11-units",
+      "pages": ["START\naaaaa\nbbbbb", "aaaaa\nbbbbb\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\naaaaa\nbbbbb\naaaaa\nbbbbb\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "overlap-12-units",
+      "pages": ["START\naaaaa\nbbbbbb", "aaaaa\nbbbbbb\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\naaaaa\nbbbbbb\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "overlap-13-units",
+      "pages": ["START\naaaaaa\nbbbbbb", "aaaaaa\nbbbbbb\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\naaaaaa\nbbbbbb\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "length-after-whitespace-normalization",
+      "pages": ["START\nA          B\nC          D", "A B\nC D\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nA          B\nC          D\nA B\nC D\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "single-long-row",
+      "pages": ["START\nITEM ABCDEFG 1000", "ITEM ABCDEFG 1000\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nITEM ABCDEFG 1000\nITEM ABCDEFG 1000\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "repeated-identical-purchases",
+      "pages": ["START\nMILK 1000\nMILK 1000", "MILK 1000\nMILK 1000\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nMILK 1000\nMILK 1000\nMILK 1000\nMILK 1000\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "changed-quantity",
+      "pages": ["START\nMILK 1 1000\nBREAD 1 2000", "MILK 2 2000\nBREAD 1 2000\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nMILK 1 1000\nBREAD 1 2000\nMILK 2 2000\nBREAD 1 2000\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "deepest-nine-line-overlap",
+      "pages": [
+        "START\n----------\nITEM QTY AMOUNT\nAPPLE 1 1000\nMILK 2 2000\nBREAD 3 3000\nCARROT 4 4000\nTEA 5 5000\n----------\nITEM QTY AMOUNT",
+        "----------\nITEM QTY AMOUNT\nAPPLE 1 1000\nMILK 2 2000\nBREAD 3 3000\nCARROT 4 4000\nTEA 5 5000\n----------\nITEM QTY AMOUNT\nEND"
+      ],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\n----------\nITEM QTY AMOUNT\nAPPLE 1 1000\nMILK 2 2000\nBREAD 3 3000\nCARROT 4 4000\nTEA 5 5000\n----------\nITEM QTY AMOUNT\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "missing-middle-page",
+      "pages": ["ALPHA ITEM\nBETA TOTAL", null, "ALPHA ITEM\nBETA TOTAL"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "ALPHA ITEM\nBETA TOTAL\nALPHA ITEM\nBETA TOTAL",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0, 1],
+        "rejectedPageIndexes": [1]
+      }
+    },
+    {
+      "id": "blank-final-page",
+      "pages": ["ALPHA ITEM\nBETA TOTAL", " \n\t"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "ALPHA ITEM\nBETA TOTAL",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": [1]
+      }
+    },
+    {
+      "id": "all-empty-pages",
+      "pages": [null, " \n\t"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": [0, 1]
+      }
+    },
+    {
+      "id": "floor-rejected-page-still-contributes",
+      "pages": ["START\nALPHA ITEM\nBETA TOTAL", "ALPHA ITEM\nBETA TOTAL\nEND"],
+      "rejectedPageIndexes": [1],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nALPHA ITEM\nBETA TOTAL\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": [1]
+      }
+    },
+    {
+      "id": "rejected-indexes-sorted-and-deduplicated",
+      "pages": ["ALPHA ITEM\nBETA TOTAL", "ALPHA ITEM\nBETA TOTAL"],
+      "rejectedPageIndexes": [1, 0, 1],
+      "expectedError": null,
+      "expected": {
+        "text": "ALPHA ITEM\nBETA TOTAL",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": [0, 1]
+      }
+    },
+    {
+      "id": "negative-rejected-index",
+      "pages": ["ITEM"],
+      "rejectedPageIndexes": [-1],
+      "expectedError": "RangeError",
+      "expected": null
+    },
+    {
+      "id": "out-of-range-rejected-index",
+      "pages": ["ITEM"],
+      "rejectedPageIndexes": [1],
+      "expectedError": "RangeError",
+      "expected": null
+    },
+    {
+      "id": "rejected-index-without-pages",
+      "pages": [],
+      "rejectedPageIndexes": [0],
+      "expectedError": "RangeError",
+      "expected": null
+    },
+    {
+      "id": "do-not-compare-nonadjacent-pages",
+      "pages": ["ALPHA ITEM\nBETA TOTAL", "MIDDLE ONLY", "ALPHA ITEM\nBETA TOTAL"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "ALPHA ITEM\nBETA TOTAL\nMIDDLE ONLY\nALPHA ITEM\nBETA TOTAL",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0, 1],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "unicode-lowercase-keeps-earlier-text",
+      "pages": ["START\nCAFÉ ÜBER 100\n합계 100", "café über 100\n합계 100\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nCAFÉ ÜBER 100\n합계 100\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "crlf-nbsp-and-tab",
+      "pages": ["START\r\n  MILK 1 100 \r\n TOTAL\t100 \r\n", "milk 1 100\ntotal 100\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nMILK 1 100\nTOTAL\t100\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "utf16-length-not-codepoints-or-bytes",
+      "pages": ["START\n😀😀😀\n🧾🧾A", "😀😀😀\n🧾🧾A\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\n😀😀😀\n🧾🧾A\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "distinctness-after-normalization",
+      "pages": ["START\nMILK 1 1000\nmilk   1 1000", "milk 1 1000\nMILK 1 1000\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nMILK 1 1000\nmilk   1 1000\nmilk 1 1000\nMILK 1 1000\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "changed-line-segmentation",
+      "pages": ["START\nALPHA ITEM\nBETA TOTAL", "ALPHA ITEM BETA TOTAL\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nALPHA ITEM\nBETA TOTAL\nALPHA ITEM BETA TOTAL\nEND",
+        "isComplete": false,
+        "unmatchedBoundaryIndexes": [0],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "fully-overlapped-middle-page",
+      "pages": [
+        "START\nALPHA ITEM\nBETA TOTAL",
+        "ALPHA ITEM\nBETA TOTAL",
+        "ALPHA ITEM\nBETA TOTAL\nEND"
+      ],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nALPHA ITEM\nBETA TOTAL\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    },
+    {
+      "id": "known-repeated-block-ambiguity",
+      "pages": ["START\nALPHA ITEM\nBETA TOTAL", "ALPHA ITEM\nBETA TOTAL\nEND"],
+      "rejectedPageIndexes": [],
+      "expectedError": null,
+      "expected": {
+        "text": "START\nALPHA ITEM\nBETA TOTAL\nEND",
+        "isComplete": true,
+        "unmatchedBoundaryIndexes": [],
+        "rejectedPageIndexes": []
+      }
+    }
+  ],
+  "qualityCases": [
+    {
+      "id": "default-floor-at-12",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": "AAAAAA\nBBBBB",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 12,
+            "lineCount": 2,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "default-floor-below-12",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": "AAAAA\nBBBBB",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "rejected",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [0],
+        "qualities": [
+          {
+            "textLength": 11,
+            "lineCount": 2,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "default-floor-above-12",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": "AAAAAA\nBBBBBB",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 13,
+            "lineCount": 2,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "default-floor-one-line",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": "ABCDEFGHIJKLM",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "rejected",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [0],
+        "qualities": [
+          {
+            "textLength": 13,
+            "lineCount": 1,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "blank-ocr",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": " \t\n ",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "rejected",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [0],
+        "qualities": [
+          {
+            "textLength": 0,
+            "lineCount": 0,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing-ocr",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": null,
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "rejected",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [0],
+        "qualities": [null]
+      }
+    },
+    {
+      "id": "trimmed-quality",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": " \tAAAAAA\n\nBBBBB \n",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 13,
+            "lineCount": 2,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "utf16-quality",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": "😀😀😀\n🧾🧾A",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 12,
+            "lineCount": 2,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "non-ascii-quality-below-floor",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": "가가가\n나나나",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "rejected",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [0],
+        "qualities": [
+          {
+            "textLength": 7,
+            "lineCount": 2,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing-confidence-satisfies-floor",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": {
+          "minTextLength": 12,
+          "minLines": 2,
+          "minConfidence": 0.9
+        },
+        "pages": [
+          {
+            "text": "AAAAAA\nBBBBB",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 12,
+            "lineCount": 2,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "zero-confidence-rejected",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": {
+          "minTextLength": 12,
+          "minLines": 2,
+          "minConfidence": 0.9
+        },
+        "pages": [
+          {
+            "text": "AAAAAA\nBBBBB",
+            "confidence": 0
+          }
+        ]
+      },
+      "expected": {
+        "status": "rejected",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [0],
+        "qualities": [
+          {
+            "textLength": 12,
+            "lineCount": 2,
+            "confidence": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "confidence-below-floor",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": {
+          "minTextLength": 12,
+          "minLines": 2,
+          "minConfidence": 0.9
+        },
+        "pages": [
+          {
+            "text": "AAAAAA\nBBBBB",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "expected": {
+        "status": "rejected",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [0],
+        "qualities": [
+          {
+            "textLength": 12,
+            "lineCount": 2,
+            "confidence": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "confidence-at-floor",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": {
+          "minTextLength": 12,
+          "minLines": 2,
+          "minConfidence": 0.9
+        },
+        "pages": [
+          {
+            "text": "AAAAAA\nBBBBB",
+            "confidence": 0.9
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 12,
+            "lineCount": 2,
+            "confidence": 0.9
+          }
+        ]
+      }
+    },
+    {
+      "id": "confidence-above-floor",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": {
+          "minTextLength": 12,
+          "minLines": 2,
+          "minConfidence": 0.9
+        },
+        "pages": [
+          {
+            "text": "AAAAAA\nBBBBB",
+            "confidence": 1
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 12,
+            "lineCount": 2,
+            "confidence": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "disabled-floor",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": false,
+        "pages": [
+          {
+            "text": "x",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 1,
+            "lineCount": 1,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "ocr-disabled",
+      "input": {
+        "status": "success",
+        "ocr": false,
+        "floor": null,
+        "pages": [
+          {
+            "text": null,
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [null]
+      }
+    },
+    {
+      "id": "custom-text-floor",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": {
+          "minTextLength": 1,
+          "minLines": 1,
+          "minConfidence": 0
+        },
+        "pages": [
+          {
+            "text": "x",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [0],
+        "rejectedPageIndexes": [],
+        "qualities": [
+          {
+            "textLength": 1,
+            "lineCount": 1,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "partial-rejection-keeps-input-order",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": "x",
+            "confidence": null
+          },
+          {
+            "text": "AAAAAA\nBBBBB",
+            "confidence": null
+          },
+          {
+            "text": null,
+            "confidence": null
+          },
+          {
+            "text": "AAAAAA\nBBBBBB",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [1, 3],
+        "rejectedPageIndexes": [0, 2],
+        "qualities": [
+          {
+            "textLength": 1,
+            "lineCount": 1,
+            "confidence": null
+          },
+          {
+            "textLength": 12,
+            "lineCount": 2,
+            "confidence": null
+          },
+          null,
+          {
+            "textLength": 13,
+            "lineCount": 2,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "all-pages-rejected",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": [
+          {
+            "text": "x",
+            "confidence": null
+          },
+          {
+            "text": "y",
+            "confidence": null
+          }
+        ]
+      },
+      "expected": {
+        "status": "rejected",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [0, 1],
+        "qualities": [
+          {
+            "textLength": 1,
+            "lineCount": 1,
+            "confidence": null
+          },
+          {
+            "textLength": 1,
+            "lineCount": 1,
+            "confidence": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-success",
+      "input": {
+        "status": "success",
+        "ocr": true,
+        "floor": null,
+        "pages": []
+      },
+      "expected": {
+        "status": "success",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [],
+        "qualities": []
+      }
+    },
+    {
+      "id": "cancelled",
+      "input": {
+        "status": "cancelled",
+        "ocr": true,
+        "floor": null,
+        "pages": []
+      },
+      "expected": {
+        "status": "cancelled",
+        "acceptedPageIndexes": [],
+        "rejectedPageIndexes": [],
+        "qualities": []
+      }
+    }
+  ],
+  "geometry": {
+    "quantizeCases": [
+      {
+        "id": "negative-135-tie",
+        "degrees": -135,
+        "expected": 270
+      },
+      {
+        "id": "negative-45-tie",
+        "degrees": -45,
+        "expected": 0
+      },
+      {
+        "id": "positive-45-tie",
+        "degrees": 45,
+        "expected": 90
+      },
+      {
+        "id": "positive-135-tie",
+        "degrees": 135,
+        "expected": 180
+      },
+      {
+        "id": "below-positive-tie",
+        "degrees": 44.99,
+        "expected": 0
+      },
+      {
+        "id": "above-positive-tie",
+        "degrees": 45.01,
+        "expected": 90
+      },
+      {
+        "id": "below-negative-tie",
+        "degrees": -45.01,
+        "expected": 270
+      },
+      {
+        "id": "above-negative-tie",
+        "degrees": -44.99,
+        "expected": 0
+      },
+      {
+        "id": "negative-wrap",
+        "degrees": -180,
+        "expected": 180
+      },
+      {
+        "id": "positive-wrap",
+        "degrees": 180,
+        "expected": 180
+      },
+      {
+        "id": "upright",
+        "degrees": 0,
+        "expected": 0
+      },
+      {
+        "id": "clockwise",
+        "degrees": 90,
+        "expected": 90
+      },
+      {
+        "id": "counterclockwise",
+        "degrees": -90,
+        "expected": 270
+      }
+    ],
+    "angleCases": [
+      {
+        "id": "empty",
+        "angles": [],
+        "expectedHistogram": [0, 0, 0, 0],
+        "expectedDominant": null
+      },
+      {
+        "id": "four-usable",
+        "angles": [90, 90, 90, 90],
+        "expectedHistogram": [0, 4, 0, 0],
+        "expectedDominant": null
+      },
+      {
+        "id": "five-usable",
+        "angles": [89, 90, 91, 90, 90],
+        "expectedHistogram": [0, 5, 0, 0],
+        "expectedDominant": 90
+      },
+      {
+        "id": "four-plus-nonfinite",
+        "angles": [90, 90, 90, 90, "NaN", "+Infinity", "-Infinity"],
+        "expectedHistogram": [0, 4, 0, 0],
+        "expectedDominant": null
+      },
+      {
+        "id": "five-plus-nonfinite",
+        "angles": [90, 90, 90, 90, 90, "NaN", "+Infinity", "-Infinity"],
+        "expectedHistogram": [0, 5, 0, 0],
+        "expectedDominant": 90
+      },
+      {
+        "id": "all-nonfinite",
+        "angles": ["NaN", "+Infinity", "-Infinity"],
+        "expectedHistogram": [0, 0, 0, 0],
+        "expectedDominant": null
+      },
+      {
+        "id": "below-70-percent",
+        "angles": [90, 90, 90, 90, 90, 90, 0, 0, 0, 0],
+        "expectedHistogram": [4, 6, 0, 0],
+        "expectedDominant": null
+      },
+      {
+        "id": "exactly-70-percent",
+        "angles": [90, 90, 90, 90, 90, 90, 90, 0, 0, 0],
+        "expectedHistogram": [3, 7, 0, 0],
+        "expectedDominant": 90
+      },
+      {
+        "id": "above-70-percent",
+        "angles": [90, 90, 90, 90, 90, 90, 90, 90, 0, 0],
+        "expectedHistogram": [2, 8, 0, 0],
+        "expectedDominant": 90
+      },
+      {
+        "id": "split-evenly",
+        "angles": [0, 0, 0, 0, 0, 90, 90, 90, 90, 90],
+        "expectedHistogram": [5, 5, 0, 0],
+        "expectedDominant": null
+      },
+      {
+        "id": "confirmed-upright",
+        "angles": [0, 1, -1, 2, -2],
+        "expectedHistogram": [5, 0, 0, 0],
+        "expectedDominant": 0
+      },
+      {
+        "id": "wrap-at-180",
+        "angles": [179, -179, 180, -178, 177],
+        "expectedHistogram": [0, 0, 5, 0],
+        "expectedDominant": 180
+      },
+      {
+        "id": "counterclockwise-majority",
+        "angles": [-90, -89, -91, -90, -90, 0],
+        "expectedHistogram": [1, 0, 0, 5],
+        "expectedDominant": 270
+      },
+      {
+        "id": "ties-in-histogram",
+        "angles": [-135, -45, 45, 135, 0],
+        "expectedHistogram": [2, 1, 1, 1],
+        "expectedDominant": null
+      }
+    ],
+    "correctionCases": [
+      {
+        "id": "correction-0",
+        "quarterTurn": 0,
+        "expected": 0
+      },
+      {
+        "id": "correction-90",
+        "quarterTurn": 90,
+        "expected": 270
+      },
+      {
+        "id": "correction-180",
+        "quarterTurn": 180,
+        "expected": 180
+      },
+      {
+        "id": "correction-270",
+        "quarterTurn": 270,
+        "expected": 90
+      },
+      {
+        "id": "correction--90",
+        "quarterTurn": -90,
+        "expected": 90
+      },
+      {
+        "id": "correction-450",
+        "quarterTurn": 450,
+        "expected": 270
+      },
+      {
+        "id": "correction-360",
+        "quarterTurn": 360,
+        "expected": 0
+      }
+    ],
+    "boxCases": [
+      {
+        "id": "rotate-0",
+        "frame": [640, 480],
+        "box": [50, 20, 100, 30],
+        "degrees": 0,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [50, 20, 100, 30],
+        "expectedClamped": [50, 20, 100, 30]
+      },
+      {
+        "id": "rotate-90",
+        "frame": [640, 480],
+        "box": [50, 20, 100, 30],
+        "degrees": 90,
+        "expectedFrame": [480, 640],
+        "expectedRotated": [430, 50, 30, 100],
+        "expectedClamped": [430, 50, 30, 100]
+      },
+      {
+        "id": "rotate-180",
+        "frame": [640, 480],
+        "box": [50, 20, 100, 30],
+        "degrees": 180,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [490, 430, 100, 30],
+        "expectedClamped": [490, 430, 100, 30]
+      },
+      {
+        "id": "rotate-270",
+        "frame": [640, 480],
+        "box": [50, 20, 100, 30],
+        "degrees": 270,
+        "expectedFrame": [480, 640],
+        "expectedRotated": [20, 490, 30, 100],
+        "expectedClamped": [20, 490, 30, 100]
+      },
+      {
+        "id": "rotate--90",
+        "frame": [640, 480],
+        "box": [50, 20, 100, 30],
+        "degrees": -90,
+        "expectedFrame": [480, 640],
+        "expectedRotated": [20, 490, 30, 100],
+        "expectedClamped": [20, 490, 30, 100]
+      },
+      {
+        "id": "rotate-450",
+        "frame": [640, 480],
+        "box": [50, 20, 100, 30],
+        "degrees": 450,
+        "expectedFrame": [480, 640],
+        "expectedRotated": [430, 50, 30, 100],
+        "expectedClamped": [430, 50, 30, 100]
+      },
+      {
+        "id": "clip-top-left",
+        "frame": [640, 480],
+        "box": [-10, -20, 40, 50],
+        "degrees": 0,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [-10, -20, 40, 50],
+        "expectedClamped": [0, 0, 30, 30]
+      },
+      {
+        "id": "clip-bottom-right",
+        "frame": [640, 480],
+        "box": [620, 460, 40, 50],
+        "degrees": 0,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [620, 460, 40, 50],
+        "expectedClamped": [620, 460, 20, 20]
+      },
+      {
+        "id": "outside-right",
+        "frame": [640, 480],
+        "box": [640, 10, 20, 30],
+        "degrees": 0,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [640, 10, 20, 30],
+        "expectedClamped": null
+      },
+      {
+        "id": "outside-left",
+        "frame": [640, 480],
+        "box": [-20, 10, 20, 30],
+        "degrees": 0,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [-20, 10, 20, 30],
+        "expectedClamped": null
+      },
+      {
+        "id": "outside-bottom",
+        "frame": [640, 480],
+        "box": [10, 480, 20, 30],
+        "degrees": 0,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [10, 480, 20, 30],
+        "expectedClamped": null
+      },
+      {
+        "id": "zero-width",
+        "frame": [640, 480],
+        "box": [20, 30, 0, 10],
+        "degrees": 0,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [20, 30, 0, 10],
+        "expectedClamped": null
+      },
+      {
+        "id": "zero-height",
+        "frame": [640, 480],
+        "box": [20, 30, 10, 0],
+        "degrees": 0,
+        "expectedFrame": [640, 480],
+        "expectedRotated": [20, 30, 10, 0],
+        "expectedClamped": null
+      },
+      {
+        "id": "rotate-then-clip",
+        "frame": [640, 480],
+        "box": [-10, 460, 40, 50],
+        "degrees": 90,
+        "expectedFrame": [480, 640],
+        "expectedRotated": [-30, -10, 50, 40],
+        "expectedClamped": [0, 0, 20, 30]
+      }
+    ],
+    "quadCases": [
+      {
+        "id": "rectangle",
+        "corners": [0, 0, 100, 0, 100, 200, 0, 200],
+        "expectedDistorted": false
+      },
+      {
+        "id": "long-receipt",
+        "corners": [0, 0, 100, 0, 100, 2500, 0, 2500],
+        "expectedDistorted": false
+      },
+      {
+        "id": "coincident",
+        "corners": [0, 0, 0, 0, 0, 0, 0, 0],
+        "expectedDistorted": true
+      },
+      {
+        "id": "collapsed-edge",
+        "corners": [0, 0, 100, 0, 50, 200, 50, 200],
+        "expectedDistorted": true
+      },
+      {
+        "id": "collinear",
+        "corners": [0, 0, 25, 0, 50, 0, 75, 0],
+        "expectedDistorted": true
+      },
+      {
+        "id": "concave",
+        "corners": [0, 0, 100, 0, 100, 200, 90, 100],
+        "expectedDistorted": true
+      },
+      {
+        "id": "crossing",
+        "corners": [0, 0, 100, 200, 100, 0, 0, 200],
+        "expectedDistorted": true
+      },
+      {
+        "id": "width-ratio-below",
+        "corners": [0, 0, 10, 0, 21.99, 100, 0, 100],
+        "expectedDistorted": false
+      },
+      {
+        "id": "width-ratio-at",
+        "corners": [0, 0, 10, 0, 22, 100, 0, 100],
+        "expectedDistorted": false
+      },
+      {
+        "id": "width-ratio-above",
+        "corners": [0, 0, 10, 0, 22.01, 100, 0, 100],
+        "expectedDistorted": true
+      },
+      {
+        "id": "height-ratio-below",
+        "corners": [0, 0, 100, 0, 100, 21.99, 0, 10],
+        "expectedDistorted": false
+      },
+      {
+        "id": "height-ratio-at",
+        "corners": [0, 0, 100, 0, 100, 22, 0, 10],
+        "expectedDistorted": false
+      },
+      {
+        "id": "height-ratio-above",
+        "corners": [0, 0, 100, 0, 100, 22.01, 0, 10],
+        "expectedDistorted": true
+      },
+      {
+        "id": "reverse-winding",
+        "corners": [0, 0, 0, 200, 100, 200, 100, 0],
+        "expectedDistorted": false
+      },
+      {
+        "id": "width-ratio-reciprocal-above",
+        "corners": [0, 0, 22.01, 0, 10, 100, 0, 100],
+        "expectedDistorted": true
+      },
+      {
+        "id": "height-ratio-reciprocal-above",
+        "corners": [0, 0, 100, 0, 100, 10, 0, 22.01],
+        "expectedDistorted": true
+      }
+    ]
+  }
+}
+''';

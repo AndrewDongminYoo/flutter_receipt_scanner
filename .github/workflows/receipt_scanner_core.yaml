@@ -1,0 +1,58 @@
+name: receipt_scanner_core
+permissions:
+  contents: read
+on:
+  pull_request:
+    paths:
+      - .github/workflows/receipt_scanner_core.yaml
+      - receipt_scanner_core/**
+      - flutter_receipt_scanner/**
+      - pubspec.yaml
+      - pubspec.lock
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/receipt_scanner_core.yaml
+      - receipt_scanner_core/**
+      - flutter_receipt_scanner/test/fixtures/ocr-contracts/**
+      - pubspec.yaml
+      - pubspec.lock
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install -y libclang-dev clang cmake
+      - run: flutter pub get
+      - run: python3 third_party/receipt_core/vendor.py --check
+        working-directory: receipt_scanner_core
+      - run: dart run tool/ffigen.dart && git diff --exit-code -- lib/src/third_party
+        working-directory: receipt_scanner_core
+      - run: dart analyze && dart test --reporter expanded
+        working-directory: receipt_scanner_core
+      - run: python3 tool/verify_packed.py
+        working-directory: receipt_scanner_core
+      - run: dart pub publish --dry-run
+        working-directory: receipt_scanner_core
+      - run: flutter test test/ocr_contracts_test.dart test/overlap_pilot_test.dart
+        working-directory: flutter_receipt_scanner
+      - name: Build sanitizer host tests
+        run: >-
+          cmake -S receipt_scanner_core/third_party/receipt_core -B /tmp/receipt-core-san
+          -DRECEIPT_CORE_SANITIZERS=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+      - run: cmake --build /tmp/receipt-core-san --parallel 2
+      - name: Run sanitizers and shared corpus using explicit Flutter fixture path
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          ctest --test-dir /tmp/receipt-core-san --output-on-failure -E shared_corpus
+          node receipt_scanner_core/third_party/receipt_core/tests/corpus_runner.js /tmp/receipt-core-san/receipt_core_corpus flutter_receipt_scanner/test/fixtures/ocr-contracts/v1/contract.json

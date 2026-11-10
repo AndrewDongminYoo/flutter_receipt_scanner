@@ -19,7 +19,7 @@ Run from the repo root unless noted.
 ```bash
 melos bootstrap                 # resolve + link all workspace packages (run first)
 melos run analyze               # dart analyze across every package
-melos run test                  # flutter test in every package that has test/
+melos run test                  # dart test for core, flutter test for Flutter packages
 melos run test:ci               # same, with --coverage --concurrency 4
 melos run format                # dart fix --apply + dart format
 melos run format:ci             # formats files and exits nonzero if any changed
@@ -98,3 +98,10 @@ Wire types are `*Wire` (e.g. `ScanOptionsWire`, `ReceiptImageWire`); public mode
 
 Both platforms currently implement camera and gallery + crop paths end-to-end; there are no `unimplemented` stubs left in native code.
 Treat the native source as the authority on implementation state and the port map as a reference.
+
+## Explicit overlap pilot
+
+`receipt_scanner_core/` vendors the complete ABI v1 snapshot and compiles it from source with a code-assets hook.
+Regenerate bindings with `dart run tool/ffigen.dart` inside that package; never hand-edit bindings or the snapshot.
+The internal merger callback is an explicit pilot seam; ordinary scans retain Dart matching and quality policy.
+See `docs/notes/flutter-overlap-pilot-report.md` for evidence and incomplete acceptance gates.

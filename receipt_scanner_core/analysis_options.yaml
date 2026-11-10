@@ -1,0 +1,9 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  errors:
+    lines_longer_than_80_chars: ignore
+
+formatter:
+  trailing_commas: preserve
+  page_width: 120
