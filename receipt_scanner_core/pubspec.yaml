@@ -4,7 +4,7 @@ version: 0.0.1
 repository: https://github.com/AndrewDongminYoo/flutter_receipt_scanner
 resolution: workspace
 environment:
-  sdk: ^3.13.7
+  sdk: ^3.14.0
 dependencies:
   code_assets: ^2.2.0
   ffi: ^2.2.0
@@ -13,5 +13,5 @@ dependencies:
   native_toolchain_c: ^0.19.6
 dev_dependencies:
   ffigen: 23.0.0
-  test: ^1.31.1
+  test: ^1.32.0
   very_good_analysis: ^11.0.0

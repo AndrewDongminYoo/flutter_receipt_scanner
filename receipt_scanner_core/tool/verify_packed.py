@@ -32,7 +32,7 @@ def main():
         consumer = workspace / "consumer"
         consumer.mkdir()
         (consumer / "pubspec.yaml").write_text(
-            "name: packed_consumer\nenvironment:\n  sdk: ^3.13.7\ndependencies:\n"
+            "name: packed_consumer\nenvironment:\n  sdk: ^3.14.0\ndependencies:\n"
             "  receipt_scanner_core:\n    path: ../core\n"
         )
         (consumer / "main.dart").write_text(

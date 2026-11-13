@@ -1,7 +1,7 @@
 name: flutter_receipt_scanner_root
 publish_to: none
 environment:
-  sdk: ^3.13.7
+  sdk: ^3.14.0
 workspace:
   - receipt_scanner_core
   - flutter_receipt_scanner_platform_interface
