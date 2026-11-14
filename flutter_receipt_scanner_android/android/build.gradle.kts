@@ -1,7 +1,7 @@
 plugins {
     id("com.android.library")
     // Applied without a version: AGP + Kotlin come from the consuming app's
-    // settings pluginManagement (the example resolves AGP 9.0.1 / Kotlin 2.3.20),
+    // settings pluginManagement (the example declares AGP 9.1.1 / Kotlin 2.3.20),
     // so nothing is pinned here. Declaring it explicitly also wires the Kotlin
     // unit-test compilation (compileDebugUnitTestKotlin). Flutter nudges toward
     // "built-in Kotlin" instead, but that broader migration is left for later.
