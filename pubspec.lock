@@ -165,10 +165,10 @@ packages:
     dependency: transitive
     description:
       name: coverage
-      sha256: ff89e37c19355194e279d26dafe8e4bece46c9ea63a30be4dc68214f5bc290d3
+      sha256: "0a864527020e20835094b04b6ca1f9e50c7defedb74892aed72e67323e5072b7"
       url: "https://pub.dev"
     source: hosted
-    version: "1.16.0"
+    version: "1.16.1"
   crypto:
     dependency: transitive
     description:
@@ -499,10 +499,10 @@ packages:
     dependency: "direct dev"
     description:
       name: pigeon
-      sha256: "8f862db8701815fb45c53997a3596992197ee7f9d9d0e0280d31297e15e791fc"
+      sha256: "5c2ac8dd19571590eaf4c178bf4a093b5646dc376d2d2619943ce2aa0aa860d0"
       url: "https://pub.dev"
     source: hosted
-    version: "30.0.3"
+    version: "30.0.4"
   platform:
     dependency: transitive
     description:
