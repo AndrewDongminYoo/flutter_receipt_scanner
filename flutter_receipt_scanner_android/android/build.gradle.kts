@@ -67,6 +67,6 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.10.1")
     testImplementation("com.google.code.gson:gson:2.15.0")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.17")
+    testImplementation("org.robolectric:robolectric:4.18.1")
     testImplementation("io.mockk:mockk:1.14.12")
 }
